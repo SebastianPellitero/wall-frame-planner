@@ -27,7 +27,7 @@ Build spec for every WallPlanner screen. Owner: designer. Tokens live in `src/ap
 
 ## 2. Tokens
 
-All tokens are CSS variables on `:root` (`@theme static`), so they also work as `var(--…)` in inline styles and motion values. Tailwind's default colors, shadows and radii are **switched off**: `bg-white`, `shadow-md` and `rounded-sm` do not exist.
+All tokens are CSS variables on `:root` (`@theme static`), so they also work as `var(--…)` in inline styles and motion values. **Exception: per-frame tokens.** `--shadow-frame-*`, `--inset-shadow-aperture`, `--inset-shadow-mat` and the frame colors contain `var(--color-frame-edge…)`-style references that are resolved where the variable is *defined*; a bare `var(--shadow-frame-rest)` in an inline style resolves on `:root` and always gives the Graphite fallback. Use these only as utilities (`shadow-frame-rest`, `inset-shadow-mat`, `border-t-frame-top`, …) on an element that carries `data-frame-color` or sits inside one. Tailwind's default colors, shadows and radii are **switched off**: `bg-white`, `shadow-md` and `rounded-sm` do not exist.
 
 ### 2.1 Color
 
@@ -110,7 +110,7 @@ Internal rhythm: 8px between controls, 12px inside panels and 24px between secti
 
 ### 2.5 Elevation
 
-Frame shadows open with the two-tone keyline `0 0 0 1px var(--color-frame-edge), 0 0 0 2px var(--color-frame-edge-outer)` (written as **K** below). Tailwind inlines shadow values into each utility, so the `var()`s resolve on the frame and pick up its color (§3.2). Both rings have zero blur, so frame corners stay square.
+Frame shadows open with the two-tone keyline `0 0 0 1px var(--color-frame-edge), 0 0 0 2px var(--color-frame-edge-outer)` (written as **K** below). Tailwind inlines shadow values into each utility, so the `var()`s resolve on the frame and pick up its color (§3.2). For the same reason, never read these shadows through `var(--shadow-frame-*)` (inline style, motion value): that resolves on `:root` and loses the frame's color (§2 exception). Both rings have zero blur, so frame corners stay square.
 
 | Token | Value (identical to `globals.css`) | Usage |
 |---|---|---|
@@ -328,8 +328,8 @@ Build the stacked shell unprefixed and then override. The root is `h-dvh`, and e
 
 - **Left rail:** `bg-surface border-r border-line p-2.5 pl-[calc(10px+var(--spacing-safe-left))] pb-[calc(10px+var(--spacing-safe-bottom))]`, one `overflow-y-auto overscroll-contain` body (`flex flex-col gap-2`). In Arrange it holds the Frame creator and then the Matrix control; there is no visible "Frame creator" title here (the section keeps its accessible name). Photo and Origin tools pin Done at the bottom as before (§4.6).
 - **Undo/Redo move to the right rail** (above Settings, `mt-auto` group), which frees 52px of the left rail for the creator. They stay visible in every mode; in Photo and Grid origin they are disabled because history covers frames only.
-- **Right rail:** `bg-surface border-l border-line px-1.5 pt-2.5 pr-[calc(6px+var(--spacing-safe-right))] pb-[calc(10px+var(--spacing-safe-bottom))]`. Mode switch at the top (3 × 52 = 156px), then the bottom group Undo, Redo, Settings (3 × 44 + 2 × 4 = 140px). Total 316px with padding, which fits 375px and the 21px home-indicator inset.
-- **Left-rail budget on a 375px-tall screen** (body 355px, or 334px with a 21px bottom inset): shape picker 44 + 8 + preview 88 + 8 + fields 64 + 8 + Generate 44 = **264px**; divider 21 (gap 8 + `border-t border-line` 1 + `pt-3` 12) + Show grid row 44 = **329px**. So the whole Frame creator and the Show grid switch are visible without scrolling on every landscape phone. The grid spacing fields (8 + 64) follow: their labels peek at the bottom edge, and the body adds a 16px bottom fade (`mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent)`) only while more content sits below. **Trade-off, chosen explicitly:** spacing is set rarely, the switch often, so the switch gets the guaranteed slot and spacing costs one short scroll. Landscape windows at least 422px tall (or 443px with a 21px inset) show everything.
+- **Right rail:** `bg-surface border-l border-line px-1.5 pt-2.5 pr-[calc(6px+var(--spacing-safe-right))] pb-[calc(10px+var(--spacing-safe-bottom))]`. Mode switch at the top (3 × 52 = 156px), then the bottom group Undo, Redo, Settings (3 × 44 + 2 × 4 = 140px). Total 316px with padding, which fits 375px and the 21px home-indicator inset. **Below 340px tall** (`[@media(max-height:340px)]:`), the mode items shrink to `size-touch` icon-only (caption dropped, the name stays in `aria-label` plus `title`): 3 × 44 = 132px, total 292px. Below that the rail itself becomes `overflow-y-auto` with the order unchanged; nothing is hidden.
+- **Left-rail budget on a 375px-tall screen** (body 355px, or 334px with a 21px bottom inset): shape picker 44 + 8 + preview 88 + 8 + fields 64 + 8 + Generate 44 = **264px**; divider 21 (gap 8 + `border-t border-line` 1 + `pt-3` 12) + Show grid row 44 = **329px**. **Thresholds, stated honestly** (viewport height H, bottom inset i): the rail body is `H − 20 − i`. The whole Frame creator (264px) is visible without scrolling while `H ≥ 284 + i`; the Show grid switch too while `H ≥ 349 + i`. That covers 375px-tall phones (with or without the 21px inset) but not every window: with browser chrome or on 320px-tall devices, Show grid scrolls first, then the spacing fields, while the picker, preview, fields and Generate stay put down to 284px. Below `H = 284 + i` the preview drops to 56px (`[@media(max-height:305px)]:h-14`) so Generate stays reachable down to 252px; anything shorter is not a supported landscape size and the body simply scrolls. The grid spacing fields (8 + 64) follow: their labels peek at the bottom edge, and the body adds a 16px bottom fade (`mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent)`) only while more content sits below. **Trade-off, chosen explicitly:** spacing is set rarely, the switch often, so the switch gets the guaranteed slot and spacing costs one short scroll. Landscape windows at least 422px tall (or 443px with a 21px inset) show everything.
 - **Selection state** (replaces the rail body): a header row with the size readout (`text-caption ink-muted`) and a Deselect ×, Duplicate and Delete as icon buttons, then a 2×2 grid of Width/Height over X/Y. 264px, no scroll.
 - **Stage:** on a 667px-wide screen the stage is 451px; a 300×250 wall at full height needs 422px.
 - **Settings:** a right side sheet, `w-sheet` plus the right safe area, over `scrim-light`, so the left part of the wall stays visible and changes preview live.
@@ -393,7 +393,7 @@ Build the stacked shell unprefixed and then override. The root is `h-dvh`, and e
 | Scale | Slider. `width = wall.w × 2^t`, `t ∈ [−2, 2]`, step 0.01 (25–400% of the wall width). Readout `round(width / wall.w × 100)%`. Height follows the image aspect |
 | Scale anchor | Slider scales about the wall's center; pinch about the pinch midpoint; wheel about the cursor. All clamp to 25–400% |
 | Upload / Replace photo | Hidden `<input type="file" accept="image/*">` behind a button. "Upload photo" (primary) with no photo, "Replace photo" (secondary, `upload` icon) with one |
-| Show photo | Icon toggle "Show photo" with `aria-pressed`, `eye` / `eye-off` icons (a switch row in Settings) |
+| Show photo | `role="switch"` with `aria-checked` everywhere: an icon-only switch button named "Show photo" (`eye` / `eye-off`, the icon is the non-color cue) in Photo tools, and a switch row in Settings and the desktop sidebar |
 | Remove photo | `trash` icon button in `text-danger`. Asks first: "Remove the photo?" / Cancel / Remove photo (§5.11) |
 | Origin instruction / readout | "Tap the wall where the grid should start." (`text-ui ink`) / "Grid starts at 20 × 40 cm" (`text-caption ink-muted tabular-nums`) |
 | Reset to corner / Done | Secondary, sets the origin to 0 × 0 / Primary, returns to Arrange |
@@ -451,7 +451,7 @@ Replaces the palette tiles. It answers the sketch: pick a shape, type the size, 
 - **Preview = drag source and tap target.** The preview element is `role="button"`, named "Add rectangle, 40 × 50 cm" / "Add square, 40 × 40 cm" / "Add circle, Ø 40 cm" from the **generated** size. Tap, click, Enter or Space adds a frame at the nearest free spot (not selected, so repeated taps keep adding). Dragging past `dragStartPx` starts the ghost (§5.15) from the preview frame's rect.
 - **Auto-roll.** After every successful add, by drop or tap, the preview rolls a new color (same rule), so consecutive frames always differ. Drag cancelled or dropped off the wall: no add, no roll. The size stays.
 - **Feedback.** Hover `can-hover:hover:ring-line-strong`; press scales the box to .97 for `duration-instant`; focus-visible uses the global outline on the box (`rounded-tile`). The live region announces "Frame added" on add and "Ready: rectangle, 40 × 50 cm" after Generate.
-- **State.** Current shape, the three generated sizes and the current color live in the planner store (successor of `paletteKind` / `paletteSizes`, plus `creatorColor`). They persist; the first color on a fresh install is random. They are not part of undo history.
+- **State.** Current shape, the three generated sizes and the current color live in the planner store (successor of `paletteKind` / `paletteSizes`, plus `creatorColor`). They persist. The first color comes from persisted state, or on a fresh install is picked with `Math.random()` **on the client after hydration** (the editor is client-only via `PlannerAppLoader`, so there is no server-rendered color to mismatch); until then the preview is not rendered. They are not part of undo history.
 
 ### 5.2 Size input (numeric, cm)
 
@@ -462,7 +462,7 @@ Width                ◄ text-caption ink-muted, 4px gap
 └──────────────────┘   value text-body tabular-nums ink; "cm" text-caption ink-muted, 10px from the right
 ```
 
-- `<input type="text" inputmode="decimal">` inside a `<label>`, `w-field` by default or `flex-1` in rows. The visible label is short; the accessible name follows the e2e contract (§8): "Width (cm)", "Height (cm)", "Side (cm)", "Diameter (cm)", "X (cm)", "Y (cm)", "Grid height (cm)", "Grid width (cm)". `CmField` needs an optional accessible-name override for the grid fields, whose visible labels are "Height" and "Width" (the name contains the visible text, WCAG 2.5.3).
+- `<input type="text" inputmode="decimal">` inside a `<label>`, `w-field` by default or `flex-1` in rows. The visible label is short; the accessible name follows the e2e contract (§8): "Width (cm)", "Height (cm)", "Side (cm)", "Diameter (cm)", "X (cm)", "Y (cm)", "Grid height (cm)", "Grid width (cm)", "Wall width (cm)", "Wall height (cm)", "Push gap (cm)". `CmField` needs an optional accessible-name override for the grid and wall fields, whose visible labels are "Height", "Width" and "Push gap"; every name starts or ends with words that contain the visible text, so label-in-name holds (WCAG 2.5.3).
 - **Compact variant** (landscape rail, 62px wide): `pl-2 pr-6`, unit at `right-1.5`, value still `text-body`. Three digits fit; longer values scroll inside the input.
 - Focus puts a 2px `focus` ring on the border (`outline-offset: -1px`). Values commit on Enter or blur; Esc reverts; focusing selects all. Inside the Frame creator, Enter submits the form (Generate).
 - An invalid value gets `border-danger`, `aria-invalid` and a helper line in `text-caption text-danger`, e.g. "Use 1–300 cm".
@@ -499,7 +499,7 @@ All buttons are `h-touch px-3.5 rounded-control text-ui font-medium`, 6px icon g
 │ Settings                         [✕] │ ┘ title + "Close settings"
 ├──────────────────────────────────────┤
 │ Wall                                 │ ┐ BODY: flex-1 min-h-0 overflow-y-auto
-│ Width [300 cm]   Height [250 cm]     │ │ overscroll-contain touch-pan-y
+│ Width [300 cm]   Height [250 cm]     │ │ overscroll-contain touch-pan-y; names "Wall width/height (cm)"
 │ Push gap [3 cm]                      │ │ helper: text-caption ink-muted
 │ Grid                                 │ │ section titles: text-lead serif
 │ Show grid                    ( ●)    │ │ ┐ STACKED ONLY: the Matrix control
@@ -516,6 +516,7 @@ All buttons are `h-touch px-3.5 rounded-control text-ui font-medium`, 6px icon g
 └──────────────────────────────────────┘
 ```
 
+- **Wall section names.** The visible labels stay short ("Width", "Height", "Push gap" under the "Wall" title), but on desktop these fields share the screen with the Frame creator's and Selected frame's "Width (cm)" / "Height (cm)", so their accessible names are **"Wall width (cm)"**, **"Wall height (cm)"** and **"Push gap (cm)"**, set through the same `CmField` name override as the grid fields. Each name contains its visible label (WCAG 2.5.3).
 - **Grid section.** Snap to grid and Set origin stay here on every shell. Show grid and the spacing fields (the Matrix control) appear **exactly once per shell**: in the left panel on landscape and desktop, and here on stacked, where the dock has no room. They are never duplicated, so each accessible name stays unique per screen. The old "Spacing X / Spacing Y" fields are gone; "Grid width" is X spacing and "Grid height" is Y spacing.
 - **Structure:** `flex flex-col`; the header never scrolls; the body scrolls on its own with `pb-[calc(24px+var(--spacing-safe-bottom))]`. Reset wall scrolls with the content, never pinned.
 - **Stacked:** bottom sheet over `scrim`, opens at `min(content, 60dvh)`, draggable to `85dvh` from the header only. Dragging down past 25%, a flick, a scrim tap or Esc closes it.
@@ -677,7 +678,7 @@ Grid lines (about 1.5:1) are deliberately quiet; the guide and the frame's motio
 - **Focus.** `:focus-visible` gives a global 2px `focus` outline at 2px offset; fields draw it on their border. Frames use a 2px *dashed* outline at 3px offset, distinct from the brackets.
 - **Hit areas.** Every control ≥44×44. A frame smaller than 44px on screen gets an invisible `::before` hit extension; the later frame wins where they overlap. The preview and frames use `touch-none`.
 - **Selection is not color alone.** Brackets are a shape; frames are `role="button"` with `aria-pressed`. The frame's finish is never the only carrier of meaning (it is decoration), and it is exposed to tests as `data-frame-color`, not in accessible names.
-- **Keyboard.** Frames: arrows nudge, Delete removes, Esc deselects. Frame creator: DOM and focus order is picker → fields (Width, Height for rectangles) → Generate → preview on every shell, which follows the task (set, generate, add); CSS grid places the parts where §4 draws them. Enter or Space on the preview adds a frame.
+- **Keyboard.** Frames: arrows nudge, Delete removes, Esc deselects. Frame creator: DOM and focus order is picker → fields (Width, Height for rectangles) → Generate → preview on every shell, which follows the task (set, generate, add); CSS grid places the parts where §4 draws them. **Why the focus order differs from the visual order** (the preview sits above or beside the fields): WCAG 1.3.2 and 2.4.3 require a sequence that preserves meaning and operability, not one that copies the layout. Here the preview's name and action depend on what Generate produced, so reaching it after Generate is the meaningful order, and the alternative (preview first) would offer "Add…" with a size the user is about to change. The order is the same on every shell, so it never surprises. Component tests should assert this tab sequence: Rectangle radio (checked) → Width (cm) → Height (cm) → Generate → Add rectangle, … cm. Enter or Space on the preview adds a frame.
 - **Live regions.** Toasts use `role="status"` or `role="alert"`. A hidden `aria-live="polite"` region announces "Frame added", "Frame deleted", "Frame duplicated" and, after Generate, "Ready: rectangle, 40 × 50 cm".
 - **Motion.** §6.4 applies in full.
 
@@ -699,6 +700,8 @@ Sentence case, no exclamation marks. Tests should find elements by these exact n
 | Matrix control | region | "Matrix control" | Left panel (landscape, desktop); inside Settings > Grid on stacked |
 | Grid spacing | textbox | "Grid height (cm)" (Y), "Grid width (cm)" (X); visible "Height", "Width" | Matrix control |
 | Show grid | switch | "Show grid" | Matrix control |
+| Show photo | switch (`aria-checked`) | "Show photo" | Photo tools, Settings > Photo |
+| Wall fields | textbox | "Wall width (cm)", "Wall height (cm)", "Push gap (cm)"; visible "Width", "Height", "Push gap" | Settings > Wall |
 | Snap to grid | switch | "Snap to grid" | Settings > Grid |
 | Set origin | button | "Set origin on the wall" | Settings > Grid |
 | Frame on the wall | button | "Rectangle 40 × 50 cm" / "Square 40 × 40 cm" / "Circle Ø 40 cm"; `data-frame-color` | Wall |
@@ -708,7 +711,7 @@ Sentence case, no exclamation marks. Tests should find elements by these exact n
 | Mode | radiogroup / radio | "Mode" / "Arrange", "Photo", "Grid origin" (phones show "Origin") | Top bar or right rail |
 | History | button | "Undo", "Redo" | Dock, right rail, top bar |
 | Settings | button / dialog | "Settings" / "Settings", "Close settings" | Top bar or right rail |
-| Photo controls | button / slider | "Upload photo", "Replace photo", "Show photo" (`aria-pressed`), "Remove photo", "Adjust photo"; "Opacity", "Scale" | Photo tools, Settings |
+| Photo controls | button / slider | "Upload photo", "Replace photo", "Remove photo", "Adjust photo"; "Opacity", "Scale" | Photo tools, Settings |
 | Origin tools | text / button | "Tap the wall where the grid should start." / "Grid starts at 20 × 40 cm" / "Reset to corner", "Done" | Origin tools |
 | Empty wall | text | "Drag a frame onto the wall, or tap the preview to add one." ("click" on fine pointers) | Wall |
 | Photo tools, no photo | text | "Add a photo of your wall to line frames up with it." | Photo tools |

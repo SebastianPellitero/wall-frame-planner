@@ -42,7 +42,7 @@
 /* `static` keeps every token on :root even when no utility uses it, because
    motion values and inline styles read var(--...) at runtime. */
 @theme static {
-  /* ---- Color: only the WallPlanner palette exists (Tailwind defaults off) */
+  /* ---- Color: only WallPlanner colors exist (Tailwind defaults off) */
   --color-*: initial;
 
   /* Room and wall */
@@ -142,7 +142,7 @@
 
   /* ---- Spacing (Tailwind's 0.25rem scale stays; these are named sizes) */
   --spacing-touch: 2.75rem; /* 44px minimum hit target */
-  --spacing-tile: 3.5rem; /* 56px palette tile / dock row */
+  --spacing-tile: 3.5rem; /* 56px stacked dock row A (shape picker, preview, history) */
   --spacing-field: 4.75rem; /* 76px numeric field */
   --spacing-bar: 3rem; /* 48px top bar, stacked layout */
   --spacing-bar-lg: 3.5rem; /* 56px top bar, desktop */
@@ -164,7 +164,7 @@
   /* ---- Radii: a hierarchy, not one radius for everything */
   --radius-*: initial;
   --radius-control: 10px; /* inputs, buttons, icon buttons */
-  --radius-tile: 14px; /* palette tiles, toasts, dialog */
+  --radius-tile: 14px; /* Frame creator preview box, toasts, dialog, vertical segmented track */
   --radius-sheet: 22px; /* sheet corners */
   --radius-pill: 9999px; /* segmented track, rotate hint, switches */
 
@@ -175,7 +175,8 @@
     0 14px 36px -14px rgb(22 26 28 / 0.32);
   /* Frame shadows open with the two-tone keyline (zero blur, so corners stay
      square). Tailwind inlines shadow values, so the var()s resolve on the
-     frame element and pick up its data-frame-color overrides. */
+     frame element and pick up its data-frame-color overrides. Use them only
+     as utilities: a bare var(--shadow-frame-*) resolves on :root (Graphite). */
   --shadow-frame-rest:
     0 0 0 1px var(--color-frame-edge), 0 0 0 2px var(--color-frame-edge-outer),
     0 1px 1px rgb(22 26 28 / 0.22), 0 3px 6px -2px rgb(22 26 28 / 0.24);
