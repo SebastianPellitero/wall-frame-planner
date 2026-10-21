@@ -65,15 +65,15 @@ Light theme only in v1 (`color-scheme: light`). A dark theme is not cheap here, 
 
 | Token | Size / line | Family, weight | Usage |
 |---|---|---|---|
-| `text-micro` | 11 / 14 | sans 500, `font-stretch-[87.5%]` | Compact frame label, vertical segment captions |
-| `text-caption` | 12 / 16 | sans 400–500 | Field labels, units, tile size, frame label, dimensions |
+| `text-micro` | 11 / 14 | sans 500 | Compact frame label, vertical segment captions |
+| `text-caption` | 12 / 16 | sans 400–500 | Field labels, units, tile size, full frame label, dimensions |
 | `text-ui` | 14 / 20 | sans 500 (600 when active) | Buttons, segments, toggles, toasts, tile names |
 | `text-body` | 16 / 24 | sans 400 | **Every text input** (prevents iOS zoom), body copy |
 | `text-lead` | 18 / 24 | serif 400 | Empty-wall line, sheet section titles |
 | `text-title` | 22 / 28 | serif 500, `tracking-title` | Sheet title, panel section titles, dialog titles |
 | Wordmark | 20 / 28 | serif 500, `tracking-title` | "WallPlanner": desktop, and stacked at 640px+ |
 
-Families are `font-sans` (Archivo) and `font-serif` (Newsreader), loaded with `next/font` in `layout.tsx`. All numbers use `tabular-nums`. Frame labels use `tracking-label` (0.01em) and serif titles use `tracking-title` (−0.01em). Never set type in all caps.
+Families are `font-sans` (Archivo) and `font-serif` (Newsreader), loaded with `next/font` in `layout.tsx`. Width is **not** part of any text token; add it as a separate utility. There are exactly two stretches: `font-stretch-semi-condensed` (87.5%) for full frame labels, vertical segment captions and wall dimensions, and `font-stretch-condensed` (75%) for compact frame labels only. All numbers use `tabular-nums`. Frame labels use `tracking-label` (0.01em) and serif titles use `tracking-title` (−0.01em). Never set type in all caps.
 
 ### 2.3 Spacing and sizes
 
@@ -106,17 +106,18 @@ Internal rhythm: 8px between controls, 12px inside panels and 24px between setti
 
 ### 2.5 Elevation
 
-| Token | Usage |
-|---|---|
-| `shadow-wall` | Wall on the stage. **Includes the 1px `wall-edge` ring** |
-| `shadow-frame-rest` | Frame hanging flush (includes the 1px `frame-halo` ring) |
-| `shadow-frame-hover` | Desktop hover |
-| `shadow-frame-nudge` | Frame being pushed (while it moves) |
-| `shadow-frame-lift` | Dragged frame, drag ghost, duplicate in flight |
-| `shadow-raised` | Segment thumb, switch knob, slider thumb |
-| `shadow-float` | Rotate hint, any floating chip |
-| `shadow-sheet` / `shadow-toast` | Bottom or side sheet and dialog / toasts |
-| `inset-shadow-aperture` | Picture opening: bevel line plus slight depth |
+| Token | Value (identical to `globals.css`) | Usage |
+|---|---|---|
+| `shadow-wall` | `0 0 0 1px #7c827d, 0 1px 2px rgb(22 26 28 / 0.1), 0 14px 36px -14px rgb(22 26 28 / 0.32)` | Wall on the stage; the first layer is the `wall-edge` ring |
+| `shadow-frame-rest` | `0 0 0 1px rgb(255 255 255 / 0.55), 0 1px 1px rgb(22 26 28 / 0.22), 0 3px 6px -2px rgb(22 26 28 / 0.24)` | Frame hanging flush; the first layer is the `frame-halo` ring |
+| `shadow-frame-hover` | `0 0 0 1px rgb(255 255 255 / 0.55), 0 2px 3px rgb(22 26 28 / 0.2), 0 7px 14px -5px rgb(22 26 28 / 0.28)` | Desktop hover |
+| `shadow-frame-nudge` | `0 0 0 1px rgb(255 255 255 / 0.55), 0 3px 5px rgb(22 26 28 / 0.18), 0 10px 18px -6px rgb(22 26 28 / 0.28)` | Frame being pushed (while it moves) |
+| `shadow-frame-lift` | `0 0 0 1px rgb(255 255 255 / 0.55), 0 8px 12px -4px rgb(22 26 28 / 0.22), 0 22px 36px -10px rgb(22 26 28 / 0.38)` | Dragged frame, drag ghost, duplicate in flight |
+| `shadow-raised` | `0 1px 2px rgb(22 26 28 / 0.14), 0 1px 1px rgb(22 26 28 / 0.08)` | Segment thumb, switch knob, slider thumb |
+| `shadow-float` | `0 2px 4px rgb(22 26 28 / 0.1), 0 8px 20px -6px rgb(22 26 28 / 0.22)` | Rotate hint, any floating chip |
+| `shadow-sheet` | `0 0 0 1px rgb(22 26 28 / 0.06), 0 10px 40px -8px rgb(22 26 28 / 0.32)` | Bottom or side sheet, dialog |
+| `shadow-toast` | `0 10px 28px -8px rgb(22 26 28 / 0.4)` | Toasts |
+| `inset-shadow-aperture` | `inset 0 0 0 1px rgb(30 34 37 / 0.16), inset 0 1px 2px rgb(30 34 37 / 0.1)` | Picture opening: bevel line plus slight depth |
 
 **Performance rule:** never animate `box-shadow` during a drag. A frame renders `shadow-frame-rest` on itself, plus a sibling layer (`absolute inset-0`, same radius, `shadow-frame-lift`, `pointer-events-none`) whose **opacity** animates from 0 to 1 on lift. The nudge shadow works the same way.
 
@@ -167,10 +168,7 @@ The layout variants `phone-portrait:`, `phone-landscape:` and `desktop:` are def
  └──────────────────────────────┘  + shadow-frame-rest (with 1px frame-halo ring)
 ```
 
-DOM, from the outside in:
-- `div.frame`: `box-border border-solid border-t-frame-top border-x-frame-side border-b-frame-bottom shadow-frame-rest`, with border width `t`.
-- `div.mat`: `absolute inset-0 bg-mat`, with padding `m`. Inside it, `div.aperture`: `size-full bg-aperture inset-shadow-aperture`.
-- The label is a sibling of the mat (`absolute inset-0 grid place-items-center`), so it can use the whole inner width.
+**DOM, from the outside in.** `div.frame` is `box-border border-solid border-t-frame-top border-x-frame-side border-b-frame-bottom shadow-frame-rest` with border width `t`. Inside it, `div.mat` is `absolute inset-0 bg-mat` with padding `m`, and holds `div.aperture` (`size-full bg-aperture inset-shadow-aperture`). The label is a sibling of the mat (`absolute inset-0 grid place-items-center`), so it can use the whole inner width.
 
 ### 3.2 Geometry rules (s = min(w, h) in screen px)
 
@@ -188,8 +186,8 @@ Try *full*, then *compact*, otherwise hide the label. Available width is `w − 
 
 | Tier | Text | Size | Stretch | Weight | Needs width ≥ | Needs height ≥ |
 |---|---|---|---|---|---|---|
-| full | `40 × 50`, `Ø 40` | 12px / 16 | 87.5% | 500 | `chars × 0.55 × 12 + 8` | 18px |
-| compact | `40×50`, `Ø40` (no spaces) | 11px / 14 | 75% | 500 | `chars × 0.50 × 11 + 4` | 16px |
+| full | `40 × 50`, `Ø 40` | `text-caption` (12/16) | `font-stretch-semi-condensed` (87.5%) | 500 | `chars × 0.55 × 12 + 8` | 18px |
+| compact | `40×50`, `Ø40` (no spaces) | `text-micro` (11/14) | `font-stretch-condensed` (75%) | 500 | `chars × 0.50 × 11 + 4` | 16px |
 | hidden | — | — | — | — | otherwise | — |
 
 - The 0.55 and 0.50 em-per-character figures are conservative upper bounds measured on Archivo at these settings (actual: 0.44–0.54 and 0.40–0.49). At the phone-landscape scale (≈1.46 px/cm), 50×70 shows full, 40×40 and 30×40 show compact, and 20×25 is hidden.
@@ -234,7 +232,7 @@ The outer element is `rounded-full` with no border. Its moulding is its own back
 
 The landscape and desktop queries are mutually exclusive, so build the stacked shell unprefixed and then override. The root is `h-dvh`, and each chrome strip pads itself with its safe-area token.
 
-**Wall fit:** `pxPerCm = min((stageW − 2p) / wall.w, (stageH − 2p) / wall.h)`, where `p` is `stage` (12px) on phones and `stage-lg` (40px) on desktop. The wall is centered, and rotating the device changes only `pxPerCm`.
+**Wall fit.** The stage's content box excludes the safe-area insets. Each side of the stage gets padding `max(p, inset of that side)`, counting only insets that no bar or rail already absorbs, where `p` is `stage` (12px) on phones and `stage-lg` (40px) on desktop. In phone landscape that means `pt-[max(var(--spacing-stage),var(--spacing-safe-top))]` and the same for the bottom; the left and right insets are already absorbed by the rails. Then `pxPerCm = min(contentW / wall.w, contentH / wall.h)`, with `contentW` and `contentH` from the ResizeObserver `contentRect` (the box with padding removed). No part of the wall sits under the notch or the home-indicator gesture zone. The wall is centered, and rotating the device changes only `pxPerCm`.
 
 **Context panel.** One component, placed as the dock (stacked), the left rail (landscape) or the left sidebar (desktop). Its content swaps with a `duration-base` cross-fade inside a container of constant size, so **the wall never rescales when the selection changes**.
 
@@ -242,8 +240,8 @@ The landscape and desktop queries are mutually exclusive, so build the stacked s
 |---|---|
 | Arrange, nothing selected | **Palette**: three tiles and size inputs |
 | Arrange, a frame selected | **Selection** (stacked and landscape). On desktop the palette stays and the selection goes to the top of the right panel |
-| Photo | **Photo tools**: Opacity, Scale, Upload photo / Replace photo, Done |
-| Grid origin | **Origin tools**: "Tap the wall where the grid should start.", Reset to corner, Done |
+| Photo | **Photo tools** (§4.6): Opacity, Scale, Upload photo / Replace photo, Show photo, Remove photo, Done |
+| Grid origin | **Origin tools** (§4.6): instruction, origin readout, Reset to corner, Done |
 
 ### 4.2 Phone portrait (stacked)
 
@@ -295,7 +293,7 @@ The landscape and desktop queries are mutually exclusive, so build the stacked s
 
 - **Left rail** (context panel and history): `bg-surface border-r border-line p-2.5 pb-[calc(10px+var(--spacing-safe-bottom))]`, a flex column with Undo/Redo pinned at the bottom (`mt-auto`). If content ever exceeds the height, the content area scrolls; the bottom row does not.
 - *Palette state:* three 132×52 tiles (glyph, name, size), then the active tile's inputs in two columns. *Selection state:* a header row with the size readout (`text-caption ink-muted`) and a Deselect ×, then Duplicate and Delete as two icon buttons, then a 2×2 grid of Width/Height over X/Y.
-- **Right rail:** `bg-surface border-l border-line`, with the vertical mode switch at the top and Settings at the bottom (`mt-auto`).
+- **Right rail:** `bg-surface border-l border-line px-1.5 pt-2.5 pb-[calc(10px+var(--spacing-safe-bottom))] pr-[calc(6px+var(--spacing-safe-right))]`. The vertical mode switch sits at the top and Settings at the bottom (`mt-auto`), clear of the home indicator. The left rail likewise adds `pl-[calc(10px+var(--spacing-safe-left))]`.
 - **Budgets:** on a 375px-tall screen, palette plus inputs take 248px (selection 264px) and history 44px. On a 667px-wide screen the stage is 451px, and a 300×250 wall at full height needs 422px.
 - **Settings:** a right side sheet, `w-sheet` plus the right safe area, over `scrim-light`. The left part of the wall stays visible, so grid and wall changes preview live.
 - **Toasts:** bottom-center of the stage, `max-w-[360px]`. Real gallery walls hang above furniture, so the bottom band of the wall is its least-used area.
@@ -324,7 +322,7 @@ The landscape and desktop queries are mutually exclusive, so build the stacked s
 
 - **Top bar:** `bg-surface border-b border-line`, with the wordmark on the left, the horizontal mode switch centered and Undo/Redo on the right.
 - **Left sidebar:** a "Frames" title (serif `text-title`), then each tile followed by **its own** inputs. All three are always visible; there is no active-tile concept on desktop.
-- **Right panel:** always open and scrolls independently. Sections run Selected frame (only while selected), Wall, Grid, Photo, then Reset wall pinned last. Sections are separated by `border-t border-line` and 24px of space.
+- **Right panel:** always open and scrolls independently. Sections run Selected frame (only while selected), Wall, Grid, Photo, then Reset wall as the last item in the scroll (not pinned, §5.6). Sections are separated by `border-t border-line` and 24px of space.
 - **Stage:** wall dimensions sit in the stage padding (§5.13), and toasts at the bottom-center.
 
 ### 4.5 Placement summary
@@ -340,6 +338,58 @@ The landscape and desktop queries are mutually exclusive, so build the stacked s
 | Settings | Bottom sheet | Right side sheet | Right panel |
 | Toasts | Stage bottom, above hint and dock | Stage bottom-center | Stage bottom-center |
 | Rotate hint | Stage bottom (`phone-portrait:` only) | — | — |
+
+### 4.6 Photo tools and Origin tools
+
+**Constant size.** The context panel's box never depends on its content, so switching modes never moves the wall. The stacked dock is `grid grid-rows-[56px_64px]`; the landscape rail and desktop sidebar fill their shell column (`h-full min-h-0`) with an `overflow-y-auto` content area. Undo/Redo are hidden in these two modes on phones, because history covers frames only; their slot holds **Done**. On desktop they stay in the top bar.
+
+**Controls**
+
+| Control | Spec |
+|---|---|
+| Opacity | Slider (§5.7), 0–100%, step 5, readout "60%". Maps to `background.opacity` 0–1 (default is T9's; 100% recommended) |
+| Scale | Slider. Maps to `background.width` in cm through a log scale: `width = wall.w × 2^t`, `t ∈ [−2, 2]`, step 0.01. That gives 25–400% of the wall width, and equal slider travel gives equal zoom. Readout `round(width / wall.w × 100)%`. Height follows the image aspect |
+| Scale anchor | The slider scales about the wall's center (x/y adjust so that photo point stays put); pinch scales about the pinch midpoint and the wheel about the cursor. All three clamp to 25–400% |
+| Upload / Replace photo | Hidden `<input type="file" accept="image/*">` behind a button (phones also offer the camera). "Upload photo" (primary) with no photo, "Replace photo" (secondary, `upload` icon) with one |
+| Show photo | Icon toggle named "Show photo" with `aria-pressed` and `eye` / `eye-off` icons (a switch row in Settings) |
+| Remove photo | `trash` icon button in `text-danger`. Not undoable, so it asks first: "Remove the photo?" / Cancel / Remove photo (§5.11 pattern) |
+| Origin instruction | "Tap the wall where the grid should start." in `text-ui ink` |
+| Origin readout | "Grid starts at 20 × 40 cm" in `text-caption ink-muted tabular-nums` |
+| Reset to corner | Secondary button; sets the origin to 0 × 0 |
+| Done | Primary button; returns to Arrange |
+
+**Per shell**
+
+```
+STACKED DOCK (rows 56 + 64, content width ≥ 336)
+ Photo, loaded   │ [⇪ Replace photo] [eye] [trash]       [Done] │ row A
+                 │ Opacity          60%   Scale          100%   │ row B: 16px label/readout + 44px
+                 │ ─────────●─────────    ─────────●─────────   │ slider, two flex-1 columns
+ Photo, empty    │ [⇪ Upload photo]                      [Done] │ row A (Done becomes secondary)
+                 │ Add a photo of your wall to line frames up   │ row B: text-ui ink-muted, ≤ 2 lines
+                 │ with it.                                     │
+ Grid origin     │ Tap the wall where the grid should    [Done] │ row A: text-ui, ≤ 2 lines
+                 │ start.                                       │
+                 │ Grid starts at 20 × 40 cm  [Reset to corner] │ row B
+
+LANDSCAPE LEFT RAIL (content 132px wide)
+ Photo, loaded         Grid origin
+┌─────────────────┐  ┌─────────────────┐
+│ Opacity      60%│  │ Tap the wall    │
+│ ───────●─────── │  │ where the grid  │
+│ Scale       100%│  │ should start.   │
+│ ───────●─────── │  │ 20 × 40 cm      │
+│[⇪] [eye] [trash]│  │[Reset to corner]│
+│                 │  │                 │
+│ [    Done     ] │  │ [    Done     ] │ ◄ pinned bottom (mt-auto)
+└─────────────────┘  └─────────────────┘
+```
+
+- **Stacked:** row A at 360px wide is 142 + 44 + 44 + 66px plus gaps, which fits in 336px.
+- **Landscape:** the three icon buttons (`aria-label` plus `title`) fill exactly 132px, and "Reset to corner" uses `px-2` to fit. Done is full width and pinned at the bottom (`mt-auto`), in the slot where Undo/Redo sit in Arrange mode. With no photo, the rail shows the caption, then [Upload photo] (primary, full width), then Done. The photo rail uses 224px and the origin rail about 230px, both well under the 345px available on a 375px-tall screen.
+- **Desktop sidebar** (216px content): a serif `text-title` heading ("Photo" or "Grid origin"), then the same controls in the same order with full labels. Photo: Opacity, Scale, a "Show photo" switch row, [Replace photo] at full width, "Remove photo" (quiet danger), [Done] at full width. Origin: instruction, readout, [Reset to corner], [Done].
+
+**Touch.** The wall is `touch-none` in every mode. In Photo mode the **whole stage** is `touch-none` too, because the photo extends past the wall and a one-finger pan or two-finger pinch may start anywhere on it. In Grid origin mode a tap on the wall sets the origin, and `touch-none` there also stops double-tap zoom.
 
 ---
 
@@ -359,8 +409,7 @@ Every interactive control is at least 44×44px (`size-touch` / `h-touch`), and e
 └──────────┘  the rectangle glyph follows the current W:H ratio
 ```
 
-- **Style:** `bg-surface border border-line rounded-tile touch-none`. The name is `text-ui` 500 and the size is `text-caption ink-muted tabular-nums`. Stacked tiles show only the size; the name is in the accessible name.
-- **Active** (stacked and landscape): `border-2 border-accent bg-accent-soft`. The thicker border is the non-color cue.
+- **Style:** `bg-surface border border-line rounded-tile touch-none`. The name is `text-ui` 500 and the size is `text-caption ink-muted tabular-nums`. Stacked tiles show only the size; the name is in the accessible name. **Active** (stacked and landscape): `border-2 border-accent bg-accent-soft`; the thicker border is the non-color cue.
 - **Feedback:** hover is `bg-surface-pressed`; press scales to .97 for `duration-instant`. **Accessible name:** "Add rectangle, 40 × 50 cm".
 - **Tap** adds a frame at the nearest free spot and makes the tile active. The new frame is **not** selected, so repeated taps keep adding. **Drag** starts the ghost (§5.15) and also makes the tile active.
 
@@ -373,17 +422,15 @@ Width                ◄ text-caption ink-muted, 4px gap
 └──────────────────┘   value text-body tabular-nums ink; "cm" text-caption ink-muted, 10px from the right
 ```
 
-- `<input type="text" inputmode="decimal">` inside a `<label>`, `w-field` by default or `flex-1` in rows.
-- The visible label is the first word. Accessible names follow the e2e contract: "Width (cm)", "Height (cm)", "Side (cm)", "Diameter (cm)", "X (cm)", "Y (cm)".
-- Focus puts a 2px `focus` ring on the border (`outline-offset: -1px`, already set in `globals.css`).
+- `<input type="text" inputmode="decimal">` inside a `<label>`, `w-field` by default or `flex-1` in rows. The visible label is the first word; accessible names follow the e2e contract: "Width (cm)", "Height (cm)", "Side (cm)", "Diameter (cm)", "X (cm)", "Y (cm)".
+- Focus puts a 2px `focus` ring on the border (`outline-offset: -1px`, already set in `globals.css`). Values commit on Enter or blur; Esc reverts; focusing selects all.
 - An invalid value gets `border-danger`, `aria-invalid` and a helper line below in `text-caption text-danger`, e.g. "Use 1–300 cm" with the real limits.
-- Values commit on Enter or blur; Esc reverts; focusing selects all.
 
 ### 5.3 Mode switch (segmented control, radios)
 
 - `role="radiogroup"` named "Mode", with `role="radio"` items "Arrange", "Photo" and "Grid origin". Arrow keys move the selection, and Tab lands on the checked item.
-- **Track:** `bg-surface-sunken p-[3px]`. Horizontal: `rounded-pill`, items `h-[38px] px-3.5 rounded-pill` (the track padding brings the hit area to 44px). Vertical (landscape): `rounded-tile`, 48×52 items with the icon over a `text-micro` caption at 87.5% stretch.
-- **Thumb (checked item):** `bg-surface shadow-raised ring-1 ring-line`, text `ink` 600. Unchecked items are `ink-muted` 500. The thumb slides with `layoutId` on the `sheet` spring, or with a `duration-base ease-out-soft` CSS transition.
+- **Hit boxes:** every radio element is itself at least 44×44, and the track has **no padding**. *Horizontal:* track `h-touch rounded-pill bg-surface-sunken`, items `relative h-touch px-3.5 rounded-pill`. *Vertical (landscape):* track `rounded-tile bg-surface-sunken`, items `relative size-[52px] rounded-tile` with the icon over a `text-micro font-stretch-semi-condensed` caption; the 52px track fits the 64px rail minus `px-1.5`.
+- **Thumb (checked item):** a separate `absolute inset-[3px] bg-surface shadow-raised ring-1 ring-line` layer inside the checked radio (radius matches the item), behind its icon and label (`relative`). The 3px inset keeps the old 38px pill look while the hit box stays 44px or more. The checked label is `ink` 600 and the others `ink-muted` 500. The thumb moves between items with a shared `layoutId` on the `sheet` spring.
 
 ### 5.4 Selection bar
 
@@ -408,31 +455,34 @@ All buttons are `h-touch px-3.5 rounded-control text-ui font-medium`, with a 6px
 
 ```
 ┌──────────────────────────────────────┐ rounded-t-sheet, bg-surface, shadow-sheet, z-sheet
-│                 ────                 │ grab handle 36×4, rounded-pill, bg-line-strong (stacked only)
-│ Settings                         [✕] │ text-title serif; close = "Close settings"
+│                 ────                 │ ┐ HEADER (fixed, touch-none): grab handle 36×4,
+│ Settings                         [✕] │ ┘ rounded-pill, bg-line-strong; title + "Close settings"
 ├──────────────────────────────────────┤
-│ Wall                                 │ text-lead serif
-│ Width [300 cm]   Height [250 cm]     │
-│ Push gap [3 cm]                      │
-│ Space kept between frames when they  │ text-caption ink-muted
-│ push each other apart.               │
-│ Grid                                 │
-│ Show grid                    ( ●)    │ switch rows, h-touch
-│ Snap to grid                 ( ●)    │ (disabled while the grid is off)
-│ Spacing X [20 cm]  Spacing Y [20 cm] │
-│ [Set origin on the wall]             │ secondary; closes the sheet, enters Grid origin
-│ Photo                                │
-│ [Upload photo] / [Replace photo]     │ primary when empty, secondary when set
-│ Show photo                   ( ●)    │
-│ Opacity  ──────────●───────    60%   │
-│ [Adjust photo]        Remove photo   │ Adjust → Photo mode; Remove = quiet danger
-├──────────────────────────────────────┤
-│ [Reset wall]                         │ secondary, text-danger → confirm dialog
+│ Wall                                 │ ┐ BODY (scrolls): flex-1 min-h-0 overflow-y-auto
+│ Width [300 cm]   Height [250 cm]     │ │ overscroll-contain touch-pan-y
+│ Push gap [3 cm]                      │ │
+│ Space kept between frames when they  │ │ text-caption ink-muted
+│ push each other apart.               │ │
+│ Grid                                 │ │ section titles: text-lead serif
+│ Show grid                    ( ●)    │ │ switch rows, h-touch
+│ Snap to grid                 ( ●)    │ │ (disabled while the grid is off)
+│ Spacing X [20 cm]  Spacing Y [20 cm] │ │
+│ [Set origin on the wall]             │ │ secondary; closes the sheet, enters Grid origin
+│ Photo                                │ │
+│ [Upload photo] / [Replace photo]     │ │ primary when empty, secondary when set
+│ Show photo                   ( ●)    │ │
+│ Opacity  ──────────●───────    60%   │ │
+│ [Adjust photo]        Remove photo   │ │ Adjust → Photo mode; Remove → confirm (§4.6)
+│ ──────────────────────────────────── │ │ border-t line + 24px
+│ [Reset wall]                         │ ┘ last item IN the scroll; secondary, text-danger
 └──────────────────────────────────────┘
 ```
 
-- **Stacked:** a bottom sheet over `scrim`, with `pb-safe-bottom`. It opens at `min(content, 60dvh)`, so the wall stays visible above it, and can be dragged up to `85dvh`. Dragging down past 25% of its height, flicking down or tapping the scrim closes it.
-- **Landscape:** a right side sheet, `w-sheet` plus the right safe area, with `rounded-l-sheet` over `scrim-light`. **Desktop:** the same sections sit in the right panel, without the sheet, handle or close button.
+- **Structure:** `flex flex-col`. The header (handle zone plus the 56px title row) never scrolls. The body holds every section and scrolls on its own (`overflow-y-auto overscroll-contain`, so scrolling never chains to the page). It is padded at the bottom with `pb-[calc(24px+var(--spacing-safe-bottom))]`. The content is about 800px tall, so it always scrolls in the 390px landscape sheet and usually in the bottom sheet.
+- **Reset wall scrolls with the content** as the last item; it is not pinned. A destructive action shouldn't sit permanently under the thumb, and a pinned footer would take 68px of a 390px landscape sheet.
+- **Stacked:** a bottom sheet over `scrim`. It opens at `min(content, 60dvh)`, so the wall stays visible above it, and can be dragged up to `85dvh`. **Dragging (resize and dismiss) works only from the header** (`touch-none`); the body only scrolls, so the two gestures never compete. Dragging the header down past 25% of the sheet height, flicking down, tapping the scrim or pressing Esc closes it.
+- **Landscape:** a right side sheet, `w-sheet` plus the right safe area, full height (`h-dvh`), `rounded-l-sheet`, over `scrim-light`. It never drags; it closes with ✕, a scrim tap or Esc. The body scrolls as above.
+- **Desktop:** the same sections sit in the right panel, without the handle or close button. The panel body uses the same `overflow-y-auto overscroll-contain`, with Reset wall last.
 - **Phones:** use `role="dialog" aria-modal="true"` named "Settings". Trap focus while open, return focus to the settings button on close, and close on Esc.
 
 ### 5.7 Slider
@@ -448,20 +498,16 @@ All buttons are `h-touch px-3.5 rounded-control text-ui font-medium`, with a 6px
 
 ### 5.9 Toast
 
-- **Style:** `bg-inverse text-on-inverse rounded-tile shadow-toast text-ui`, `max-w-[360px]` (on phones also capped at `calc(100vw - 24px)`), padding `10px 8px 10px 14px`.
-- **Contents:** an 18px `alert` or `info` icon in `on-inverse-muted`, the message, an optional action in `text-accent-on-inverse` 600, and a Dismiss × (`size-touch`, `on-inverse-muted`).
-- **Timing:** info toasts (`role="status"`) auto-dismiss after 5s, paused on hover or focus; errors (`role="alert"`) stay until dismissed. At most two stack, 8px apart, newest at the bottom.
-- **Motion:** enters with y 12→0 plus a fade on the `sheet` spring; exits by fading over `duration-quick`.
+- **Style:** `bg-inverse text-on-inverse rounded-tile shadow-toast text-ui`, `max-w-[360px]` (on phones also capped at `calc(100vw - 24px)`), padding `10px 8px 10px 14px`. **Contents:** an 18px `alert` or `info` icon in `on-inverse-muted`, the message, an optional action in `text-accent-on-inverse` 600, and a Dismiss × (`size-touch`, `on-inverse-muted`).
+- **Timing:** info toasts (`role="status"`) auto-dismiss after 5s, paused on hover or focus; errors (`role="alert"`) stay until dismissed. At most two stack, 8px apart, newest at the bottom. **Motion:** enters with y 12→0 plus a fade on the `sheet` spring; exits by fading over `duration-quick`.
 
 ### 5.10 Rotate hint (phone portrait only)
 
-- A pill: `h-touch bg-surface shadow-float rounded-pill pl-3.5 pr-1 z-float`, containing the 18px `rotate` icon, "Rotate for a bigger wall" (`text-ui`) and a Dismiss ×.
-- It sits at the bottom-center of the stage, 12px above the dock, and fades in 600ms after first load over `duration-slow`. Dismissal is remembered in `localStorage` (wrapped in try/catch), and the hint hides by itself in landscape.
+- A pill: `h-touch bg-surface shadow-float rounded-pill pl-3.5 pr-1 z-float`, containing the 18px `rotate` icon, "Rotate for a bigger wall" (`text-ui`) and a Dismiss ×. It sits at the bottom-center of the stage, 12px above the dock, and fades in 600ms after first load over `duration-slow`. Dismissal is remembered in `localStorage` (wrapped in try/catch), and the hint hides by itself in landscape.
 
-### 5.11 Confirm dialog (Reset wall)
+### 5.11 Confirm dialog (Reset wall, Remove photo)
 
-- `role="alertdialog"`, centered, `w-[min(360px,calc(100vw-32px))] bg-surface rounded-tile shadow-sheet p-5 z-dialog`, over `scrim`.
-- **Title:** "Reset the wall?" (serif `text-title`). **Body:** `text-ui ink-muted`; suggested: "Every frame is removed and the wall goes back to its defaults." The exact scope is T10's. **Buttons**, right-aligned: Cancel (secondary, initial focus) and Reset wall (danger).
+- `role="alertdialog"`, centered, `w-[min(360px,calc(100vw-32px))] bg-surface rounded-tile shadow-sheet p-5 z-dialog`, over `scrim`. **Title:** "Reset the wall?" (serif `text-title`). **Body:** `text-ui ink-muted`; suggested: "Every frame is removed and the wall goes back to its defaults." The exact scope is T10's. **Buttons**, right-aligned: Cancel (secondary, initial focus) and Reset wall (danger).
 
 ### 5.12 Snap guide
 
@@ -472,7 +518,7 @@ All buttons are `h-touch px-3.5 rounded-control text-ui font-medium`, with a 6px
 
 - **Grid:** an SVG `<pattern>` of 1px `grid` lines with `shape-rendering="crispEdges"`, offset so a line passes through the origin. Over a visible photo, each line gets a 3px `grid-halo` underlay. The two origin lines (x = originX, y = originY) use `grid-origin`.
 - **Origin marker:** a 14px crosshair, 2.5px `accent` over 5.5px `halo`. In Grid origin mode it grows to 20px with a 4px center dot, and the wall cursor becomes `crosshair`. A tap sets the origin and plays one ring pulse: an accent ring scaling 0.6→1.6 while fading over 320ms (skipped under reduced motion).
-- **Dimensions (desktop only):** "300 cm" centered 14px above the top edge, and "250 cm" rotated −90° 14px left of the left edge, in `text-caption ink-muted tabular-nums` at 87.5% stretch. Each sits on a 1px `ink-muted/40` dimension line with 6px end ticks.
+- **Dimensions (desktop only):** "300 cm" centered 14px above the top edge, and "250 cm" rotated −90° 14px left of the left edge, in `text-caption ink-muted tabular-nums font-stretch-semi-condensed`. Each sits on a 1px `ink-muted/40` dimension line with 6px end ticks.
 
 ### 5.14 Wall surface and edge
 
@@ -482,8 +528,7 @@ All buttons are `h-touch px-3.5 rounded-control text-ui font-medium`, with a 6px
 
 ### 5.15 Drag ghost (palette to wall)
 
-- **Rendering:** a full frame (§3 anatomy), portalled to `body` at `z-ghost`, with `shadow-frame-lift` at `liftScale`.
-- **Size:** starts at the tile glyph's rect and springs (`ghostFollow`) to the frame's **true on-wall size** at the current `pxPerCm`, so the user sees the real scale while dragging.
+- **Rendering:** a full frame (§3 anatomy), portalled to `body` at `z-ghost`, with `shadow-frame-lift` at `liftScale`. **Size:** starts at the tile glyph's rect and springs (`ghostFollow`) to the frame's **true on-wall size** at the current `pxPerCm`, so the user sees the real scale while dragging.
 - **Position:** follows the pointer on `ghostFollow`, centered on the cursor for fine pointers. On coarse pointers the ghost's bottom edge sits `ghostTouchLiftPx` (12px) above the finger, so the thumb doesn't hide it; the drop lands where the ghost is drawn.
 - **Over the wall:** opacity 1, with the same tilt, snapping and guides as a frame. **Off the wall:** opacity `ghostOffWallOpacity` (0.6), the rest shadow instead of lift and no tilt, signalling it will fly back.
 
@@ -581,7 +626,7 @@ Grid lines (about 1.5:1) are deliberately quiet. They are a decorative aid; the 
 - **Focus.** `:focus-visible` gives a global 2px `focus` outline at 2px offset; text fields draw it on their border. Frames use a 2px *dashed* outline at 3px offset, so focus is never confused with the selection brackets. Never remove an outline without a replacement.
 - **Hit areas.** Every control is at least 44×44. A frame smaller than 44px on screen gets an invisible `::before` hit extension, centered and at least 44×44; where extensions overlap, the later (top) frame wins. Palette tiles and frames use `touch-none`.
 - **Selection is not color alone.** Brackets are a shape. Frames are `role="button"`, with `aria-pressed` reflecting selection and an `aria-label` like "Rectangle 40 × 50 cm", plus the `data-*` e2e attributes. Arrow keys nudge, Delete removes and Esc deselects.
-- **Names.** Icon buttons: "Undo", "Redo", "Settings", "Close settings", "Duplicate", "Delete", "Deselect", "Dismiss", "Show photo" / "Hide photo". Mode radios: "Arrange", "Photo", "Grid origin". Undo and Redo are truly `disabled` when unavailable, not just recolored.
+- **Names.** Icon buttons: "Undo", "Redo", "Settings", "Close settings", "Duplicate", "Delete", "Deselect", "Dismiss", "Replace photo", "Show photo" (toggle with `aria-pressed`), "Remove photo". Mode radios: "Arrange", "Photo", "Grid origin". Undo and Redo are truly `disabled` when unavailable, not just recolored.
 - **Live regions.** Toasts use `role="status"` or `role="alert"`. Add, delete and duplicate are announced in a visually hidden `aria-live="polite"` region: "Frame added", "Frame deleted", "Frame duplicated".
 - **Motion.** §6.4 applies in full. Only the toast, the hint fade and the origin pulse move without direct manipulation, and all three are reduced.
 
