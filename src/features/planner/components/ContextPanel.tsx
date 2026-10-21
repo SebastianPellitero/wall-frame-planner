@@ -3,9 +3,9 @@ import type { Shell } from "../hooks/useShell";
 import { usePlannerStore } from "../state/store";
 import type { Mode } from "../types";
 import { OriginTools } from "./panel/OriginTools";
-import { PalettePanel } from "./panel/PalettePanel";
 import { PhotoTools } from "./panel/PhotoTools";
 import { SelectionPanel } from "./panel/SelectionPanel";
+import { ShapePalette } from "./palette/ShapePalette";
 import { cx } from "./ui/cx";
 
 type Content = "palette" | "selection" | "photo" | "origin";
@@ -17,8 +17,8 @@ function pickContent(mode: Mode, hasSelection: boolean, shell: Shell): Content {
   return hasSelection && shell !== "desktop" ? "selection" : "palette";
 }
 
-const CONTENT: Record<Content, ComponentType> = {
-  palette: PalettePanel,
+const CONTENT: Record<Content, ComponentType<{ shell: Shell }>> = {
+  palette: ShapePalette,
   selection: SelectionPanel,
   photo: PhotoTools,
   origin: OriginTools,
@@ -47,7 +47,7 @@ export function ContextPanel({ shell }: { shell: Shell }) {
           shell === "stacked" ? "overflow-hidden" : "overflow-y-auto overscroll-contain",
         )}
       >
-        <Content />
+        <Content shell={shell} />
       </div>
     </div>
   );
