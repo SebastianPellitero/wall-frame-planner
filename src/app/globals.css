@@ -1,1 +1,288 @@
 @import "tailwindcss";
+
+/*
+ * WallPlanner design tokens.
+ * Source of truth: docs/design/design-system.md (owned by the designer).
+ * Components consume these as Tailwind utilities (bg-wall, shadow-frame-lift,
+ * z-sheet, duration-quick, w-rail, pt-safe-top ...) or as var(--token).
+ * Never hard-code colors or shadows in components.
+ */
+
+/* ---------------------------------------------------------------------------
+ * Layout variants (design-system.md §4). The three layout queries are
+ * mutually exclusive except phone-portrait, which is a subset of "stacked"
+ * (the unprefixed default).
+ * ------------------------------------------------------------------------- */
+@custom-variant phone-portrait {
+  @media (max-width: 639px) and (orientation: portrait) {
+    @slot;
+  }
+}
+@custom-variant phone-landscape {
+  @media (orientation: landscape) and (max-height: 500px) {
+    @slot;
+  }
+}
+@custom-variant desktop {
+  @media (min-width: 1024px) and (min-height: 501px) {
+    @slot;
+  }
+}
+@custom-variant coarse {
+  @media (pointer: coarse) {
+    @slot;
+  }
+}
+@custom-variant can-hover {
+  @media (hover: hover) and (pointer: fine) {
+    @slot;
+  }
+}
+
+/* `static` keeps every token on :root even when no utility uses it, because
+   motion values and inline styles read var(--...) at runtime. */
+@theme static {
+  /* ---- Color: only the WallPlanner palette exists (Tailwind defaults off) */
+  --color-*: initial;
+
+  /* Room and wall */
+  --color-stage: #cdd2cc; /* concrete: the room around the wall */
+  --color-wall: #f4f5f1; /* gallery white: default wall surface */
+  --color-wall-edge: #7c827d; /* 1px wall boundary, 3.6:1 on wall */
+  --color-photo-dim: rgb(205 210 204 / 0.62); /* veil over photo outside the wall */
+
+  /* Interface surfaces */
+  --color-surface: #fcfcfa; /* bars, rails, dock, sheet, panels */
+  --color-surface-sunken: #eceeea; /* input wells, segmented track, slider track */
+  --color-surface-pressed: #e2e5e0; /* pressed/hover fill for quiet buttons */
+  --color-line: #dadcd7; /* dividers, rail edges (decorative) */
+  --color-line-strong: #7c827d; /* input and control borders, 3.4:1+ */
+
+  /* Text */
+  --color-ink: #1e2225; /* graphite: primary text and icons */
+  --color-ink-muted: #4f555a; /* secondary text, units, captions */
+  --color-ink-disabled: #9aa09b; /* disabled text and icons only */
+
+  /* Inverse (toasts) */
+  --color-inverse: #24292c;
+  --color-on-inverse: #f2f4f0;
+  --color-on-inverse-muted: #b9bfbb;
+  --color-accent-on-inverse: #aeb8ff;
+
+  /* Accent: ultramarine. Selection, active state, primary action, focus */
+  --color-accent: #2b3fcb;
+  --color-accent-hover: #2536b4;
+  --color-accent-pressed: #1f2d9e;
+  --color-accent-soft: #e5e8fb;
+  --color-on-accent: #ffffff;
+  --color-focus: #2b3fcb;
+
+  /* Laser: snap guides only */
+  --color-laser: #0a9447;
+  --color-laser-glow: rgb(38 214 112 / 0.45);
+
+  /* Danger: delete, remove photo, reset */
+  --color-danger: #b42318;
+  --color-danger-soft: #fbe6e3;
+  --color-on-danger: #ffffff;
+
+  /* Frame anatomy (design-system.md §3) */
+  --color-frame-top: #50555a; /* moulding, lit top rail */
+  --color-frame-side: #363a3e; /* moulding, left and right rails */
+  --color-frame-bottom: #1e2124; /* moulding, shaded bottom rail */
+  --color-frame-halo: rgb(255 255 255 / 0.55); /* 1px ring that lifts dark frames off dark photos */
+  --color-mat: #fdfdfb; /* museum mat */
+  --color-aperture: #e6e8e4; /* picture opening; the size label sits here */
+  --color-aperture-edge: rgb(30 34 37 / 0.16); /* bevel line at the mat's inner edge */
+
+  /* Overlays and helpers */
+  --color-halo: rgb(255 255 255 / 0.92); /* outline behind accent marks over photos */
+  --color-grid: rgb(30 34 37 / 0.16);
+  --color-grid-origin: rgb(43 63 203 / 0.5);
+  --color-grid-halo: rgb(255 255 255 / 0.45);
+  --color-scrim: rgb(30 34 37 / 0.28); /* behind the bottom sheet and dialogs */
+  --color-scrim-light: rgb(30 34 37 / 0.14); /* behind the landscape side sheet */
+
+  /* ---- Type scale (families live in the inline block below) */
+  --text-micro: 0.6875rem; /* 11px */
+  --text-micro--line-height: 0.875rem;
+  --text-caption: 0.75rem; /* 12px */
+  --text-caption--line-height: 1rem;
+  --text-ui: 0.875rem; /* 14px */
+  --text-ui--line-height: 1.25rem;
+  --text-body: 1rem; /* 16px: also every text input (prevents iOS zoom) */
+  --text-body--line-height: 1.5rem;
+  --text-lead: 1.125rem; /* 18px serif */
+  --text-lead--line-height: 1.5rem;
+  --text-title: 1.375rem; /* 22px serif */
+  --text-title--line-height: 1.75rem;
+
+  --tracking-label: 0.01em;
+  --tracking-title: -0.01em;
+
+  /* ---- Spacing (Tailwind's 0.25rem scale stays; these are named sizes) */
+  --spacing-touch: 2.75rem; /* 44px minimum hit target */
+  --spacing-tile: 3.5rem; /* 56px palette tile / dock row */
+  --spacing-field: 4.75rem; /* 76px numeric field */
+  --spacing-bar: 3rem; /* 48px top bar, stacked layout */
+  --spacing-bar-lg: 3.5rem; /* 56px top bar, desktop */
+  --spacing-rail: 9.5rem; /* 152px left rail, phone landscape */
+  --spacing-rail-end: 4rem; /* 64px right rail, phone landscape */
+  --spacing-sidebar: 15.5rem; /* 248px left sidebar, desktop */
+  --spacing-panel: 20rem; /* 320px right panel, desktop */
+  --spacing-sheet: 22.5rem; /* 360px side sheet, phone landscape */
+  --spacing-gutter: 0.75rem; /* 12px screen-edge gutter, phones */
+  --spacing-stage: 0.75rem; /* 12px min padding around the wall, phones */
+  --spacing-stage-lg: 2.5rem; /* 40px padding around the wall, desktop */
+  --spacing-safe-top: env(safe-area-inset-top, 0px);
+  --spacing-safe-right: env(safe-area-inset-right, 0px);
+  --spacing-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --spacing-safe-left: env(safe-area-inset-left, 0px);
+
+  /* ---- Radii: a hierarchy, not one radius for everything */
+  --radius-*: initial;
+  --radius-control: 10px; /* inputs, buttons, icon buttons */
+  --radius-tile: 14px; /* palette tiles, toasts, dialog */
+  --radius-sheet: 22px; /* sheet corners */
+  --radius-pill: 9999px; /* segmented track, rotate hint, switches */
+
+  /* ---- Elevation. Frames: rest < hover < nudge < lift */
+  --shadow-*: initial;
+  --shadow-wall:
+    0 0 0 1px #7c827d, 0 1px 2px rgb(22 26 28 / 0.1),
+    0 14px 36px -14px rgb(22 26 28 / 0.32);
+  --shadow-frame-rest:
+    0 0 0 1px rgb(255 255 255 / 0.55), 0 1px 1px rgb(22 26 28 / 0.22),
+    0 3px 6px -2px rgb(22 26 28 / 0.24);
+  --shadow-frame-hover:
+    0 0 0 1px rgb(255 255 255 / 0.55), 0 2px 3px rgb(22 26 28 / 0.2),
+    0 7px 14px -5px rgb(22 26 28 / 0.28);
+  --shadow-frame-nudge:
+    0 0 0 1px rgb(255 255 255 / 0.55), 0 3px 5px rgb(22 26 28 / 0.18),
+    0 10px 18px -6px rgb(22 26 28 / 0.28);
+  --shadow-frame-lift:
+    0 0 0 1px rgb(255 255 255 / 0.55), 0 8px 12px -4px rgb(22 26 28 / 0.22),
+    0 22px 36px -10px rgb(22 26 28 / 0.38);
+  --shadow-raised:
+    0 1px 2px rgb(22 26 28 / 0.14), 0 1px 1px rgb(22 26 28 / 0.08);
+  --shadow-float:
+    0 2px 4px rgb(22 26 28 / 0.1), 0 8px 20px -6px rgb(22 26 28 / 0.22);
+  --shadow-sheet:
+    0 0 0 1px rgb(22 26 28 / 0.06), 0 10px 40px -8px rgb(22 26 28 / 0.32);
+  --shadow-toast: 0 10px 28px -8px rgb(22 26 28 / 0.4);
+  /* Picture opening: bevel line + slight depth (inset-shadow-aperture) */
+  --inset-shadow-aperture:
+    inset 0 0 0 1px rgb(30 34 37 / 0.16), inset 0 1px 2px rgb(30 34 37 / 0.1);
+
+  /* ---- Layers. Stage-local (wall..guides) sit inside the stage's own
+     stacking context; the rest are app-level. */
+  --z-index-wall: 0;
+  --z-index-photo: 1;
+  --z-index-grid: 2;
+  --z-index-guides: 5; /* under resting frames so guides never strike labels */
+  --z-index-frames: 10;
+  --z-index-frame-lifted: 20; /* the dragged frame rides above its guides */
+  --z-index-chrome: 40;
+  --z-index-float: 50;
+  --z-index-scrim: 60;
+  --z-index-sheet: 70;
+  --z-index-ghost: 80;
+  --z-index-dialog: 85;
+  --z-index-toast: 90;
+
+  /* ---- CSS durations and easing (springs live in lib/physics.ts) */
+  --transition-duration-instant: 80ms;
+  --transition-duration-quick: 140ms;
+  --transition-duration-base: 220ms;
+  --transition-duration-slow: 320ms;
+  --transition-duration-reduced-short: 120ms;
+  --transition-duration-reduced: 160ms;
+  --transition-duration-reduced-long: 200ms;
+
+  --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-soft: cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out-soft: cubic-bezier(0.45, 0, 0.2, 1);
+}
+
+/* Font families point at the variables next/font sets on <html>
+   (src/app/layout.tsx), so they must be inlined. */
+@theme static inline {
+  --font-sans:
+    var(--font-archivo), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+  --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body {
+    height: 100%;
+    overscroll-behavior: none;
+  }
+
+  body {
+    background-color: var(--color-stage);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  /* Text fields: one 2px ring sitting on the field's own border */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline-offset: -1px;
+  }
+
+  ::selection {
+    background-color: var(--color-accent-soft);
+    color: var(--color-ink);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="radio"]:not([aria-disabled="true"]),
+  label:has(input:not(:disabled)) {
+    cursor: pointer;
+  }
+
+  /* Numeric fields: tabular figures, no spinners */
+  input[inputmode="decimal"],
+  input[inputmode="numeric"],
+  input[type="number"] {
+    font-variant-numeric: tabular-nums;
+  }
+  input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+/* JS springs read the same preference via motion's useReducedMotion();
+   this block covers CSS animations only (transitions stay short by design). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
