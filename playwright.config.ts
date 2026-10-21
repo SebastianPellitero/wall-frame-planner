@@ -19,9 +19,10 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npm run dev -- --port ${PORT}`,
+    // The real static export, independent of any `next dev` running in this folder.
+    command: `npm run build && node e2e/serve-static.mjs ${PORT}`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: true,
-    timeout: 120_000,
+    timeout: 180_000,
   },
 });
