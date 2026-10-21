@@ -86,12 +86,32 @@
   --color-danger-soft: #fbe6e3;
   --color-on-danger: #ffffff;
 
-  /* Frame anatomy (design-system.md §3) */
+  /* Curated frame colors (design-system.md §3.2). A frame stores its index
+     1-10 and renders data-frame-color="N"; the rules in @layer base below
+     re-point the anatomy tokens for that subtree. */
+  --color-frame-1: #363a3e; /* Graphite (dark) - default, legacy frames */
+  --color-frame-2: #17191b; /* Black (dark) */
+  --color-frame-3: #e6e4dd; /* Gallery white (light) */
+  --color-frame-4: #5b3e2c; /* Walnut (dark) */
+  --color-frame-5: #a8814f; /* Oak (light) */
+  --color-frame-6: #d6c3a1; /* Ash (light) */
+  --color-frame-7: #b38f45; /* Brass (light) */
+  --color-frame-8: #7d8d76; /* Sage (light) */
+  --color-frame-9: #6a2a2e; /* Oxblood (dark) */
+  --color-frame-10: #4a5c63; /* Slate (dark) */
+
+  /* Frame anatomy (design-system.md §3). These :root values are only the
+     fallback for UI with no data-frame-color (a Graphite moulding with a
+     light opening); every frame and the preview set data-frame-color. */
   --color-frame-top: #50555a; /* moulding, lit top rail */
   --color-frame-side: #363a3e; /* moulding, left and right rails */
   --color-frame-bottom: #1e2124; /* moulding, shaded bottom rail */
-  --color-frame-halo: rgb(255 255 255 / 0.55); /* 1px ring that lifts dark frames off dark photos */
-  --color-mat: #fdfdfb; /* museum mat */
+  --color-frame-halo: rgb(255 255 255 / 0.55); /* legacy name; superseded by frame-edge */
+  --color-frame-edge: rgb(255 255 255 / 0.72); /* inner keyline, contrasts with the moulding */
+  --color-frame-edge-outer: rgb(30 34 37 / 0.42); /* outer keyline, contrasts with the inner one */
+  --color-frame-ink: #1e2225; /* size label on the opening */
+  --color-mat: #fdfdfb; /* museum mat, same for every color */
+  --color-mat-edge: transparent; /* 1px line between a light moulding and the mat */
   --color-aperture: #e6e8e4; /* picture opening; the size label sits here */
   --color-aperture-edge: rgb(30 34 37 / 0.16); /* bevel line at the mat's inner edge */
 
@@ -128,7 +148,9 @@
   --spacing-bar-lg: 3.5rem; /* 56px top bar, desktop */
   --spacing-rail: 9.5rem; /* 152px left rail, phone landscape */
   --spacing-rail-end: 4rem; /* 64px right rail, phone landscape */
-  --spacing-sidebar: 15.5rem; /* 248px left sidebar, desktop */
+  --spacing-sidebar: 17.5rem; /* 280px left sidebar, desktop (Frame creator + Matrix control) */
+  --spacing-preview: 5.5rem; /* 88px Frame creator preview height, phone landscape */
+  --spacing-preview-lg: 9.5rem; /* 152px Frame creator preview height, desktop */
   --spacing-panel: 20rem; /* 320px right panel, desktop */
   --spacing-sheet: 22.5rem; /* 360px side sheet, phone landscape */
   --spacing-gutter: 0.75rem; /* 12px screen-edge gutter, phones */
@@ -151,18 +173,21 @@
   --shadow-wall:
     0 0 0 1px #7c827d, 0 1px 2px rgb(22 26 28 / 0.1),
     0 14px 36px -14px rgb(22 26 28 / 0.32);
+  /* Frame shadows open with the two-tone keyline (zero blur, so corners stay
+     square). Tailwind inlines shadow values, so the var()s resolve on the
+     frame element and pick up its data-frame-color overrides. */
   --shadow-frame-rest:
-    0 0 0 1px rgb(255 255 255 / 0.55), 0 1px 1px rgb(22 26 28 / 0.22),
-    0 3px 6px -2px rgb(22 26 28 / 0.24);
+    0 0 0 1px var(--color-frame-edge), 0 0 0 2px var(--color-frame-edge-outer),
+    0 1px 1px rgb(22 26 28 / 0.22), 0 3px 6px -2px rgb(22 26 28 / 0.24);
   --shadow-frame-hover:
-    0 0 0 1px rgb(255 255 255 / 0.55), 0 2px 3px rgb(22 26 28 / 0.2),
-    0 7px 14px -5px rgb(22 26 28 / 0.28);
+    0 0 0 1px var(--color-frame-edge), 0 0 0 2px var(--color-frame-edge-outer),
+    0 2px 3px rgb(22 26 28 / 0.2), 0 7px 14px -5px rgb(22 26 28 / 0.28);
   --shadow-frame-nudge:
-    0 0 0 1px rgb(255 255 255 / 0.55), 0 3px 5px rgb(22 26 28 / 0.18),
-    0 10px 18px -6px rgb(22 26 28 / 0.28);
+    0 0 0 1px var(--color-frame-edge), 0 0 0 2px var(--color-frame-edge-outer),
+    0 3px 5px rgb(22 26 28 / 0.18), 0 10px 18px -6px rgb(22 26 28 / 0.28);
   --shadow-frame-lift:
-    0 0 0 1px rgb(255 255 255 / 0.55), 0 8px 12px -4px rgb(22 26 28 / 0.22),
-    0 22px 36px -10px rgb(22 26 28 / 0.38);
+    0 0 0 1px var(--color-frame-edge), 0 0 0 2px var(--color-frame-edge-outer),
+    0 8px 12px -4px rgb(22 26 28 / 0.22), 0 22px 36px -10px rgb(22 26 28 / 0.38);
   --shadow-raised:
     0 1px 2px rgb(22 26 28 / 0.14), 0 1px 1px rgb(22 26 28 / 0.08);
   --shadow-float:
@@ -175,7 +200,9 @@
     0 0 0 1px rgb(255 255 255 / 0.6), 0 0 8px 2px var(--color-laser-glow);
   /* Picture opening: bevel line + slight depth (inset-shadow-aperture) */
   --inset-shadow-aperture:
-    inset 0 0 0 1px rgb(30 34 37 / 0.16), inset 0 1px 2px rgb(30 34 37 / 0.1);
+    inset 0 0 0 1px var(--color-aperture-edge), inset 0 1px 2px rgb(30 34 37 / 0.1);
+  /* Mat keyline against light mouldings (transparent on dark ones) */
+  --inset-shadow-mat: inset 0 0 0 1px var(--color-mat-edge);
 
   /* ---- Layers. Stage-local (wall..guides) sit inside the stage's own
      stacking context; the rest are app-level. */
@@ -248,6 +275,46 @@
   textarea:focus-visible,
   select:focus-visible {
     outline-offset: -1px;
+  }
+
+  /* Per-frame color (design-system.md §3.2). Put data-frame-color="1".."10"
+     on the frame's root (wall frame, drag ghost, Frame creator preview); the
+     moulding, opening, label and keylines below inherit into its subtree.
+     Dark tone first (1, 2, 4, 9, 10 and any unknown value), light tone after. */
+  [data-frame-color] {
+    --frame-base: var(--color-frame-1);
+    --color-frame-top: color-mix(in srgb, var(--frame-base), white 14%);
+    --color-frame-side: var(--frame-base);
+    --color-frame-bottom: color-mix(in srgb, var(--frame-base), black 30%);
+    --color-aperture: color-mix(in srgb, var(--frame-base), black 38%);
+    --color-aperture-edge: rgb(255 255 255 / 0.2);
+    --color-frame-ink: var(--color-on-inverse);
+    --color-frame-edge: rgb(255 255 255 / 0.72);
+    --color-frame-edge-outer: rgb(30 34 37 / 0.42);
+    --color-mat-edge: transparent;
+  }
+  [data-frame-color="2"] { --frame-base: var(--color-frame-2); }
+  [data-frame-color="3"] { --frame-base: var(--color-frame-3); }
+  [data-frame-color="4"] { --frame-base: var(--color-frame-4); }
+  [data-frame-color="5"] { --frame-base: var(--color-frame-5); }
+  [data-frame-color="6"] { --frame-base: var(--color-frame-6); }
+  [data-frame-color="7"] { --frame-base: var(--color-frame-7); }
+  [data-frame-color="8"] { --frame-base: var(--color-frame-8); }
+  [data-frame-color="9"] { --frame-base: var(--color-frame-9); }
+  [data-frame-color="10"] { --frame-base: var(--color-frame-10); }
+  [data-frame-color="3"],
+  [data-frame-color="5"],
+  [data-frame-color="6"],
+  [data-frame-color="7"],
+  [data-frame-color="8"] {
+    --color-frame-top: color-mix(in srgb, var(--frame-base), white 22%);
+    --color-frame-bottom: color-mix(in srgb, var(--frame-base), black 20%);
+    --color-aperture: color-mix(in srgb, var(--color-mat), var(--frame-base) 16%);
+    --color-aperture-edge: rgb(30 34 37 / 0.16);
+    --color-frame-ink: var(--color-ink);
+    --color-frame-edge: rgb(30 34 37 / 0.55);
+    --color-frame-edge-outer: rgb(255 255 255 / 0.7);
+    --color-mat-edge: rgb(30 34 37 / 0.18);
   }
 
   ::selection {
