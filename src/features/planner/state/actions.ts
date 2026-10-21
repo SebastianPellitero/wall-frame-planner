@@ -3,6 +3,7 @@ import { resolveOverlaps } from "../lib/collision";
 import { findFreeSpot } from "../lib/freeSpot";
 import { clamp, clampSize, clampToWall, round1 } from "../lib/geometry";
 import { newId } from "../lib/id";
+import { pushOrder } from "../lib/pushOrder";
 import type { PersistedSlice, Point, Shape, ShapeKind, Wall } from "../types";
 import type { PlannerActions, PlannerState, PlannerUiSlice } from "./storeTypes";
 
@@ -23,7 +24,13 @@ export function initialProject(): PersistedSlice {
   };
 }
 
-export const initialUi: PlannerUiSlice = { selectedId: null, mode: "arrange", paletteKind: "rect" };
+export const initialUi: PlannerUiSlice = { selectedId: null, mode: "arrange", paletteKind: "rect", pushedIds: [] };
+
+/** `shapes` with overlaps pushed away from `anchorId`, plus the stagger order of what moved. */
+function resolveWithOrder(shapes: Shape[], anchorId: string, wall: Wall): Pick<PlannerState, "shapes" | "pushedIds"> {
+  const resolved = resolveOverlaps(shapes, anchorId, wall);
+  return { shapes: resolved, pushedIds: pushOrder(shapes, resolved, anchorId) };
+}
 
 /** A shape of `kind` and `size` whose center is at `center`, kept inside the wall. */
 function centeredShape(id: string, kind: ShapeKind, size: { w: number; h: number }, center: Point, wall: Wall): Shape {
@@ -41,7 +48,7 @@ function placeNear(shape: Shape, near: Point, shapes: Shape[], wall: Wall): Shap
 export function createActions(set: Set, get: Get, clearHistory: () => void): PlannerActions {
   const insert = (shape: Shape, select: boolean): string => {
     const { shapes, wall, selectedId } = get();
-    set({ shapes: resolveOverlaps([...shapes, shape], shape.id, wall), selectedId: select ? shape.id : selectedId });
+    set({ ...resolveWithOrder([...shapes, shape], shape.id, wall), selectedId: select ? shape.id : selectedId });
     return shape.id;
   };
 
@@ -69,7 +76,7 @@ export function createActions(set: Set, get: Get, clearHistory: () => void): Pla
       const moved = next.x !== current.x || next.y !== current.y || next.w !== current.w || next.h !== current.h;
       if (!moved) return;
       const updated = shapes.map((s) => (s.id === id ? next : s));
-      set({ shapes: resolveOverlaps(updated, id, wall) });
+      set(resolveWithOrder(updated, id, wall));
     },
 
     duplicateShape(id) {

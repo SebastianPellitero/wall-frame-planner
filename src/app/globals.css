@@ -170,6 +170,9 @@
   --shadow-sheet:
     0 0 0 1px rgb(22 26 28 / 0.06), 0 10px 40px -8px rgb(22 26 28 / 0.32);
   --shadow-toast: 0 10px 28px -8px rgb(22 26 28 / 0.4);
+  /* Snap guide (§5.12): white edges for photos, then the laser glow */
+  --shadow-laser:
+    0 0 0 1px rgb(255 255 255 / 0.6), 0 0 8px 2px var(--color-laser-glow);
   /* Picture opening: bevel line + slight depth (inset-shadow-aperture) */
   --inset-shadow-aperture:
     inset 0 0 0 1px rgb(30 34 37 / 0.16), inset 0 1px 2px rgb(30 34 37 / 0.1);
@@ -182,6 +185,7 @@
   --z-index-guides: 5; /* under resting frames so guides never strike labels */
   --z-index-frames: 10;
   --z-index-frame-lifted: 20; /* the dragged frame rides above its guides */
+  --z-index-guides-live: 25; /* live drag guides: above the dragged frame, so a center guide stays visible (T5 review) */
   --z-index-chrome: 40;
   --z-index-float: 50;
   --z-index-scrim: 60;

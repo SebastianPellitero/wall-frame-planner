@@ -257,3 +257,65 @@ describe("undo / redo", () => {
     expect(store.temporal.getState().futureStates).toHaveLength(0);
   });
 });
+
+describe("pushedIds", () => {
+  it("starts empty", () => {
+    expect(store.getState().pushedIds).toEqual([]);
+  });
+
+  it("commitShape lists the pushed neighbors, nearest to the anchor first", () => {
+    const rect = (id: string, x: number) => ({ id, kind: "rect" as const, x, y: 75, w: 40, h: 50 });
+    // A row: far is listed first so array order can't pass for distance order.
+    store.setState({ shapes: [rect("far", 175), rect("a", 10), rect("near", 130), { ...rect("untouched", 250), y: 190 }] });
+    // The anchor at 112..152 overlaps near (130..170), which is pushed right into far (175..215).
+    store.getState().commitShape("a", { x: 112 });
+    expect(shapeOf(store, "near").x).toBeGreaterThan(130);
+    expect(shapeOf(store, "far").x).toBeGreaterThan(175);
+    expect(store.getState().pushedIds).toEqual(["near", "far"]);
+  });
+
+  it("commitShape with no overlap leaves it empty", () => {
+    const a = store.getState().addShape("rect", { x: 30, y: 30 });
+    store.getState().addShape("rect", { x: 230, y: 100 });
+    store.getState().commitShape(a, { x: 60 });
+    expect(store.getState().pushedIds).toEqual([]);
+  });
+
+  it("addShape at a point lists the neighbor it pushed", () => {
+    const a = store.getState().addShape("rect", { x: 100, y: 100 });
+    store.getState().addShape("rect", { x: 110, y: 100 });
+    expect(store.getState().pushedIds).toEqual([a]);
+  });
+
+  it("duplicateShape sets it (empty when the copy lands on a free spot)", () => {
+    const a = store.getState().addShape("rect", { x: 100, y: 100 });
+    store.setState({ pushedIds: ["stale"] });
+    store.getState().duplicateShape(a);
+    expect(store.getState().pushedIds).toEqual([]);
+  });
+
+  it("is cleared when shapes change any other way (undo, delete)", () => {
+    const a = store.getState().addShape("rect", { x: 100, y: 100 });
+    store.getState().addShape("rect", { x: 110, y: 100 });
+    expect(store.getState().pushedIds).toEqual([a]);
+    undo(store);
+    expect(store.getState().pushedIds).toEqual([]);
+    redo(store);
+    expect(store.getState().pushedIds).toEqual([]);
+    store.setState({ pushedIds: [a] });
+    store.getState().deleteShape(a);
+    expect(store.getState().pushedIds).toEqual([]);
+  });
+
+  it("is neither persisted nor recorded in history", () => {
+    const name = `test-pushed-${n++}`;
+    const persisted = createPlannerStore({ name });
+    persisted.getState().addShape("rect", { x: 100, y: 100 });
+    persisted.getState().addShape("rect", { x: 110, y: 100 });
+    expect(persisted.getState().pushedIds).toHaveLength(1);
+    expect(localStorage.getItem(name) ?? "").not.toMatch(/pushedIds/);
+    const past = history(persisted);
+    persisted.setState({ pushedIds: [] });
+    expect(history(persisted)).toBe(past);
+  });
+});

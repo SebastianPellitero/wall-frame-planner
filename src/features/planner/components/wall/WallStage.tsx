@@ -1,8 +1,10 @@
-import type { ReactNode, Ref } from "react";
+import type { PointerEvent, ReactNode, Ref } from "react";
 import type { Shell } from "../../hooks/useShell";
 import { usePlannerStore } from "../../state/store";
 import { cx } from "../ui/cx";
+import { FramesLayer } from "./FramesLayer";
 import { GridLayer } from "./GridLayer";
+import { SnapGuides } from "./SnapGuides";
 import { useWallContext } from "./WallContext";
 import { WallDimensions } from "./WallDimensions";
 
@@ -22,7 +24,7 @@ const SAFE_PADDING: Record<Shell, string> = {
 
 /**
  * The stage (the room) with the to-scale wall centered in it. Wall layers, bottom to top:
- * background photo, grid, frames, guides. `children` are stage overlays (rotate hint, toasts).
+ * background photo, grid, frames, live snap guides. `children` are stage overlays (rotate hint, toasts).
  */
 export function WallStage({ stageRef, shell, children }: { stageRef: Ref<HTMLElement>; shell: Shell; children?: ReactNode }) {
   const { pxPerCm, wallRef, wallPx } = useWallContext();
@@ -30,6 +32,11 @@ export function WallStage({ stageRef, shell, children }: { stageRef: Ref<HTMLEle
   const empty = usePlannerStore((s) => s.shapes.length === 0);
   const width = usePlannerStore((s) => s.wall.width);
   const height = usePlannerStore((s) => s.wall.height);
+
+  // A press on the bare wall (not a frame) clears the selection in Arrange mode.
+  const onWallPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (mode === "arrange" && e.target === e.currentTarget) usePlannerStore.getState().select(null);
+  };
 
   return (
     <main
@@ -46,6 +53,7 @@ export function WallStage({ stageRef, shell, children }: { stageRef: Ref<HTMLEle
         <div
           ref={wallRef}
           data-testid="wall"
+          onPointerDown={onWallPointerDown}
           style={{ width: wallPx.w, height: wallPx.h }}
           className={cx(
             "relative z-wall touch-none bg-wall shadow-wall",
@@ -55,8 +63,8 @@ export function WallStage({ stageRef, shell, children }: { stageRef: Ref<HTMLEle
         >
           {/* T9: background photo layer (z-photo) */}
           <GridLayer />
-          {/* T5: frames layer (z-frames) */}
-          {/* T5: snap guides layer (z-guides) */}
+          <FramesLayer />
+          <SnapGuides />
           {empty && mode === "arrange" && <EmptyWallCopy />}
           {shell === "desktop" && <WallDimensions width={width} height={height} />}
         </div>

@@ -4,6 +4,12 @@ export interface PlannerUiSlice {
   selectedId: string | null;
   mode: Mode;
   paletteKind: ShapeKind;
+  /**
+   * Frames the last add, commit or duplicate pushed out of the way, nearest to the anchor
+   * first: the push-apart stagger order. Not persisted and not in history; any other change
+   * to `shapes` (undo, delete, wall resize) clears it.
+   */
+  pushedIds: string[];
 }
 
 export interface PlannerActions {

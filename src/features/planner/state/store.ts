@@ -49,10 +49,14 @@ export function createPlannerStore(opts: { storage?: PersistStorage<PersistedSli
   // Hydration is not an undoable edit.
   store.temporal.getState().clear();
 
-  // After undo/redo the selected shape may be gone.
-  store.subscribe((s) => {
+  store.subscribe((s, prev) => {
+    // After undo/redo the selected shape may be gone.
     if (s.selectedId !== null && !s.shapes.some((shape) => shape.id === s.selectedId)) {
       store.setState({ selectedId: null });
+    }
+    // pushedIds only describes the change that set it; any other shapes change makes it stale.
+    if (s.shapes !== prev.shapes && s.pushedIds === prev.pushedIds && s.pushedIds.length > 0) {
+      store.setState({ pushedIds: [] });
     }
   });
 

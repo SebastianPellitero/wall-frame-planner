@@ -125,3 +125,32 @@ describe("tiltFromVelocity", () => {
     expect(tiltFromVelocity(-20, 0.05, 3)).toBeCloseTo(1, 10);
   });
 });
+
+describe("pushDelayMs", () => {
+  it("staggers by rank, nearest first, capped at 150 ms total", () => {
+    expect(physics.pushDelayMs(0)).toBe(0);
+    expect(physics.pushDelayMs(1)).toBe(pushStaggerMs);
+    expect(physics.pushDelayMs(3)).toBe(3 * pushStaggerMs);
+    expect(physics.pushDelayMs(50)).toBe(physics.pushStaggerCapMs);
+    expect(physics.pushStaggerCapMs).toBe(150);
+  });
+
+  it("is 0 under reduced motion and for frames that were not pushed", () => {
+    expect(physics.pushDelayMs(3, true)).toBe(0);
+    expect(physics.pushDelayMs(-1)).toBe(0);
+  });
+});
+
+describe("tween", () => {
+  it("is a reduced-motion tween in seconds with the soft ease-out", () => {
+    expect(physics.tween(reducedMotion.tweenMs)).toEqual({ type: "tween", duration: 0.16, ease: reducedMotion.ease });
+    expect(physics.tween(120, 0.5)).toEqual({ type: "tween", duration: 0.12, ease: reducedMotion.ease, delay: 0.5 });
+  });
+});
+
+describe("choreography fades (§6.3)", () => {
+  it("pop-in fades in over 120 ms and delete fades out over 140 ms", () => {
+    expect(physics.popInFadeMs).toBe(120);
+    expect(physics.removeFadeMs).toBe(140);
+  });
+});

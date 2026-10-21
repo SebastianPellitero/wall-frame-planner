@@ -1,8 +1,9 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createRef } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Shell } from "../../hooks/useShell";
 import { initialProject, initialUi } from "../../state/actions";
+import { useDragUi } from "../../state/dragUi";
 import { usePlannerStore } from "../../state/store";
 import { WallContext } from "./WallContext";
 import { WallStage } from "./WallStage";
@@ -97,5 +98,49 @@ describe("GridLayer", () => {
     renderStage();
     expect(screen.getByTestId("grid-origin-marker")).toBeInTheDocument();
     expect(screen.getByTestId("grid").querySelectorAll("[data-line]")).toHaveLength(0);
+  });
+});
+
+describe("frames and guides", () => {
+  it("renders a frame per shape", () => {
+    renderStage();
+    act(() => {
+      usePlannerStore.getState().addShape("rect", { x: 50, y: 50 });
+      usePlannerStore.getState().addShape("circle", { x: 200, y: 150 });
+    });
+    expect(screen.getAllByTestId("frame").map((f) => f.dataset.kind)).toEqual(["rect", "circle"]);
+  });
+
+  it("deselects on a press on the bare wall in Arrange mode only", () => {
+    renderStage();
+    act(() => void usePlannerStore.getState().addShape("rect"));
+    expect(usePlannerStore.getState().selectedId).not.toBeNull();
+    const wall = screen.getByTestId("wall");
+    // A press on a frame bubbles to the wall but is not a bare-wall press.
+    fireEvent.pointerDown(screen.getByTestId("frame").firstElementChild as Element, { isPrimary: true, button: 0 });
+    expect(usePlannerStore.getState().selectedId).not.toBeNull();
+    act(() => usePlannerStore.getState().setMode("photo"));
+    fireEvent.pointerDown(wall);
+    expect(usePlannerStore.getState().selectedId).not.toBeNull();
+    act(() => usePlannerStore.getState().setMode("arrange"));
+    fireEvent.pointerDown(wall);
+    expect(usePlannerStore.getState().selectedId).toBeNull();
+  });
+
+  it("draws a laser line across the wall for each active guide", () => {
+    renderStage({ pxPerCm: 2 });
+    expect(screen.queryByTestId("snap-guide")).not.toBeInTheDocument();
+    act(() =>
+      useDragUi.getState().setGuides([
+        { axis: "x", position: 30 },
+        { axis: "y", position: 100 },
+      ]),
+    );
+    const [vertical, horizontal] = screen.getAllByTestId("snap-guide");
+    expect(vertical.style.left).toBe("60px");
+    expect(vertical).toHaveClass("inset-y-0", "bg-laser");
+    expect(horizontal.style.top).toBe("200px");
+    expect(vertical.parentElement).toHaveClass("z-guides-live", "overflow-hidden", "pointer-events-none");
+    act(() => useDragUi.getState().endDrag());
   });
 });

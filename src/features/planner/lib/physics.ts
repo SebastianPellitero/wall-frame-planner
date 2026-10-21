@@ -89,3 +89,31 @@ export function tiltFromVelocity(
 ): number {
   return clamp(-vxPxPerSec * factor, -maxDeg, maxDeg) + 0;
 }
+
+/** Total cap on the push-apart stagger (§6.2). */
+export const pushStaggerCapMs = 150;
+
+/** Delay before a pushed frame starts moving: `pushStaggerMs × rank`, capped; 0 when reduced or not pushed (rank < 0). */
+export function pushDelayMs(rank: number, reduced = false): number {
+  if (reduced || rank < 0) return 0;
+  return Math.min(rank * pushStaggerMs, pushStaggerCapMs);
+}
+
+export interface TweenPreset {
+  type: "tween";
+  duration: number;
+  ease: [number, number, number, number];
+  delay?: number;
+}
+
+/** A reduced-motion tween of `ms` (a `reducedMotion` duration), for motion's `transition`. */
+export function tween(ms: number, delaySec?: number): TweenPreset {
+  const t: TweenPreset = { type: "tween", duration: ms / 1000, ease: reducedMotion.ease };
+  if (delaySec !== undefined) t.delay = delaySec;
+  return t;
+}
+
+/** Opacity fade of a frame appearing (tap to add, §6.3). */
+export const popInFadeMs = 120;
+/** Opacity fade of a deleted frame (§6.3). */
+export const removeFadeMs = 140;
