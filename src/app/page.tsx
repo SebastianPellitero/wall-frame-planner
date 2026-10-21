@@ -1,7 +1,5 @@
+import { PlannerAppLoader } from "@/features/planner/components/PlannerAppLoader";
+
 export default function Home() {
-  return (
-    <main>
-      <div>Hello world!</div>
-    </main>
-  );
+  return <PlannerAppLoader />;
 }
