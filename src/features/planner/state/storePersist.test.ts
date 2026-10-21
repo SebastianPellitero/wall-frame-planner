@@ -36,6 +36,37 @@ describe("persistence", () => {
     expect(raw).not.toMatch(/selectedId|paletteKind|pastStates|futureStates|"mode"/);
   });
 
+  it("persists the result of undo and redo", () => {
+    const name = nextName();
+    const store = createPlannerStore({ name });
+    const id = store.getState().addShape("rect", { x: 100, y: 100 });
+    store.getState().commitShape(id, { x: 200 });
+    store.temporal.getState().undo();
+    expect(saved(name).state.shapes[0].x).toBe(80);
+    store.temporal.getState().undo();
+    expect(saved(name).state.shapes).toEqual([]);
+    store.temporal.getState().redo();
+    expect(saved(name).state.shapes[0].x).toBe(80);
+    store.temporal.getState().redo();
+    expect(saved(name).state.shapes[0].x).toBe(200);
+    expect(localStorage.getItem(name) ?? "").not.toMatch(/pastStates|futureStates/);
+  });
+
+  it("can undo new actions after rehydrating, without undoing the hydration", () => {
+    const name = nextName();
+    const first = createPlannerStore({ name });
+    first.getState().addShape("rect", { x: 100, y: 100 });
+    const reloaded = createPlannerStore({ name });
+    expect(reloaded.getState().shapes).toHaveLength(1);
+    expect(reloaded.temporal.getState().pastStates).toHaveLength(0);
+    reloaded.getState().addShape("circle", { x: 250, y: 200 });
+    expect(reloaded.getState().shapes).toHaveLength(2);
+    reloaded.temporal.getState().undo();
+    expect(reloaded.getState().shapes).toHaveLength(1);
+    reloaded.temporal.getState().undo();
+    expect(reloaded.getState().shapes).toHaveLength(1);
+  });
+
   it("uses the app key by default", () => {
     // The singleton uses "wallplanner:project"; the factory default must match.
     const store = createPlannerStore();

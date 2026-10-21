@@ -21,30 +21,31 @@ const pickPersisted = (s: PlannerState): PersistedSlice => ({
 /** A fresh store. Tests use this for isolation; the app uses the `usePlannerStore` singleton. */
 export function createPlannerStore(opts: { storage?: PersistStorage<PersistedSlice>; name?: string } = {}) {
   const store = create<PlannerState>()(
-    temporal(
-      persist(
+    persist(
+      temporal(
         (set, get) => ({
           ...initialProject(),
           ...initialUi,
           ...createActions(set, get, () => store.temporal.getState().clear()),
         }),
         {
-          name: opts.name ?? PERSIST_KEY,
-          version: 1,
-          storage: opts.storage ?? safeStorage,
-          partialize: pickPersisted,
-          migrate: (persisted) => sanitizeProject(persisted),
-          merge: (persisted, current) => ({ ...current, ...sanitizeProject(persisted) }),
+          partialize: (s) => ({ shapes: s.shapes }),
+          limit: HISTORY_LIMIT,
+          equality: (a, b) => a.shapes === b.shapes,
         },
       ),
       {
-        partialize: (s) => ({ shapes: s.shapes }),
-        limit: HISTORY_LIMIT,
-        equality: (a, b) => a.shapes === b.shapes,
+        name: opts.name ?? PERSIST_KEY,
+        version: 1,
+        storage: opts.storage ?? safeStorage,
+        partialize: pickPersisted,
+        migrate: (persisted) => sanitizeProject(persisted),
+        merge: (persisted, current) => ({ ...current, ...sanitizeProject(persisted) }),
       },
     ),
   );
 
+  // persist wraps temporal, so zundo's undo/redo writes go through persist and are saved.
   // Hydration is not an undoable edit.
   store.temporal.getState().clear();
 
