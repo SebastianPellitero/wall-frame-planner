@@ -225,6 +225,14 @@ describe("resolveOverlaps", () => {
     expect(collision.overlaps(a, pushed, wall.pushGap)).toBe(false);
   });
 
+  it("never leaves a pushed frame overlapping the anchor when a neighbor is jammed against the wall (regression)", () => {
+    // Found by fuzzing: the anchor pushes s1 away, and s2 (jammed against the left wall) pushed it straight back.
+    const jammed: Wall = { width: 100, height: 100, pushGap: 3 };
+    const shapes = [rect("s0", 5, 25, 32, 20), rect("s1", 5, 44, 26, 31), rect("s2", 5, 46, 20, 19)];
+    const out = resolveOverlaps(shapes, "s0", jammed);
+    for (const s of out.slice(1)) expect(collision.overlaps(byId(out, "s0"), s, jammed.pushGap)).toBe(false);
+  });
+
   it("changes nothing when the anchor id is not in the list", () => {
     const shapes = [rect("a", 50, 50, 40, 40), rect("b", 70, 50, 40, 40)];
     const out = resolveOverlaps(shapes, "missing", wall);

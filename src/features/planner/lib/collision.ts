@@ -11,18 +11,25 @@ function place(q: Shape, delta: Point, wall: Wall): Point {
 }
 
 /**
- * Where to put `q` so it stops overlapping `p`: the first separation candidate that
- * still clears `p` after clamping to the wall. If none does (a wall edge is in the
- * way), the first candidate, clamped, is the best effort.
+ * Where to put `q` so it stops overlapping `p`. Candidates are tried in order and the
+ * first that clears `p` (and, preferably, the anchor too) after clamping to the wall wins:
+ * 1. clears both `p` and the anchor, so a frame jammed against a wall can't be shoved back into it;
+ * 2. else clears `p`;
+ * 3. else (a wall edge is in the way) the first candidate, clamped, as best effort.
  */
-function bestPlacement(p: Shape, q: Shape, gap: number, wall: Wall): Point {
+function bestPlacement(p: Shape, q: Shape, gap: number, wall: Wall, anchor: Shape | undefined): Point {
+  let clearsP: Point | null = null;
   let fallback: Point | null = null;
   for (const delta of separationCandidates(p, q, gap)) {
     const pos = place(q, delta, wall);
-    if (!overlaps(p, { ...q, ...pos }, gap)) return pos;
+    const moved = { ...q, ...pos };
+    if (!overlaps(p, moved, gap)) {
+      if (!anchor || anchor.id === q.id || anchor.id === p.id || !overlaps(anchor, moved, gap)) return pos;
+      clearsP ??= pos;
+    }
     fallback ??= pos;
   }
-  return fallback ?? { x: q.x, y: q.y };
+  return clearsP ?? fallback ?? { x: q.x, y: q.y };
 }
 
 /**
@@ -68,7 +75,7 @@ export function resolveOverlaps(
         }
 
         if (!overlaps(out[p], out[q], gap)) continue;
-        const next = bestPlacement(out[p], out[q], gap, wall);
+        const next = bestPlacement(out[p], out[q], gap, wall, out.find((s) => s.id === anchorId));
         if (next.x === out[q].x && next.y === out[q].y) continue;
 
         out[q] = { ...out[q], x: next.x, y: next.y };

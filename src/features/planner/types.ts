@@ -56,4 +56,13 @@ export interface Project {
   shapes: Shape[];
 }
 
-export type Mode = "arrange" | "photo" | "gridOrigin";
+/** The part of the planner state that is saved to localStorage. */
+export interface PersistedSlice {
+  wall: Wall;
+  grid: Grid;
+  background: Background;
+  shapes: Shape[];
+  paletteSizes: Record<ShapeKind, { w: number; h: number }>;
+}
+
+export type Mode ="arrange" | "photo" | "gridOrigin";
