@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# testing (playwright)
+/test-results/
+/playwright-report/
+
+# superpowers sdd scratch
+/.superpowers/
