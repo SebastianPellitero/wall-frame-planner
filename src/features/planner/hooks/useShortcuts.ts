@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { resolveShortcut } from "../lib/shortcuts";
 import { useDragUi } from "../state/dragUi";
+import { isModalOpen } from "../state/modalUi";
 import { duplicateFrame, nudgeFrame, redo, undo } from "../state/frameCommands";
 import { usePlannerStore } from "../state/store";
 import { rescueFocus } from "./rescueFocus";
@@ -26,7 +27,7 @@ export function useShortcuts() {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented || useDragUi.getState().draggingId !== null) return;
       const target = e.target instanceof Element ? e.target : null;
-      if (target?.closest(TYPING) || target?.closest(MODAL)) return;
+      if (isModalOpen() || target?.closest(TYPING) || target?.closest(MODAL)) return;
       const action = resolveShortcut(e, { mac });
       if (!action) return;
 

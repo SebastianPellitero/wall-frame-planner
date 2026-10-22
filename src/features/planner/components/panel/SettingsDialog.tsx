@@ -1,8 +1,9 @@
 import { animate, motion, useMotionValue, useReducedMotion } from "motion/react";
-import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { trapTab } from "../../hooks/focusTrap";
 import { useSheetDrag } from "../../hooks/useSheetDrag";
 import { reducedMotion, sheet, tween } from "../../lib/physics";
+import { registerModal } from "../../state/modalUi";
 import { ICON_BUTTON } from "../ui/buttons";
 import { cx } from "../ui/cx";
 import { CloseIcon } from "../ui/icons";
@@ -38,6 +39,16 @@ export function SettingsDialog({ shell, closing, onRequestClose, onExited }: Set
   const [expanded, setExpanded] = useState(false);
   const entered = useRef(false);
   const grow = useRef<{ offset: number; height: number } | null>(null);
+  /** Set the moment a close is requested, so focus may leave for the Settings button. */
+  const leaving = useRef(false);
+  const latestClose = useRef(onRequestClose);
+  useLayoutEffect(() => {
+    latestClose.current = onRequestClose;
+  });
+  const requestClose = () => {
+    leaving.current = true;
+    latestClose.current();
+  };
 
   const size = () => {
     const r = sheetRef.current?.getBoundingClientRect();
@@ -47,6 +58,7 @@ export function SettingsDialog({ shell, closing, onRequestClose, onExited }: Set
   // Enter: from off-screen on mount, or back from a half-finished exit.
   useLayoutEffect(() => {
     if (closing) return;
+    leaving.current = false;
     if (!entered.current) {
       entered.current = true;
       offset.jump(size());
@@ -57,6 +69,37 @@ export function SettingsDialog({ shell, closing, onRequestClose, onExited }: Set
     animate(scrim, 1, transition);
     // Only the open/closing switch starts an animation; size and transition are read then.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [closing]);
+
+  // While open, the keyboard belongs to the sheet wherever focus is, <body> included (a tap on
+  // a caption): Esc closes, Tab stays trapped, focus wandering out is pulled back, and the
+  // shortcuts stand down (modalUi). Document-level, after React: a field's own Esc (revert)
+  // has already prevented the default and keeps the sheet open.
+  useEffect(() => {
+    if (closing) return;
+    const release = registerModal();
+    const onKeyDown = (e: globalThis.KeyboardEvent) => {
+      const el = sheetRef.current;
+      if (!el) return;
+      if (e.key === "Escape") {
+        if (e.defaultPrevented) return;
+        e.preventDefault();
+        requestClose();
+        return;
+      }
+      trapTab(e, el);
+    };
+    const onFocusIn = (e: FocusEvent) => {
+      const el = sheetRef.current;
+      if (el && !leaving.current && e.target instanceof Node && !el.contains(e.target)) el.focus();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("focusin", onFocusIn);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("focusin", onFocusIn);
+      release();
+    };
   }, [closing]);
 
   // Exit: slide out from wherever the sheet is (a drag release included), then unmount.
@@ -90,29 +133,19 @@ export function SettingsDialog({ shell, closing, onRequestClose, onExited }: Set
     heightPx: size,
     expanded,
     transition,
-    onClose: onRequestClose,
+    onClose: requestClose,
     onExpand: (at) => {
       grow.current = { offset: at, height: size() };
       setExpanded(true);
     },
   });
 
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    // A field's own Esc (revert) prevents the default and keeps the sheet open.
-    if (e.key === "Escape" && !e.defaultPrevented) {
-      e.preventDefault();
-      onRequestClose();
-      return;
-    }
-    if (sheetRef.current) trapTab(e, sheetRef.current);
-  };
-
   return (
     <>
       <motion.div
         data-testid="settings-scrim"
         aria-hidden="true"
-        onClick={onRequestClose}
+        onClick={requestClose}
         style={{ opacity: scrim }}
         className={cx("fixed inset-0 z-scrim", stacked ? "bg-scrim" : "bg-scrim-light")}
       />
@@ -121,11 +154,12 @@ export function SettingsDialog({ shell, closing, onRequestClose, onExited }: Set
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        // Focusable itself, so a tap on non-focusable content keeps focus in the dialog.
+        tabIndex={-1}
         inert={closing}
-        onKeyDown={onKeyDown}
         style={stacked ? { y: offset } : { x: offset }}
         className={cx(
-          "fixed z-sheet flex flex-col bg-surface shadow-sheet",
+          "fixed z-sheet flex flex-col bg-surface shadow-sheet outline-none",
           stacked
             ? cx("inset-x-0 bottom-0 mx-auto w-full rounded-t-sheet sm:max-w-[560px]", expanded ? "max-h-[85dvh]" : "max-h-[60dvh]")
             : "inset-y-0 right-0 h-dvh w-[calc(var(--spacing-sheet)+var(--spacing-safe-right))] rounded-l-sheet pr-safe-right",
@@ -141,7 +175,7 @@ export function SettingsDialog({ shell, closing, onRequestClose, onExited }: Set
             <h2 id={titleId} className="font-serif text-title font-medium tracking-title text-ink">
               Settings
             </h2>
-            <button ref={closeRef} type="button" aria-label="Close settings" title="Close settings" onClick={onRequestClose} className={ICON_BUTTON}>
+            <button ref={closeRef} type="button" aria-label="Close settings" title="Close settings" onClick={requestClose} className={ICON_BUTTON}>
               <CloseIcon />
             </button>
           </div>
@@ -150,7 +184,7 @@ export function SettingsDialog({ shell, closing, onRequestClose, onExited }: Set
           data-testid="settings-body"
           className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-4 pt-3 pb-[calc(24px+var(--spacing-safe-bottom))]"
         >
-          <SettingsSections shell={shell} onSetOrigin={onRequestClose} />
+          <SettingsSections shell={shell} onSetOrigin={requestClose} />
         </div>
       </motion.div>
     </>

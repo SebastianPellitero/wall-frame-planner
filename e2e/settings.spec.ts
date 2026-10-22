@@ -66,6 +66,12 @@ test.describe("settings", () => {
     await expect(sheet.getByRole("region", { name: "Matrix control" })).toHaveCount(0);
     await page.screenshot({ path: `${SHOTS}/t8-${testInfo.project.name}-settings.png` });
 
+    // A tap on plain text keeps focus in the dialog, so Tab and Esc still belong to it.
+    await sheet.getByText("Space kept between frames when they push each other apart.").click();
+    await expect(sheet).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(sheet.getByRole("button", { name: "Close settings" })).toBeFocused();
+
     await page.keyboard.press("Escape");
     await expect(settingsDialog(page)).toBeHidden();
     await expect(page.getByRole("button", { name: "Settings" })).toBeFocused();

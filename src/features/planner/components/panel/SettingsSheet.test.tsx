@@ -1,8 +1,13 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
+import { createRef } from "react";
+import { useShortcuts } from "../../hooks/useShortcuts";
+import type { Shell } from "../../hooks/useShell";
 import { initialProject, initialUi } from "../../state/actions";
 import { usePlannerStore } from "../../state/store";
+import { ContextPanel } from "../ContextPanel";
+import { WallContext } from "../wall/WallContext";
 import { SettingsSheet } from "./SettingsSheet";
 
 beforeEach(() => {
@@ -96,5 +101,74 @@ describe("SettingsSheet", () => {
     const d = await open();
     act(() => void within(d).getByRole("switch", { name: "Show grid" }).click());
     expect(usePlannerStore.getState().grid.enabled).toBe(true);
+  });
+});
+
+describe("SettingsSheet, with focus fallen to <body> (a tap on a caption or label)", () => {
+  function WithShortcuts() {
+    useShortcuts();
+    return <SettingsSheet shell="stacked" />;
+  }
+
+  async function openThenDropFocus() {
+    usePlannerStore.setState({ shapes: [{ id: "a", kind: "rect", x: 20, y: 30, w: 40, h: 50, color: 1 }], selectedId: "a" });
+    render(<WithShortcuts />);
+    await userEvent.click(settingsButton());
+    (document.activeElement as HTMLElement).blur();
+    expect(document.activeElement).toBe(document.body);
+    return dialog();
+  }
+
+  it("a tap on non-focusable content focuses the dialog itself", async () => {
+    const d = await openThenDropFocus();
+    expect(d).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("Tab and Shift+Tab land inside the dialog", async () => {
+    const d = await openThenDropFocus();
+    await userEvent.tab();
+    expect(within(d).getByRole("button", { name: "Close settings" })).toHaveFocus();
+    (document.activeElement as HTMLElement).blur();
+    await userEvent.tab({ shift: true });
+    expect(within(d).getByRole("button", { name: "Set origin on the wall" })).toHaveFocus();
+  });
+
+  it("Esc still closes it", async () => {
+    await openThenDropFocus();
+    await userEvent.keyboard("{Escape}");
+    await expectClosed();
+    expect(settingsButton()).toHaveFocus();
+  });
+
+  it("Delete and arrows do not reach the selected frame behind the sheet", async () => {
+    await openThenDropFocus();
+    fireEvent.keyDown(document.body, { key: "Delete" });
+    fireEvent.keyDown(document.body, { key: "ArrowRight" });
+    expect(usePlannerStore.getState().shapes).toEqual([expect.objectContaining({ id: "a", x: 20 })]);
+  });
+
+  it("focus moving out to the page behind is pulled back into the dialog", async () => {
+    const d = await openThenDropFocus();
+    const outside = document.createElement("button");
+    document.body.appendChild(outside);
+    act(() => outside.focus());
+    expect(d.contains(document.activeElement)).toBe(true);
+    outside.remove();
+  });
+});
+
+describe("Matrix control, once per shell", () => {
+  it.each(["stacked", "landscape"] as const)("the context panel and the open sheet together hold one Matrix control (%s)", async (shell: Shell) => {
+    const value = { pxPerCm: 2, wallRef: createRef<HTMLDivElement>(), wallPx: { w: 600, h: 500 } };
+    render(
+      <WallContext value={value}>
+        <ContextPanel shell={shell} />
+        <SettingsSheet shell={shell as "stacked" | "landscape"} />
+      </WallContext>,
+    );
+    await userEvent.click(settingsButton());
+    expect(screen.getAllByRole("region", { name: "Matrix control" })).toHaveLength(1);
+    expect(screen.getAllByRole("switch", { name: "Show grid" })).toHaveLength(1);
+    expect(screen.getAllByRole("textbox", { name: "Grid width (cm)" })).toHaveLength(1);
   });
 });
