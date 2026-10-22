@@ -2,7 +2,7 @@ import { deleteFramePhotos, downscaleImage, ImageStoreUnavailableError, listFram
 import { newId } from "../lib/id";
 import type { Shape } from "../types";
 import { framePhotoUrls } from "./framePhotoUrls";
-import { safeStorage } from "./safeStorage";
+import { backupImageIds, safeStorage } from "./safeStorage";
 import { storageEvents } from "./storageEvents";
 import { usePlannerStore } from "./store";
 
@@ -50,10 +50,16 @@ export async function uploadFramePhoto(id: string, file: Blob): Promise<FramePho
 
 const imageIdsOf = (shapes: readonly Shape[]) => shapes.flatMap((s) => (s.photo ? [s.photo.imageId] : []));
 
-/** Every image a frame on the wall, an undo or redo step, or this session's uploads still use. */
-function imageIdsInUse(): Set<string> {
+/**
+ * Every image a frame on the wall, an undo or redo step, this session's uploads or a corrupt-save
+ * backup still use; `null` when the backups can't be read.
+ */
+function imageIdsInUse(): Set<string> | null {
+  const backups = backupImageIds();
+  if (!backups) return null;
   const { pastStates, futureStates } = usePlannerStore.temporal.getState();
   return new Set([
+    ...backups,
     ...imageIdsOf(usePlannerStore.getState().shapes),
     ...[...pastStates, ...futureStates].flatMap((step) => imageIdsOf(step.shapes ?? [])),
     ...framePhotoUrls.rememberedIds(),
@@ -70,7 +76,8 @@ const hydrated = () =>
  * Run once after hydration: deletes every stored frame photo nothing uses, since removing a photo
  * or a frame never deletes its image right away (undo may need it). Skipped when the save could
  * not be read (corrupt or storage unavailable): the wall then started empty, and the backed-up
- * save may still use every stored photo. Silent if IndexedDB fails.
+ * save may still use every stored photo. On later loads the backup's photos stay in use. Silent
+ * if IndexedDB fails.
  */
 export async function gcFramePhotos(): Promise<void> {
   await hydrated();
@@ -79,6 +86,7 @@ export async function gcFramePhotos(): Promise<void> {
     const stored = await listFramePhotoIds();
     // Read after the list resolves, so a photo added meanwhile counts as in use.
     const inUse = imageIdsInUse();
+    if (!inUse) return;
     const orphans = stored.filter((imageId) => !inUse.has(imageId));
     if (orphans.length > 0) await deleteFramePhotos(orphans);
   } catch (error) {

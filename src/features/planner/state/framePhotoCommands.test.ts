@@ -182,6 +182,32 @@ describe("gcFramePhotos", () => {
     expect(mocked.deleteFramePhotos).not.toHaveBeenCalled();
   });
 
+  it("keeps a corrupt backup's photos on later loads too, while deleting real orphans", async () => {
+    // A save cut off mid-write: not JSON, but its frames' image ids are still in the text.
+    const key = "wallplanner:test-project";
+    localStorage.setItem(key, '{"state":{"shapes":[{"id":"a","photo":{"imageId":"kept-1","aspect":1}},{"photo":{ "imageId" : "kept-2"');
+    mocked.listFramePhotoIds.mockResolvedValue(["kept-1", "kept-2", "orphan"]);
+
+    // Load 1: the read fails, so nothing is collected.
+    safeStorage.getItem(key);
+    await gcFramePhotos();
+    expect(mocked.deleteFramePhotos).not.toHaveBeenCalled();
+
+    // Load 2: the save was moved to the backup, the key is absent and the read succeeds.
+    expect(localStorage.getItem(key)).toBeNull();
+    safeStorage.getItem(key);
+    expect(safeStorage.lastReadFailed()).toBe(false);
+    await gcFramePhotos();
+    expect(mocked.deleteFramePhotos).toHaveBeenCalledWith(["orphan"]);
+  });
+
+  it("finds no image ids in a backup of garbage text", async () => {
+    localStorage.setItem("wallplanner:corrupt-1", 'garbage imageId: nope {{ "imageId": 42, "imageId":"", "image":"x');
+    mocked.listFramePhotoIds.mockResolvedValue(["a", "b"]);
+    await gcFramePhotos();
+    expect(mocked.deleteFramePhotos).toHaveBeenCalledWith(["a", "b"]);
+  });
+
   it("runs normally after a good read", async () => {
     localStorage.setItem("wallplanner:test-ok", JSON.stringify({ state: {}, version: 1 }));
     safeStorage.getItem("wallplanner:test-ok");

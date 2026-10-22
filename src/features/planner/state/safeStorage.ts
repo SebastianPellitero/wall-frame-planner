@@ -22,6 +22,29 @@ function dropOldBackups() {
  * an event, so the app keeps working in memory. Once storage is known to be unavailable that
  * is reported once, and later failed writes add nothing ("storage full" would contradict it).
  */
+const BACKUP_IMAGE_ID = /"imageId"\s*:\s*"([^"]+)"/g;
+
+/**
+ * Every frame photo id a corrupt-save backup still mentions, found by a tolerant text scan (a
+ * backup is by definition not valid JSON), so photo garbage collection keeps them on every later
+ * load. `null` when localStorage can't be read: the caller must then assume anything is in use.
+ */
+export function backupImageIds(): string[] | null {
+  if (typeof window === "undefined") return [];
+  try {
+    const ids: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (!key?.startsWith(BACKUP_PREFIX)) continue;
+      const text = window.localStorage.getItem(key) ?? "";
+      for (const match of text.matchAll(BACKUP_IMAGE_ID)) ids.push(match[1]);
+    }
+    return ids;
+  } catch {
+    return null;
+  }
+}
+
 export interface SafeStorage extends PersistStorage<PersistedSlice> {
   /**
    * Whether the last read failed (storage unavailable, or a corrupt save that was backed up).
