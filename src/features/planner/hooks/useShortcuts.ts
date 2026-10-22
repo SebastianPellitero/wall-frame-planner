@@ -41,7 +41,7 @@ export function useShortcuts() {
       e.preventDefault();
       switch (action.type) {
         case "nudge":
-          nudgeFrame(selectedId, action.dx, action.dy);
+          nudgeFrame(selectedId, action.dx, action.dy, { repeat: e.repeat });
           break;
         case "duplicate":
           duplicateFrame(selectedId);

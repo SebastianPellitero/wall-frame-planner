@@ -147,11 +147,15 @@ test.describe("selection", () => {
     const copy = page.locator('[data-testid="frame"]:not([data-shape-id="a"])');
     await expect(copy).toHaveAttribute("aria-pressed", "true");
 
+    // Delete from the copy itself, so the focused element is the one that goes away.
+    await copy.focus();
     await page.keyboard.press("Delete");
     await expect(frames(page)).toHaveCount(1);
     await expect(frame(page, "a")).toBeVisible();
-    // Focus never falls to <body>.
-    expect(await page.evaluate(() => document.activeElement !== document.body)).toBe(true);
+    // Focus never falls to <body>: after the copy's exit, the rescue (next frame) puts it on the Frame creator.
+    await expect
+      .poll(() => page.evaluate(() => document.activeElement?.getAttribute("aria-label") ?? document.activeElement?.tagName))
+      .toBe("Rectangle");
 
     await selectFrame(page, testInfo, "a");
     await page.keyboard.press("Escape");

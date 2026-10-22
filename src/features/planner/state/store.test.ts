@@ -175,6 +175,17 @@ describe("commitShape", () => {
     expect(shapeOf(store, id)).toMatchObject({ w: 40, h: 40 });
   });
 
+  it("is a no-op, with no history entry, when the clamped and rounded result equals the shape", () => {
+    const id = store.getState().addShape("rect", { x: 20, y: 25 });
+    store.getState().commitShape(id, { x: 0, y: 0 });
+    store.temporal.getState().clear();
+    const before = store.getState().shapes;
+    store.getState().commitShape(id, { x: -5 });
+    store.getState().commitShape(id, { x: 0.04, y: -1 });
+    expect(store.getState().shapes).toBe(before);
+    expect(history(store)).toBe(0);
+  });
+
   it("is a no-op for an unknown id", () => {
     store.getState().addShape("rect");
     const before = store.getState().shapes;

@@ -41,6 +41,30 @@ describe("frameCommands", () => {
     expect(usePlannerStore.temporal.getState().pastStates).toHaveLength(3);
   });
 
+  it("a nudge clamped against the wall edge changes nothing and records no history", () => {
+    usePlannerStore.setState({ shapes: [{ ...A, x: 0 }] });
+    usePlannerStore.temporal.getState().clear();
+    const before = usePlannerStore.getState().shapes;
+    nudgeFrame("a", -1, 0);
+    nudgeFrame("a", -10, 0, { repeat: true });
+    expect(usePlannerStore.getState().shapes).toBe(before);
+    expect(usePlannerStore.temporal.getState().pastStates).toHaveLength(0);
+  });
+
+  it("a held arrow (first press, then repeats) is one undo step back to the start", () => {
+    nudgeFrame("a", 1, 0);
+    for (let i = 0; i < 20; i++) nudgeFrame("a", 1, 0, { repeat: true });
+    expect(usePlannerStore.getState().shapes[0].x).toBe(41);
+    expect(usePlannerStore.temporal.getState().pastStates).toHaveLength(1);
+    undo();
+    expect(usePlannerStore.getState().shapes[0].x).toBe(20);
+    redo();
+    expect(usePlannerStore.getState().shapes[0].x).toBe(41);
+    // Tracking is back on afterwards.
+    nudgeFrame("a", 0, 1);
+    expect(usePlannerStore.temporal.getState().pastStates).toHaveLength(2);
+  });
+
   it("undo and redo step through frame history", () => {
     nudgeFrame("a", 10, 0);
     undo();

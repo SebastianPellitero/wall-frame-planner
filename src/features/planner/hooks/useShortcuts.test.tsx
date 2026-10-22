@@ -55,6 +55,18 @@ describe("useShortcuts", () => {
     expect(a()!.y).toBe(29);
   });
 
+  it("a held arrow moves live and saves, but is one undo step back to the start", () => {
+    press("ArrowRight");
+    for (let i = 0; i < 9; i++) press("ArrowRight", { repeat: true });
+    expect(a()!.x).toBe(30);
+    expect(usePlannerStore.temporal.getState().pastStates).toHaveLength(1);
+    const saved = JSON.parse(localStorage.getItem("wallplanner:project")!);
+    expect(saved.state.shapes[0].x).toBe(30);
+    press("z", { ctrlKey: true });
+    expect(a()!.x).toBe(20);
+    expect(usePlannerStore.temporal.getState().pastStates).toHaveLength(0);
+  });
+
   it("deletes with Delete and Backspace, and deselects with Escape", () => {
     press("Escape");
     expect(usePlannerStore.getState().selectedId).toBeNull();

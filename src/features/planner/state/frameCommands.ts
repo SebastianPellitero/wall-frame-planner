@@ -16,11 +16,23 @@ export function duplicateFrame(id: string): string | null {
   return copyId;
 }
 
-/** Moves `id` by (dx, dy) cm through the single commit path (clamped, pushes neighbors). */
-export function nudgeFrame(id: string, dx: number, dy: number): void {
+/**
+ * Moves `id` by (dx, dy) cm through the single commit path (clamped, pushes neighbors).
+ * `repeat` (a held key's auto-repeat) moves the frame and saves it but records no history
+ * step, so a whole hold is the first press's single step: undo returns to where it started.
+ */
+export function nudgeFrame(id: string, dx: number, dy: number, { repeat = false }: { repeat?: boolean } = {}): void {
   const shape = usePlannerStore.getState().shapes.find((s) => s.id === id);
   if (!shape) return;
-  usePlannerStore.getState().commitShape(id, { x: shape.x + dx, y: shape.y + dy });
+  const commit = () => usePlannerStore.getState().commitShape(id, { x: shape.x + dx, y: shape.y + dy });
+  if (!repeat) return commit();
+  const temporal = usePlannerStore.temporal.getState();
+  temporal.pause();
+  try {
+    commit();
+  } finally {
+    temporal.resume();
+  }
 }
 
 export const undo = () => usePlannerStore.temporal.getState().undo();
