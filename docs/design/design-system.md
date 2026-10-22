@@ -10,6 +10,8 @@ Build spec for every WallPlanner screen. Owner: designer. Tokens live in `src/ap
 
 **Color story.** Concrete (`stage`) for the room, gallery white (`wall`) for the wall, mat white (`surface`) for the interface and graphite (`ink`) for text. There is one art-world accent, **ultramarine** (`accent`, a nod to International Klein Blue), for selection, the active mode and primary actions; it holds 7:1 on the wall. **Laser green** (`laser`) appears only as the snap guide. Danger red is for destructive actions only. The only other color on screen is the frames' own finishes (§3.2), deliberately free of blue so they never compete with the selection accent. No gradients and no decorative washes.
 
+**The user's own colors.** Two things on screen belong to the user, not to the system: the **wall paint** (§5.18, eight paint-chip swatches or any custom color) and the **photos in the frames** (§3.8). The interface is built to survive both: everything drawn on the wall either has its own halo (brackets, guides, keylines, the label plate) or switches between a light-wall and a dark-wall set (§5.19).
+
 **Typography pairing.**
 - **Archivo** (variable, width axis 62–125) is the measuring voice: controls, numbers and frame labels. Its width axis condenses frame labels (87.5% down to 75%) so small frames keep their size label longer.
 - **Newsreader** (variable, optical size) is the gallery-placard voice, used only for the wordmark, section and sheet titles, dialog titles and the empty-wall line. Roman only.
@@ -61,6 +63,14 @@ All tokens are CSS variables on `:root` (`@theme static`), so they also work as 
 | `halo` | `rgb(255 255 255 / .92)` | Underlay behind accent marks (brackets, origin marker) |
 | `grid` / `grid-origin` / `grid-halo` | `rgb(30 34 37 / .16)` / `rgb(43 63 203 / .5)` / `rgb(255 255 255 / .45)` | Grid lines / origin lines / line underlay over a photo |
 | `scrim` / `scrim-light` | `rgb(30 34 37 / .28)` / `rgb(30 34 37 / .14)` | Behind the bottom sheet and dialogs / behind the landscape side sheet |
+| `wall-paint` | `#f4f5f1` default; **overridden inline** with `wall.color` | Wall surface (§5.18). `wall` stays gallery white for the preview box |
+| `wall-ink` | light set `#1e2225` / dark set `on-inverse` | Empty-wall line (§5.19) |
+| `origin-mark` / `origin-mark-halo` | light set `accent` / `rgb(255 255 255 / .92)`; dark set `accent-on-inverse` / `rgb(20 23 25 / .88)` | Origin crosshair core / underlay (§5.19). `grid` and `grid-origin` also have dark-set values |
+| `label-plate` | `rgb(30 34 37 / .8)` | Size plate behind a photo frame's label (§3.8), text `on-inverse` |
+| `adjust-veil` | `rgb(30 34 37 / .45)` | Stage veil in adjust mode (§5.17) |
+| `swatch-edge` | `rgb(30 34 37 / .24)` | 1px inner edge of the wall-color chips (§5.18) |
+
+**Wall tone sets.** `wall-ink`, `grid`, `grid-origin`, `origin-mark` and `origin-mark-halo` are defined twice: the **light-wall set** on `:root` and the **dark-wall set** under `[data-wall-tone="dark"]` in `globals.css` (§5.19). The wall element carries the attribute, so everything on the wall picks the right set without per-component logic.
 
 Light theme only in v1 (`color-scheme: light`); the wall and frames are physical colors, so a dark theme is skipped.
 
@@ -72,7 +82,8 @@ Light theme only in v1 (`color-scheme: light`); the wall and frames are physical
 | `text-caption` | 12 / 16 | sans 400–500 | Field labels, units, preview caption, full frame label, dimensions |
 | `text-ui` | 14 / 20 | sans 500 (600 when active) | Buttons, segments, toggles, toasts |
 | `text-body` | 16 / 24 | sans 400 | **Every text input** (prevents iOS zoom), body copy |
-| `text-lead` | 18 / 24 | serif 400 | Empty-wall line, sheet section titles |
+| `text-lead` | 18 / 24 | serif 400 | Sheet section titles |
+| `text-placard` | 24 / 30 | serif 400 | Empty-wall line (was `text-lead`; 24px makes it large text, so it holds AA on any custom wall color, §5.19) |
 | `text-title` | 22 / 28 | serif 500, `tracking-title` | Sheet title, panel section titles ("Frame creator", "Matrix control"), dialog titles |
 | Wordmark | 20 / 28 | serif 500, `tracking-title` | "WallPlanner": desktop, and stacked at 640px+ |
 
@@ -126,12 +137,16 @@ Frame shadows open with the two-tone keyline `0 0 0 1px var(--color-frame-edge),
 | `shadow-laser` | `0 0 0 1px rgb(255 255 255 / 0.6), 0 0 8px 2px var(--color-laser-glow)` | Snap guide |
 | `inset-shadow-aperture` | `inset 0 0 0 1px var(--color-aperture-edge), inset 0 1px 2px rgb(30 34 37 / 0.1)` | Picture opening: bevel line plus slight depth |
 | `inset-shadow-mat` | `inset 0 0 0 1px var(--color-mat-edge)` | Mat keyline (visible on light mouldings only) |
+| `inset-shadow-rebate` | `inset 0 0 0 1px rgb(22 26 28 / 0.28), inset 0 1px 3px rgb(22 26 28 / 0.3)` | Mat off: the line where the photo or opening meets the moulding (§3.8) |
+| `inset-shadow-crop` | `inset 0 0 0 2px var(--color-accent), inset 0 0 0 3.5px var(--color-halo)` | Adjust mode: crop outline on the opening edge (§5.17) |
+
+**Inset shadows on a parent paint under its children.** A photo `<img>` inside the opening would cover the opening's own `inset-shadow-aperture`. Photo frames therefore draw the bevel, rebate and crop outline on a separate overlay `span` placed **after** the image (§3.8).
 
 **Performance rule:** never animate `box-shadow` during a drag. A frame renders `shadow-frame-rest` on itself, plus a sibling layer (`absolute inset-0`, same radius, `shadow-frame-lift`, `pointer-events-none`) whose **opacity** animates from 0 to 1 on lift. The nudge shadow works the same way.
 
 ### 2.6 Z-index (`z-*`)
 
-The stage is its own stacking context (`relative isolate overflow-hidden`): `wall 0` < `photo 1` < `grid 2` < `frames 10` < `frame-lifted 20` < `guides-live 25`. Snap guides exist only during a live drag and are **always** drawn at `z-guides-live`, above every frame including the dragged one, so a center guide stays visible (decided in the T5 review; the cost is that a guide may cross a resting frame's label for the length of the gesture). `z-guides` (5) is kept as a token but is unused.
+The stage is its own stacking context (`relative isolate overflow-hidden`): `wall 0` < `photo 1` < `grid 2` < `frames 10` < `adjust-veil 15` < `frame-lifted 20` < `guides-live 25`. In adjust mode (§5.17) the veil covers the stage and the frame being adjusted rides at `z-frame-lifted` above it. Snap guides exist only during a live drag and are **always** drawn at `z-guides-live`, above every frame including the dragged one, so a center guide stays visible (decided in the T5 review; the cost is that a guide may cross a resting frame's label for the length of the gesture). `z-guides` (5) is kept as a token but is unused.
 
 App level: `chrome 40` (bars, rails, dock, panels) < `float 50` (rotate hint) < `scrim 60` < `sheet 70` < `ghost 80` (drag ghost from the preview, portalled to `body`) < `dialog 85` < `toast 90`.
 
@@ -245,6 +260,9 @@ The outer element is `rounded-full` with no border. Its moulding is its own back
 | Snapped | Frame unchanged; laser guides light up (§5.12), plus haptic | Guide line |
 | Photo mode | `opacity-35`, `pointer-events-none`, no brackets | — |
 | Grid origin mode | Full opacity, no brackets (the selection is kept and its brackets return in Arrange) | — |
+| With photo, resting | Photo in the opening (mat on) or inside the moulding (mat off); **no size label** (§3.8) | The photo |
+| With photo, hover / selected / lifted | Label returns on the `label-plate` at the bottom of the opening | Plate shape |
+| Adjusting (§5.17) | `z-frame-lifted`, no scale, no tilt, rest shadow; brackets hidden; `inset-shadow-crop` on the opening; the photo's overflow shows at 0.45 over the `adjust-veil` | Crop outline, overflow, veil |
 
 None of these states tints the moulding, so no state depends on the finish. Brackets, focus outline and guides sit outside the moulding (on wall or photo), each with its own white underlay, so they hold ≥3:1 next to Black as well as Gallery white.
 
@@ -253,6 +271,64 @@ None of these states tints the moulding, so no state depends on the finish. Brac
 - An SVG child of the frame with `overflow-visible pointer-events-none`, at `left/top: −(t + 4)px` with size `(w + 8) × (h + 8)`; for circles `−4px`.
 - Four L-marks, arm `a = clamp(8, round(s × 0.2), 14)` px. Each is a 5.5px `halo` stroke with a 2.5px `accent` stroke on top, `stroke-linecap="square"` and `stroke-linejoin="miter"` so the marks match the square frames. The halo overlaps K's outer ring by about 1px, which keeps the marks attached to the frame.
 - They rotate and scale with the frame while it is dragged, because they are its children.
+- Hidden while the frame is being adjusted (§5.17); the crop outline takes their place.
+
+### 3.8 Frame with a photo
+
+A frame can hold one of the user's photos (`Shape.photo`) and has a per-frame **mat** switch (`Shape.mat`, on by default). The photo always **covers** its box (cropped, never letterboxed); `zoom` and `focusX`/`focusY` choose the crop (§5.17).
+
+```
+ MAT ON (default)                         MAT OFF
+ ┌──────────────────────────────┐         ┌──────────────────────────────┐
+ │▓▓▓▓▓▓▓▓▓ moulding t ▓▓▓▓▓▓▓▓▓│         │▓▓▓▓▓▓▓▓▓ moulding t ▓▓▓▓▓▓▓▓▓│
+ │▓┌──────────────────────────┐▓│         │▓┌──────────────────────────┐▓│ ◄ inset-shadow-rebate
+ │▓│ mat m                    │▓│         │▓│░░░░░░░░░░░░░░░░░░░░░░░░░░│▓│   (overlay span)
+ │▓│  ┌────────────────────┐  │▓│         │▓│░░░░░░░ photo, cover ░░░░░│▓│
+ │▓│  │░░░░ photo, cover ░░│  │▓│         │▓│░░░░░░░░░░░░░░░░░░░░░░░░░░│▓│
+ │▓│  │░░░░░░░░░░░░░░░░░░░░│  │▓│ ◄ inset-│▓│░░░░░░░░┌───────┐░░░░░░░░░│▓│
+ │▓│  │░░░░░┌───────┐░░░░░░│  │▓│  shadow-│▓│░░░░░░░░│40 × 50│░░░░░░░░░│▓│ ◄ label plate: only on
+ │▓│  │░░░░░│40 × 50│░░░░░░│  │▓│  aper-  │▓│░░░░░░░░└───────┘░░░░░░░░░│▓│   hover, selection, lift
+ │▓│  └─────┴───────┴──────┘  │▓│  ture   │▓└──────────────────────────┘▓│
+ │▓└──────────────────────────┘▓│ (overlay│▓▓▓▓▓▓▓▓▓ frame-bottom ▓▓▓▓▓▓▓│
+ │▓▓▓▓▓▓▓▓▓ frame-bottom ▓▓▓▓▓▓▓│  span)  └──────────────────────────────┘
+ └──────────────────────────────┘
+   opening = (w − 2t − 2m) × (h − 2t − 2m)    opening = (w − 2t) × (h − 2t)
+```
+
+**The opening box.** Mat on: the aperture, exactly as §3.1 (inside the mat's padding `m`; `m` may be 0 on small frames, §3.3). Mat off: the mat's padding becomes 0, so the opening fills everything inside the moulding. Circles: the same, inside the circular mat at `inset: t`, all layers `rounded-full`. **The mat switch also applies to frames without a photo:** mat off shows the `aperture` color filling the moulding, with the label as in §3.4.
+
+**DOM inside `div.mat`** (replaces the empty aperture for photo frames; plain frames keep §3.1 apart from the mat-off padding):
+```
+div.aperture  relative size-full overflow-hidden bg-aperture  (+ rounded-full on circles)
+├─ img        absolute max-w-none select-none pointer-events-none, alt="", draggable={false},
+│             decoding="async"; width/height/left/top in px from photoLayout(openingW, openingH, photo)
+└─ span       absolute inset-0 pointer-events-none (+ rounded-full)
+              mat on:  inset-shadow-aperture   mat off: inset-shadow-rebate
+              adjusting: inset-shadow-crop instead (§5.17)
+```
+- The `bg-aperture` fill shows while the image loads and if it fails to load, so a frame never looks empty or broken. The image fades in over `duration-quick` once decoded (reduced motion: no fade).
+- The frame root gains `data-has-photo="true|false"` and `data-mat="true|false"` next to `data-frame-color`.
+- No `inset-shadow-aperture` on `div.aperture` itself for photo frames; the overlay span carries it (§2.5 note).
+
+**Size label on photo frames.** The photo is the content, so the label **does not show at rest**. It returns, on a plate, whenever the frame is the focus of attention:
+
+| Frame state | Label |
+|---|---|
+| Resting, with photo | Not shown |
+| Hover (`can-hover:` only), selected, lifted (dragging), being duplicated while selected | Shown on the plate |
+| Adjusting (§5.17), Photo mode | Not rendered |
+| Photo still loading | Not shown (the opening shows `bg-aperture`) |
+| Photo failed to load (transient) or missing | Plain-frame rules (§3.4, centered, no plate) |
+
+- **Plate:** `absolute left-1/2 bottom-1 -translate-x-1/2 bg-label-plate px-1 py-px` (radius 0, square like the frames), text `text-on-inverse font-medium tabular-nums tracking-label whitespace-nowrap` in the tier's size and stretch (§3.4). It sits **4px above the opening's bottom edge**, centered. If the opening is shorter than 40px, or the frame is a circle, the plate is centered vertically instead (`top-1/2 -translate-y-1/2`, no `bottom-1`).
+- **Tier:** the same full / compact / hidden rule as §3.4, measured on the same box. A hidden tier means no plate at all.
+- **Showing:** the plate element is rendered whenever the tier allows it and the state is not "not rendered"; it is `opacity-0` at rest and `opacity-100` when selected, plus `can-hover:group-hover:opacity-100`, with `transition-opacity duration-quick` (reduced motion: no transition).
+- **Contrast:** `on-inverse` on the 80% graphite plate holds **7.6:1 over pure white** and more over anything darker, so the label reads on any photo.
+- **Plain frames** (no photo) keep the §3.4 label: centered on the opening, no plate, always shown.
+
+**Accessible name.** The frame's name gains a " with photo" suffix (one space, no comma): "Rectangle 40 × 50 cm with photo", "Square 40 × 40 cm with photo", "Circle Ø 40 cm with photo" (§8). The `<img>` has `alt=""`.
+
+**Unchanged.** Moulding, keylines, shadows, brackets, focus outline, lift, tilt, push, delete and duplicate motion all work exactly as on plain frames; the photo is just content inside the opening, so it rotates, scales and lifts with the frame. A duplicate shows the same photo immediately (same `imageId`, shared object URL).
 
 ---
 
@@ -304,7 +380,8 @@ Build the stacked shell unprefixed and then override. The root is `h-dvh`, and e
 - **Dock:** `bg-surface border-t border-line px-gutter pt-2 pb-[calc(8px+var(--spacing-safe-bottom))]`, `grid grid-rows-[56px_64px] gap-2`. From 640px the content is `max-w-[560px] mx-auto`.
 - **Frame creator state** (§5.1): row A holds the shape picker (132px), the preview (`flex-1`, 56px tall, 115px wide at 375px) and Undo/Redo; row B holds the size fields (`flex-1` each) and Generate (`self-end`, ≈88px). Square and circle have one field.
 - **Matrix control does not fit the 120px dock**, and adding a third row would cost the wall 72px in a layout that is already width-limited. On stacked shells it lives in the Settings sheet's Grid section (§5.6), one tap away.
-- **Selection state:** row A holds Duplicate and Delete (icon plus label) and Undo/Redo; row B holds Width, Height, X and Y (three fields for square and circle). Tapping empty wall or pressing Esc deselects.
+- **Selection state:** row A holds the **Size | Photo** tabs, Duplicate and Delete, then Undo/Redo at the end (the existing `pr-24` slot). Row B shows the selected tab: *Size* = Width, Height, X and Y (three fields for square and circle), *Photo* = the frame photo controls and the Mat switch (§4.7). Below 640px wide (`max-sm:`) Duplicate and Delete are icon-only (`aria-label` plus `title`), as in the landscape rail. Tapping empty wall or pressing Esc deselects.
+- **Adjust mode** (§5.17) replaces both rows with the adjust tools (§4.7); Undo/Redo stay.
 - Settings open as a bottom sheet (§5.6). Toasts sit bottom-center on the stage, 12px above the hint or dock.
 
 ### 4.3 Phone landscape (primary device)
@@ -332,7 +409,8 @@ Build the stacked shell unprefixed and then override. The root is `h-dvh`, and e
 - **Undo/Redo move to the right rail** (above Settings, `mt-auto` group), which frees 52px of the left rail for the creator. They stay visible in every mode; in Photo and Grid origin they are disabled because history covers frames only.
 - **Right rail:** `bg-surface border-l border-line px-1.5 pt-2.5 pr-[calc(6px+var(--spacing-safe-right))] pb-[calc(10px+var(--spacing-safe-bottom))]`. Mode switch at the top (3 × 52 = 156px), then the bottom group Undo, Redo, Settings (3 × 44 + 2 × 4 = 140px). Total 316px with padding, which fits 375px and the 21px home-indicator inset. **Below 340px tall** (`[@media(max-height:340px)]:`), the mode items shrink to `size-touch` icon-only (caption dropped, the name stays in `aria-label` plus `title`): 3 × 44 = 132px, total 292px. Below that the rail itself becomes `overflow-y-auto` with the order unchanged; nothing is hidden.
 - **Left-rail budget on a 375px-tall screen** (body 355px, or 334px with a 21px bottom inset): shape picker 44 + 8 + preview 88 + 8 + fields 64 + 8 + Generate 44 = **264px**; divider 21 (gap 8 + `border-t border-line` 1 + `pt-3` 12) + Show grid row 44 = **329px**. **Thresholds, stated honestly** (viewport height H, bottom inset i): the rail body is `H − 20 − i`. The whole Frame creator (264px) is visible without scrolling while `H ≥ 284 + i`; the Show grid switch too while `H ≥ 349 + i`. That covers 375px-tall phones (with or without the 21px inset) but not every window: with browser chrome or on 320px-tall devices, Show grid scrolls first, then the spacing fields, while the picker, preview, fields and Generate stay put down to 284px. Below `H = 284 + i` the preview drops to 56px (`[@media(max-height:305px)]:h-14`) so Generate stays reachable down to 252px; anything shorter is not a supported landscape size and the body simply scrolls. The grid spacing fields (8 + 64) follow: their labels peek at the bottom edge, and the body adds a 16px bottom fade (`mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent)`) only while more content sits below. **Trade-off, chosen explicitly:** spacing is set rarely, the switch often, so the switch gets the guaranteed slot and spacing costs one short scroll. Landscape windows at least 422px tall (or 443px with a 21px inset) show everything.
-- **Selection state** (replaces the rail body): a header row with the size readout (`text-caption ink-muted`) and a Deselect ×, Duplicate and Delete as icon buttons, then a 2×2 grid of Width/Height over X/Y. 264px, no scroll.
+- **Selection state** (replaces the rail body): a header row with the size readout (`text-caption ink-muted`) and a Deselect ×; an action row of three icon buttons, Duplicate, Delete and the **Mat** icon switch; a 2×2 grid of Width/Height over X/Y; then the **photo row** (§4.7): [Add photo] full width, or Replace, Adjust and Remove as three icons. v1's 264px plus 8 + 44 = **316px**, which fits the 334px body (375px tall with a 21px inset) with no scroll.
+- **Adjust mode** (§5.17) replaces the rail body with the adjust tools, Done pinned at the bottom like Photo tools (§4.7). The right rail's Undo/Redo stay **enabled** (adjusting is frame history).
 - **Stage:** on a 667px-wide screen the stage is 451px; a 300×250 wall at full height needs 422px.
 - **Settings:** a right side sheet, `w-sheet` plus the right safe area, over `scrim-light`, so the left part of the wall stays visible and changes preview live.
 - **Toasts:** bottom-center of the stage, `max-w-[360px]`.
@@ -365,8 +443,8 @@ Build the stacked shell unprefixed and then override. The root is `h-dvh`, and e
 - **Top bar:** `bg-surface border-b border-line`; wordmark left, horizontal mode switch centered, Undo/Redo right.
 - **Left sidebar** (`w-sidebar` 280px, `p-4`, content 248px, `overflow-y-auto overscroll-contain`): Frame creator above Matrix control, as in the sketch. The sidebar widens from 248 to 280px because the sketch gives the creator a real preview with the Height field beside it. At 1280px the stage is 680px (wall area 600px) instead of 712px. That costs the wall 5% of scale, and in exchange the creator is usable at a glance.
 - **Sidebar budget:** title 28 + 12 + picker 44 + 12 + preview row 152 + 8 + Width field 64 + 12 + Generate 44 = **376px**; Matrix control 24 + 28 + 12 + 64 + 8 + 44 = 180px. Everything fits from a 645px-tall viewport; below that, down to the 501px desktop minimum, the creator (376 + 32 padding + 56 bar = 464px) is still fully visible and only the Matrix control scrolls.
-- **Right panel:** always open, scrolls independently: Selected frame (only while selected), Wall, Grid (Snap to grid, Set origin), Photo, then Reset wall last in the scroll. **In Photo mode the panel's Photo section is not rendered**: the sidebar's Photo tools hold the same controls, and each accessible name ("Show photo", "Opacity", "Replace photo", "Remove photo") must appear once per screen.
-- **Narrow desktop (`desktop-narrow:`, 1024–1279px wide).** Two fixed panels (280 + 320) leave a 1024px window a 424px stage and a 344 × 287 wall: less than half the screen, against the sketch's ≈67% canvas. So below 1280px the right panel is not rendered. The top bar's right group becomes Undo, Redo, Settings (`size-touch` icon button, name "Settings"), which opens the landscape side sheet (§5.6: `w-sheet`, `rounded-l-sheet`, `scrim-light`, the same sections in the same order; no Matrix control, which stays in the sidebar). A selection replaces the sidebar's Frame creator with the Selected frame section (serif `text-title` "Selected frame", Duplicate and Delete with labels, Width/Height over X/Y), and deselecting brings the creator back, as on landscape. At 1024 × 768 the stage becomes 744px wide and the wall 664 × 553 (2.21 px/cm instead of 1.15).
+- **Right panel:** always open, scrolls independently: Selected frame (only while selected, now ending with its **Frame photo** group, §4.7), Wall (with the Wall color row, §5.18), Grid (Snap to grid, Set origin), Photo, then Reset wall last in the scroll. **In Photo mode the panel's Photo section is not rendered**: the sidebar's Photo tools hold the same controls, and each accessible name ("Show photo", "Opacity", "Replace photo", "Remove photo") must appear once per screen.
+- **Narrow desktop (`desktop-narrow:`, 1024–1279px wide).** Two fixed panels (280 + 320) leave a 1024px window a 424px stage and a 344 × 287 wall: less than half the screen, against the sketch's ≈67% canvas. So below 1280px the right panel is not rendered. The top bar's right group becomes Undo, Redo, Settings (`size-touch` icon button, name "Settings"), which opens the landscape side sheet (§5.6: `w-sheet`, `rounded-l-sheet`, `scrim-light`, the same sections in the same order; no Matrix control, which stays in the sidebar). A selection replaces the sidebar's Frame creator with the Selected frame section (serif `text-title` "Selected frame", Duplicate and Delete with labels, Width/Height over X/Y, then the Frame photo group exactly as on wide desktop, §4.7), and deselecting brings the creator back, as on landscape. At 1024 × 768 the stage becomes 744px wide and the wall 664 × 553 (2.21 px/cm instead of 1.15).
 - **Stage:** wall dimensions sit in the stage padding (§5.13), toasts at the bottom-center.
 
 ### 4.5 Placement summary
@@ -383,6 +461,9 @@ Build the stacked shell unprefixed and then override. The root is `h-dvh`, and e
 | Undo / Redo | Dock row A, right end | **Right rail, above Settings** | Top bar, right |
 | Settings entry | Top bar, right | Right rail, bottom | None (panel always open); top bar right on narrow desktop |
 | Selection bar | Replaces dock rows A and B | Replaces the left-rail body | Right panel, first section |
+| Frame photo controls, Mat | Dock row B, **Photo** tab | Mat in the action row; photo row under the fields | "Frame photo" group at the end of Selected frame |
+| Adjust tools (hint, Zoom, Done) | Replace dock rows A and B (Undo/Redo stay) | Replace the left-rail body, Done pinned | Replace the Frame photo group |
+| Wall color | Settings sheet, Wall section | Side sheet, Wall section | Right panel, Wall section (narrow: side sheet) |
 | Toasts | Stage bottom, above hint and dock | Stage bottom-center | Stage bottom-center |
 | Rotate hint | Stage bottom (`phone-portrait:` only) | — | — |
 
@@ -415,11 +496,83 @@ STACKED DOCK (rows 56 + 64)                              LANDSCAPE RAIL (132 wid
 - **Desktop sidebar:** a serif `text-title` heading ("Photo" or "Grid origin"), then the same controls with full labels; Photo adds a "Show photo" switch row and "Remove photo" (quiet danger).
 - **Touch.** The wall is `touch-none` in every mode. In Photo mode the whole stage is `touch-none` (pan and pinch may start anywhere on the photo).
 
+### 4.7 Frame photo controls and adjust tools
+
+Everything here belongs to the **selected frame** and lives inside the existing Selected frame section (`<section aria-label="Selected frame">`), within the budgets of §4.2–4.4. The wall photo's controls (§4.6) are a different thing with different names (§8), so both can be on screen at once on desktop.
+
+| Control | Kind | Visible text | Accessible name | Shown |
+|---|---|---|---|---|
+| Add photo | Secondary button, `image-add` icon; hidden `<input type="file" accept="image/*">` | "Add photo" | **"Add photo to frame"** | Frame has no photo |
+| Replace | Secondary button, `upload` icon; same hidden input | "Replace" (icon-only where noted) | **"Replace frame photo"** | Frame has a photo |
+| Adjust | Secondary button, `crop` icon | "Adjust" (icon-only in the landscape rail) | **"Adjust frame photo"** | Frame has a photo |
+| Remove | Secondary danger (stacked), danger icon (landscape) or quiet danger (desktop), `trash` icon | "Remove" (icon-only where noted) | **"Remove frame photo"** | Frame has a photo |
+| Mat | `role="switch"` with `aria-checked`: a Toggle row (§5.8), or an icon switch in the landscape rail (`mat` / `mat-off`, the icon is the non-color cue, like Show photo) | "Mat" | **"Mat"** | Always, photo or not |
+| Size / Photo tabs | `role="tablist"` / `role="tab"` (stacked only) | "Size", "Photo" | tablist **"Frame details"**, tabs **"Size"**, **"Photo"** | Stacked selection |
+
+- Every visible text is the start of its accessible name, so label-in-name holds (WCAG 2.5.3), and no frame-photo name contains a wall-photo name ("Upload photo", "Replace photo", "Remove photo", "Adjust photo"), so substring matching in tests can't confuse them.
+- **Upload busy state:** the same pattern as the wall photo's upload (§4.6): while decoding and saving, the Add/Replace button has `aria-busy="true"`, ignores presses and keeps its label. Add and Replace occupy the same slot, so focus stays put when one becomes the other.
+- **Remove has no confirm dialog**: it is one undo step (Ctrl+Z or Undo restores it). After Remove, focus moves to Add photo, which takes the same slot. The live region says "Photo removed".
+- **Add / Replace:** the live region says "Photo added" / "Photo replaced". The frame stays selected; adjust mode is **not** entered automatically (the default centered cover crop is usually right).
+
+**Stacked dock (rows 56 + 64; 375px wide → content 351px, Undo/Redo keep 96px at the end of row A):**
+
+```
+ Size tab     │ (Size|Photo) [⧉][🗑]                         [↶][↷] │ row A: tabs 114 + 8 + 44 + 8 + 44 = 218 ≤ 255
+              │ Width      Height     X          Y                 │ row B: fields as §4.2
+ Photo tab,   │ (Size|Photo) [⧉][🗑]                         [↶][↷] │
+ no photo     │ [⊞ Add photo]                         Mat ( ●)    │ row B: items-end, Mat ml-auto
+ Photo tab,   │ (Size|Photo) [⧉][🗑]                         [↶][↷] │
+ with photo   │ [⌗ Adjust] [⇪] [🗑]                    Mat ( ●)    │ 94 + 44 + 44 + 76 + 3×8 = 282 ≤ 296 (320px phones)
+ Adjusting    │ Drag the photo to move it.      [Done]       [↶][↷] │ row A: hint flex-1, Done primary
+              │ Zoom  ─────────●──────────────────────   150%     │ row B: items-center
+```
+- **Tabs:** built like the horizontal segmented control (§5.3): track `h-touch rounded-pill bg-surface-sunken`, tabs `relative h-touch px-3 rounded-pill text-ui`, raised thumb on the selected tab (`layoutId`, `sheet` spring). `aria-selected`, `aria-controls` pointing at row B (`role="tabpanel"`, labelled by the selected tab). Arrow keys move and activate (automatic activation); Tab lands on the selected tab. **Below 360px wide** (`max-[359px]:`) the tabs are icon-only `size-touch` (`ruler` for Size, `image` for Photo; names from `aria-label`), 88px, so row A still fits 200px.
+- **Tab state** is session UI state (not persisted, not undoable), default **Size**, and it is kept across selections so a user dressing several frames stays on Photo. It resets to Size on reload.
+- **Row B, Photo tab:** `flex items-end gap-2` so the 44px controls line up with the field inputs of the Size tab. Below 640px (`max-sm:`) Replace and Remove are icon-only (`w-touch px-0`, `aria-label` plus `title`); Adjust always keeps its label. Mat is a compact Toggle row (`h-touch`, "Mat" in `text-ui` + 8px + the 44×26 switch, ≈76px, the whole row is the button) pinned with `ml-auto`, in the same spot in both states.
+- **Duplicate and Delete** are icon-only below 640px (`SECONDARY_BUTTON`/`SECONDARY_DANGER_BUTTON` with `w-touch px-0`); from 640px all labels show (row A 334px of 464px, row B with photo 394px of 560px).
+
+**Landscape rail (132px content, body 334–355px):**
+
+```
+ Selected, no photo        Selected, with photo        Adjusting
+ │ 40 × 50 cm        [✕] │ │ 40 × 50 cm        [✕] │   │ Drag the photo to move   │ hint, text-caption
+ │ [⧉]   [🗑]   [▣]      │ │ [⧉]   [🗑]   [▣]      │   │ it. Pinch to zoom.       │ ink-muted
+ │ Width       Height    │ │ Width       Height    │   │ Zoom              150%   │ label + readout
+ │ [40 cm]    [50 cm]    │ │ [40 cm]    [50 cm]    │   │ ─────────●────────────   │ slider (44)
+ │ X           Y         │ │ X           Y         │   │                          │
+ │ [20 cm]    [35 cm]    │ │ [20 cm]    [35 cm]    │   │                          │
+ │ [⊞   Add photo     ]  │ │ [⇪]   [⌗]   [🗑]      │   │ [         Done        ]  │ ◄ pinned, primary
+```
+- **Action row:** `grid grid-cols-3`, no gap, three borderless 44px icon buttons (`ICON_BUTTON`): Duplicate, Delete (`DANGER_ICON_BUTTON`), Mat (icon switch, `mat` when on, `mat-off` plus `text-ink-muted` when off). This replaces v1's two bordered 62px buttons, matching the Photo tools icon row.
+- **Photo row:** no photo: [Add photo] `SECONDARY_BUTTON w-full` with icon and label (114px). With photo: `grid grid-cols-3` icon buttons Replace (`upload`), Adjust (`crop`), Remove (`DANGER_ICON_BUTTON`, `trash`), each `aria-label` plus `title`.
+- **Adjust tools:** the rail body becomes hint (≤ 3 lines, 48px) + 8 + Zoom label row (20) + slider (44), and Done is pinned at the bottom (`w-full`, primary) exactly like Photo tools. ≈ 172px.
+
+**Desktop: right panel, and the narrow-desktop sidebar (content 288 / 248px):**
+
+```
+ Selected frame                    serif text-title
+ [⧉ Duplicate]  [🗑 Delete]
+ Width [40 cm]   Height [50 cm]
+ X     [20 cm]   Y      [35 cm]
+ ───────────────────────────────── mt-4 pt-3 border-t border-line
+ Frame photo                       text-ui font-medium ink; role="group" aria-labelledby this line
+ no photo:   [⊞ Add photo                ]   secondary w-full
+ with photo: [⌗ Adjust]   [⇪ Replace]        grid grid-cols-2 gap-2, secondary
+ Mat                          ( ●)           Toggle row (§5.8)
+ with photo: [🗑 Remove]                      quiet danger, self-start (-ml-3.5 so the icon aligns)
+ adjusting:  Drag the photo to move it, or use the arrow keys.   text-caption ink-muted
+             Zoom                    150%    label + readout
+             ──────────●──────────────────   slider
+             [            Done           ]   primary w-full
+```
+- The Frame photo group adds 20 + 8 + 44 + 8 + 44 + 8 + 44 ≈ 176px to Selected frame; the right panel scrolls independently, as before. In the narrow-desktop sidebar the creator is already replaced, so the section has room.
+- While adjusting, the rest of Selected frame (Duplicate, Delete, fields) stays visible and enabled; if the frame is deleted or loses its photo, adjust mode ends (§5.17).
+
 ---
 
 ## 5. Components
 
-Every interactive control is at least 44×44px, and every hover style is wrapped in `can-hover:`. Icons are 20px in icon buttons and 18px next to text, on a 24-unit viewBox with a 1.75 `currentColor` stroke. The set: `undo`, `redo`, `settings` (two sliders), `arrange`, `photo`, `origin`, `duplicate`, `trash`, `close`, `rotate`, `upload`, `eye`, `eye-off`, `alert`, `info`, `check`, and the shape glyphs `shape-rect` (a 12×16 portrait rectangle), `shape-square` (14×14) and `shape-circle` (⌀15), each a double outline (frame plus opening) with **square** joins on rect and square.
+Every interactive control is at least 44×44px, and every hover style is wrapped in `can-hover:`. Icons are 20px in icon buttons and 18px next to text, on a 24-unit viewBox with a 1.75 `currentColor` stroke. The set: `undo`, `redo`, `settings` (two sliders), `arrange`, `photo`, `origin`, `duplicate`, `trash`, `close`, `rotate`, `upload`, `eye`, `eye-off`, `alert`, `info`, `check`, plus for frame photos and wall color: `image` (a landscape rectangle with a small peak and sun), `image-add` (`image` with a plus at its lower right), `crop` (two interlocking L-brackets, square ends), `mat` (a square outline with a second square inset 4 units: frame plus mat), `mat-off` (a square outline with a solid-stroke square inset 1.5 units: the photo to the edge), `ruler` (a horizontal bar with four ticks) and `dropper` (an eyedropper, 45°); and the shape glyphs `shape-rect` (a 12×16 portrait rectangle), `shape-square` (14×14) and `shape-circle` (⌀15), each a double outline (frame plus opening) with **square** joins on rect and square.
 
 ### 5.1 Frame creator
 
@@ -483,6 +636,7 @@ Width                ◄ text-caption ink-muted, 4px gap
 
 - **Order:** Duplicate (secondary, `duplicate` icon), Delete (secondary, `trash`, `text-danger`), then Width, Height, X, Y (rect); Side, X, Y (square); Diameter, X, Y (circle). Edits commit through the store's single commit path, push-apart included.
 - **Landscape** adds a header (size readout plus Deselect ×) and makes Duplicate and Delete icon-only.
+- **Frame photo controls and Mat** follow the fields on every shell, placed per §4.7 (stacked: behind the Photo tab). In adjust mode the shell's photo controls give way to the adjust tools (§5.17).
 - Wrap it in `<section aria-label="Selected frame">`; on desktop it and the Frame creator both have "Width (cm)", and the sections tell them apart.
 
 ### 5.5 Buttons
@@ -507,6 +661,8 @@ All buttons are `h-touch px-3.5 rounded-control text-ui font-medium`, 6px icon g
 │ Wall                                 │ ┐ BODY: flex-1 min-h-0 overflow-y-auto
 │ Width [300 cm]   Height [250 cm]     │ │ overscroll-contain touch-pan-y; names "Wall width/height (cm)"
 │ Push gap [3 cm]                      │ │ helper: text-caption ink-muted
+│ Wall color               Pale sage   │ │ ┐ Wall color row (§5.18)
+│ [■][■][■][■][■][■][■][■][✎ Custom]   │ │ ┘ wraps to two rows where narrow
 │ Grid                                 │ │ section titles: text-lead serif
 │ Show grid                    ( ●)    │ │ ┐ STACKED ONLY: the Matrix control
 │ Height [10 cm]   Width [10 cm]       │ │ ┘ (§5.16), absent on landscape and desktop
@@ -559,15 +715,15 @@ All buttons are `h-touch px-3.5 rounded-control text-ui font-medium`, 6px icon g
 
 ### 5.13 Grid lines, origin and wall dimensions
 
-- **Grid:** an SVG `<pattern>` of 1px `grid` lines (`shape-rendering="crispEdges"`) every Grid width (X) and Grid height (Y) cm, offset so a line passes through the origin. Over a visible photo each line gets a 3px `grid-halo` underlay. The two origin lines use `grid-origin`. Hidden entirely while Show grid is off.
-- **Origin marker:** a 14px crosshair, 2.5px `accent` over 5.5px `halo`; in Grid origin mode 20px with a 4px center dot and a `crosshair` cursor. A tap sets the origin and plays one ring pulse (0.6→1.6 scale, fading over 320ms; skipped under reduced motion).
-- **Dimensions (desktop only):** "300 cm" 20px above the top edge and "250 cm" rotated −90° 20px left of the left edge (clear of the 14px origin crosshair at the corner), `text-caption ink-muted tabular-nums font-stretch-semi-condensed`, on a 1px `ink-muted/40` line with 6px end ticks.
+- **Grid:** an SVG `<pattern>` of 1px `grid` lines (`shape-rendering="crispEdges"`) every Grid width (X) and Grid height (Y) cm, offset so a line passes through the origin. Over a visible photo each line gets a 3px `grid-halo` underlay. The two origin lines use `grid-origin`. Hidden entirely while Show grid is off. `grid` and `grid-origin` switch with the wall tone (§5.19) through the CSS variables alone; the utilities stay `stroke-grid` / `stroke-grid-origin`.
+- **Origin marker:** a 14px crosshair, 2.5px `origin-mark` over 5.5px `origin-mark-halo` (was `accent` over `halo`; the light-wall values are identical, so nothing changes on the default wall), center dot and set-pulse ring in `origin-mark` too; in Grid origin mode 20px with a 4px center dot and a `crosshair` cursor. A tap sets the origin and plays one ring pulse (0.6→1.6 scale, fading over 320ms; skipped under reduced motion).
+- **Dimensions (desktop only):** "300 cm" 20px above the top edge and "250 cm" rotated −90° 20px left of the left edge (clear of the 14px origin crosshair at the corner), `text-caption ink-muted tabular-nums font-stretch-semi-condensed`, on a 1px `ink-muted/40` line with 6px end ticks. **They sit on the stage, not on the wall**, so they keep these values on every wall color (both tone sets in §5.19 leave them unchanged).
 
 ### 5.14 Wall surface and edge
 
-- **Wall:** `bg-wall shadow-wall`, no texture. In Arrange mode a photo is clipped to the wall at the user's opacity.
+- **Wall:** `bg-wall-paint shadow-wall`, no texture, with `style={{ "--color-wall-paint": wall.color }}` and `data-wall-tone` (§5.19) on the same element. `transition-colors duration-base ease-in-out-soft` so a new paint washes in (reduced motion: `duration-reduced`). In Arrange mode a photo is clipped to the wall at the user's opacity, above the paint.
 - **Photo mode:** the photo extends past the wall, the outside veiled with `photo-dim` (e.g. `box-shadow: 0 0 0 100vmax var(--color-photo-dim)` on a wall-sized element); the wall edge is a 1px `ink` line plus a 1px outer `halo`; cursor `move`.
-- **Empty wall:** centered serif `text-lead ink-muted`, `max-w-[24ch] text-balance pointer-events-none`: "Drag a frame onto the wall, or tap the preview to add one." ("click" under `can-hover:`).
+- **Empty wall:** centered serif `text-placard text-wall-ink`, `max-w-[22ch] text-balance pointer-events-none` (24px large text; `wall-ink` follows the wall tone, §5.19): "Drag a frame onto the wall, or tap the preview to add one." ("click" under `can-hover:`).
 
 ### 5.15 Drag ghost (preview to wall)
 
@@ -589,6 +745,124 @@ All buttons are `h-touch px-3.5 rounded-control text-ui font-medium`, 6px icon g
 - **Show grid** hides or shows the grid lines and origin lines. While off, Snap to grid (in Settings) is disabled, as before.
 - **Order per shell.** Desktop: title, fields, switch (the sketch's order: fields, then the on/off control). Landscape rail: switch first, then fields, so the frequently used switch always sits above the fold (§4.3). Stacked: inside the Settings Grid section, switch first, then fields (§5.6).
 - Not undoable (grid settings are not frames), consistent with the rest of Settings.
+
+### 5.17 Adjust mode (frame photo crop)
+
+A sub-state of Arrange for the selected frame, held as UI state `adjustingId` (not persisted). Entered only with **Adjust** ("Adjust frame photo") on a selected frame that has a photo. The idea: the frame stays on its nail, the room dims, and you see the whole photo behind the opening so you know what you are cropping.
+
+```
+ stage (the veil reaches past the wall, clipped by the stage)
+ ┌──────────────────────────────────────────────────────┐
+ │▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ adjust-veil ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│ other frames sit under the veil
+ │▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│ ◄ overflow: the rest of the zoomed
+ │▒▒▒▒▒▒░░░░░░┌──────────────────┐░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│   image at 0.45, under the moulding
+ │▒▒▒▒▒▒░░░░░░│▓▓▓▓ moulding ▓▓▓▓│░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│
+ │▒▒▒▒▒▒░░░░░░│▓┌──── mat ─────┐▓│░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│
+ │▒▒▒▒▒▒░░░░░░│▓│ ┏━━━━━━━━━━┓ │▓│░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│ ◄ crop outline: inset-shadow-crop
+ │▒▒▒▒▒▒░░░░░░│▓│ ┃  photo   ┃ │▓│░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│   (2px accent + 1.5px halo inside)
+ │▒▒▒▒▒▒░░░░░░│▓│ ┗━━━━━━━━━━┛ │▓│░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│
+ │▒▒▒▒▒▒░░░░░░│▓└──────────────┘▓│░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│
+ │▒▒▒▒▒▒░░░░░░└──────────────────┘░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│ frame: z-frame-lifted, no scale,
+ │▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│ no tilt, rest shadow, no brackets
+ └──────────────────────────────────────────────────────┘
+```
+
+**Layers.**
+- **Veil:** a child of the wall element (the wall is its own stacking context and holds the frames), `absolute inset-[-100vmax] z-adjust-veil bg-adjust-veil`, clipped by the stage's `overflow-hidden`. It takes all pointer input outside the adjusted frame, so other frames are not interactive until adjust mode ends.
+- **The adjusted frame** switches to `z-frame-lifted` (above the veil) without lifting: scale 1, rotation 0, `shadow-frame-rest`, brackets hidden, label plate not rendered.
+- **Overflow image:** inside the frame root, **before** the frame body in DOM order (so moulding and mat paint over it): a `pointer-events-none` box at the opening's offset holding a second `<img>` (same object URL, `alt=""`) at the same `photoLayout` size and position, **not clipped**, at opacity `adjustOverflowOpacity` (0.45). Through the opening the full-opacity photo shows; around the frame the faint rest of the picture shows what is cropped away.
+- **Crop outline:** the opening's overlay span (§3.8) uses `inset-shadow-crop` instead of the bevel or rebate.
+
+**Input.**
+
+| Input | Effect | Commit |
+|---|---|---|
+| Drag starting on the frame **or on the veil** (past `dragStartPx`) | Pans the photo 1:1 with the finger (the image follows the pointer). Live through motion values; past the no-empty-band clamp it rubber-bands (§6.2 curve, in image px) and springs back on `settle` at release | One `adjustFramePhoto` on release |
+| Tap (no drag) inside the frame | Centers the tapped image point in the opening (clamped), animating on `settle`. This is the single-pointer alternative to dragging (WCAG 2.5.7) | One step |
+| Tap (no drag) on the veil | Exits adjust mode (does **not** deselect) | — |
+| Pinch (two touches anywhere on the stage) | Zooms about the pinch midpoint: the image point under the midpoint stays put, so focus shifts with it. Hard clamp to zoom 1–4, no rubber band | One step on release |
+| Zoom slider | Zooms about the opening's center (focus unchanged, then re-clamped). 100–400%, step 1% (`zoom` 1–4, step 0.01), readout `round(zoom × 100)%` | One step on release (`pointerup` / `change`; keyboard: each key) |
+| Arrow keys (focus on the frame) | Pan focus by 0.02 (Shift: 0.1) of the image in that direction, clamped | One step per key press, like the v1 nudge |
+| `+` / `=` and `-` (focus on the frame) | Zoom by ±0.1, clamped 1–4 | One step per key press |
+| Esc, or Done | Exits adjust mode | — |
+
+Exits also happen, with no extra step, when the mode changes, the selection is cleared or changes, the frame is deleted, or the frame no longer has a photo (for example after Undo). While adjusting, the frame cannot be dragged and Delete/Backspace on the frame does nothing (Esc first); Undo and Redo still work.
+
+**Focus.** Entering moves focus to the frame (its `role="button"`), so the arrow keys work at once; the Zoom slider and Done follow in the panel's tab order. Done returns focus to Adjust ("Adjust frame photo"); Esc leaves focus on the frame. The live region says **"Adjusting photo. Drag or use the arrow keys to move it, Escape to finish."** on entry.
+
+**Cursor and touch hints.** Fine pointers: `cursor-grab` on the frame and the veil, `cursor-grabbing` while a pan is live. The panel hint (`text-caption text-ink-muted`) is chosen by CSS, like the empty-wall line: coarse **"Drag the photo to move it. Pinch to zoom."**, fine (`can-hover:`) **"Drag the photo to move it, or use the arrow keys."** No hint floats over the wall. The whole stage is `touch-none` while adjusting (as in Photo mode), so a pan or pinch can start anywhere.
+
+**Tools** per shell: §4.7 (hint, Zoom slider §5.7, Done primary).
+
+### 5.18 Wall color row (Settings → Wall)
+
+Paint for the wall, for when no wall photo is used. It sits at the end of the Wall section, after the Push gap helper, on every shell (bottom sheet, side sheet, desktop right panel). Not undoable; Reset wall restores Gallery white.
+
+```
+ Wall color                         Pale sage   ◄ text-ui ink label (id = group label) / text-ui ink-muted
+ ┌────┐┌────┐┌────┐┌────┐   ┌──────────┐            current name, or "Custom #8a6f5c"
+ │    ││    ││    ││ ✓  │   │    ✎     │        ◄ 4 × 2 radiogroup of 44px cells (36px chips),
+ └────┘└────┘└────┘└────┘   │  Custom  │          gap-1; then a 92 × 88 Custom tile, gap-3
+ ┌────┐┌────┐┌────┐┌────┐   │          │          188 + 12 + 88 = 288px: fits the 288px desktop panel,
+ │    ││    ││    ││    │   └──────────┘          the 328px side sheet and a 320px phone's sheet
+ └────┘└────┘└────┘└────┘
+```
+
+**Swatches** (light to dark; order = grid order, row by row). Values live as data in `lib/wallColor.ts` (`WALL_SWATCHES: { name, hex }[]`, `DEFAULT_WALL_COLOR = "#f4f5f1"`), because the store keeps a hex; the chips paint with inline `style={{ backgroundColor: hex }}`. This is the one documented exception to "tokens only", same as the persisted `wall.color` itself.
+
+| # | Name (radio name) | Hex | Relative luminance | Tone | Wall ink contrast |
+|---|---|---|---|---|---|
+| 1 | Gallery white (default) | `#f4f5f1` | 0.909 | light | 14.6 |
+| 2 | Warm linen | `#ebe3d3` | 0.773 | light | 12.6 |
+| 3 | Plaster pink | `#e6cdc1` | 0.643 | light | 10.6 |
+| 4 | Pale sage | `#d3dbcb` | 0.688 | light | 11.3 |
+| 5 | Mist blue | `#cdd7dd` | 0.668 | light | 11.0 |
+| 6 | Stone | `#a9a79f` | 0.386 | light | 6.7 |
+| 7 | Forest green | `#2f4a3f` | 0.059 | dark | 8.7 |
+| 8 | Charcoal | `#34383b` | 0.039 | dark | 10.7 |
+
+No saturated blues (the accent stays the only strong blue) and no terracotta. Every swatch keeps the selection accent readable through the brackets' white halo, and the frame keylines K hold ≥3.3:1 on all of them (§3.2).
+
+**Radiogroup.** `role="radiogroup"` `aria-labelledby` the "Wall color" label; `grid grid-cols-[repeat(4,44px)] gap-1`. Each item is a `button role="radio" aria-checked` (`size-touch rounded-control`, `aria-label` and `title` = the name) with a centered 36px chip `size-9 rounded-[8px]` painted the swatch's hex.
+- **Unchecked:** chip `ring-1 ring-inset ring-swatch-edge` (so Gallery white shows on the white sheet); hover (`can-hover:`) the ring becomes `ring-line-strong`.
+- **Checked:** chip `ring-2 ring-accent ring-offset-1 ring-offset-surface` **plus an 18px `check` icon** centered, `text-ink` on light swatches and `text-on-inverse` on dark ones (`isLightColor`). The check is the non-color cue.
+- **Focus-visible:** the global 2px `focus` outline on the 44px cell, `outline-offset-0` (outside the checked ring, so both read).
+- Roving tabindex; arrow keys move **and select** (each selection commits `setWall({ color })` at once). When the wall color matches no swatch (case-insensitive), no radio is checked and Tab lands on the first.
+
+**Custom tile.** A `<label>` styled as a tile, `relative grid h-[92px] w-[88px] place-content-center justify-items-center gap-1 rounded-control border-[1.5px] border-dashed border-line-strong bg-surface text-ink`: a 20px `dropper` icon over the text "Custom" (`text-ui font-medium`). Inside it, the native `<input type="color">` covers the tile (`absolute inset-0 size-full opacity-0 cursor-pointer`), so a tap lands on the real input on every browser; the label text gives it the name **"Custom"**. Its `value` is the current `wall.color`.
+- **Active** (the color matches no swatch): `border-solid` and the tile is painted the custom color (inline `backgroundColor`), with `ring-2 ring-accent ring-offset-1 ring-offset-surface`, the `check` icon replacing `dropper`, and the icon and text in `text-ink` / `text-on-inverse` by `isLightColor`.
+- **Focus-visible:** `has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-focus has-[:focus-visible]:outline-offset-2` on the tile (the input itself is invisible).
+- **Commit:** the input's `input` events preview live (the wall's `--color-wall-paint` and tone update from a transient UI value, not the store); its `change` event commits `setWall({ color })` once. Values are already `#rrggbb` lowercase from the native input.
+
+**Readout** (right side of the label row, `text-ui text-ink-muted`): the checked swatch's name, or "Custom #8a6f5c" (lowercase hex). It is plain text, not a live region.
+
+### 5.19 Wall tone (light and dark on-wall sets)
+
+**Rule.** `isLightColor(hex)` computes WCAG relative luminance: each sRGB channel `c = v / 255`, linearized as `c ≤ 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ^ 2.4`, then `L = 0.2126 R + 0.7152 G + 0.0722 B`. **`L ≥ 0.2` is light.** The wall element gets:
+
+```
+data-wall-tone = (wall photo shown in Arrange with opacity ≥ 0.5) ? "light"
+               : isLightColor(wall.color) ? "light" : "dark"
+```
+
+A mostly opaque photo forces the light set because grid lines over a photo already carry their `grid-halo` (§5.13), which is designed for the light set. In Photo mode the same rule applies.
+
+**Why 0.2.** It is the luminance where `ink` (`#1e2225`) and `on-inverse` (`#f2f4f0`) have equal contrast with the wall (L ≈ 0.199). On either side the chosen ink is the stronger of the two, so the worst case for any custom color is **3.8:1, right at the threshold**. The empty-wall line is 24px (`text-placard`, large text), which needs 3:1, so it passes AA on every possible wall color. All eight swatches are far from the threshold (6.7:1 and up).
+
+**The two sets** (defined in `globals.css`: light on `:root`, dark under `[data-wall-tone="dark"]`):
+
+| Token | Light-wall set | Dark-wall set | Used by |
+|---|---|---|---|
+| `wall-ink` | `#1e2225` | `on-inverse` `#f2f4f0` | Empty-wall line |
+| `grid` | `rgb(30 34 37 / .16)` | `rgb(242 244 240 / .2)` | Grid lines (quiet by design in both) |
+| `grid-origin` | `rgb(43 63 203 / .5)` | `rgb(174 184 255 / .62)` | The two origin lines |
+| `origin-mark` | `accent` `#2b3fcb` | `accent-on-inverse` `#aeb8ff` | Origin crosshair core, center dot, set pulse |
+| `origin-mark-halo` | `rgb(255 255 255 / .92)` | `rgb(20 23 25 / .88)` | Origin crosshair underlay (core vs halo 7.9 / 8.3:1) |
+| Dimension text and line | `ink-muted`, `ink-muted/40` | unchanged | They sit on the stage, not the wall (§5.13) |
+
+**Not switched, on purpose.** Selection brackets (accent over a white halo), the snap guide (white rim in `shadow-laser`), frame keylines K, the label plate and the wall edge already work on any background. The Frame creator's preview box stays `bg-wall` (gallery white): it shows the frame, not the room.
+
+**Motion.** Tone changes swap the variables instantly; the wall paint itself transitions over `duration-base` (§5.14).
 
 ---
 
@@ -627,6 +901,9 @@ All springs use motion's `{ type: "spring", stiffness, damping, mass }`; during 
 | `ghostTouchLiftPx` / `ghostOffWallOpacity` | 12 / 0.6 | |
 | `popInFromScale` / `removeToScale` / `generateFromScale` | 0.6 / 0.85 / 0.92 | `generateFromScale` is new |
 | `guideFadeInMs` / `guideFadeOutMs` / `photoModeFrameOpacity` / `toastMs` | 60 / 120 / 0.35 / 5000 | |
+| `adjustOverflowOpacity` | 0.45 | Overflow image in adjust mode (§5.17) |
+| `photoZoomMin` / `photoZoomMax` / `photoZoomStep` | 1 / 4 / 0.01 | Zoom slider; keyboard `+`/`-` use 0.1 |
+| `photoPanKeyStep` / `photoPanKeyStepLarge` | 0.02 / 0.1 | Focus change per arrow key / with Shift |
 
 ### 6.3 Choreography
 
@@ -641,7 +918,13 @@ All springs use motion's `{ type: "spring", stiffness, damping, mass }`; during 
 - **Color roll after an add.** The preview frame cross-fades to the new color over `duration-quick` with no scale, so the eye reads "next frame, new finish" without the box jumping.
 - **Pop-in (tap to add).** The frame appears at its free spot, scaling from `popInFromScale` to 1 on `popIn` while fading in over 120ms; the lift layer fades 1→0, as if it is being placed against the wall.
 - **Delete.** Shrink to `removeToScale` on `remove` and fade over 140ms, then unmount. The context panel cross-fades back to the Frame creator.
-- **Duplicate.** The copy (same color) mounts over the original at `liftScale` with the lift layer, springs to its free spot on `duplicate` and settles to 1. It becomes selected, so repeated Duplicates walk copies across the wall.
+- **Duplicate.** The copy (same color) mounts over the original at `liftScale` with the lift layer, springs to its free spot on `duplicate` and settles to 1. It becomes selected, so repeated Duplicates walk copies across the wall. A photo frame's copy carries the same photo from its first frame (shared object URL, no reload flash).
+- **Photo arrives.** After Add or Replace, the new image fades in over `duration-quick` inside the opening; the frame itself does not move or pulse. Remove is instant (the opening shows `bg-aperture`), since Undo is the safety net.
+- **Mat switch.** Instant swap, like a size edit: the opening jumps between the aperture and the full inner box. No animation, because the photo's layout depends on the opening size and a tween would re-crop on every frame.
+- **Enter adjust.** The veil and the overflow image fade in over `duration-base` `ease-out-soft` (veil 0→1, overflow 0→`adjustOverflowOpacity`); brackets and plate disappear at once; the frame rises to `z-frame-lifted` at once without scaling. **Exit:** both fade out over `duration-quick` `ease-in-soft`, and the frame drops back to `z-frames` when the fade ends.
+- **Pan.** The image tracks the pointer 1:1. Past the clamp it follows the rubber-band curve (§6.2, in image px per axis) and returns on `settle` at release, the same feel as a frame at the wall edge. **Tap to center** and keyboard pans animate the focus on `settle`.
+- **Zoom.** Slider and pinch are live and unsprung (the finger or thumb is the spring). The zoom clamps hard at 100% and 400%.
+- **Wall paint.** The wall's background color transitions over `duration-base` `ease-in-out-soft`; the tone variables swap instantly.
 
 ### 6.4 Reduced motion (`useReducedMotion()` is true)
 
@@ -657,6 +940,10 @@ All springs use motion's `{ type: "spring", stiffness, damping, mass }`; during 
 | Sheet / toast | 200ms tween / 160ms fade |
 | Snap guide, haptic | Unchanged |
 | Origin pulse, rotate-hint fade, preview pulse | Skipped |
+| Photo fade-in, label plate fade | None: instant |
+| Adjust veil and overflow, enter and exit | 120ms opacity tween (`duration-reduced-short`) |
+| Pan rubber-band return, tap to center, keyboard pan | 160ms tween (`duration-reduced`), `ease-out-soft`, no overshoot |
+| Wall paint change | `duration-reduced` (160ms) color transition |
 
 Encode in `physics.ts` as `reducedMotion = { tweenShortMs: 120, tweenMs: 160, tweenLongMs: 200, ease: [0.2, 0.8, 0.2, 1] }`.
 
@@ -678,6 +965,12 @@ Encode in `physics.ts` as `reducedMotion = { tweenShortMs: 120, tweenMs: 160, tw
 | `on-inverse` / `accent-on-inverse` / `on-inverse-muted` on `inverse` | 13.3 / 7.8 / 7.9 | 4.5 |
 | `line-strong` on `surface` / `surface-sunken` (control borders) | 3.8 / 3.4 | 3 |
 | `wall-edge` on `wall`; `laser` on `wall` | 3.6; 3.6 | 3 |
+| `on-inverse` on `label-plate` over pure white (worst case, any photo) | 7.6 | 4.5 |
+| `wall-ink` on the eight swatches (§5.18) | 6.7–14.6 | 3 (24px text) |
+| `wall-ink` on any custom color, worst case at the 0.2 threshold (§5.19) | 3.8 | 3 (24px text) |
+| `accent` crop outline on `mat`; on its `halo` | 7.7; 7.9 | 3 |
+| Checked swatch `check` icon (`ink` or `on-inverse` by tone) on its swatch | ≥6.7 | 3 |
+| `origin-mark` on `origin-mark-halo`, light / dark set | 7.9 / 8.3 | 3 |
 
 Grid lines (about 1.5:1) are deliberately quiet; the guide and the frame's motion convey snapping. The preview box border (`line`) is decorative; the box is identified by the frame inside it and its accessible name.
 
@@ -685,7 +978,10 @@ Grid lines (about 1.5:1) are deliberately quiet; the guide and the frame's motio
 - **Hit areas.** Every control ≥44×44. A frame smaller than 44px on screen gets an invisible `::before` hit extension; the later frame wins where they overlap. The preview and frames use `touch-none`.
 - **Selection is not color alone.** Brackets are a shape; frames are `role="button"` with `aria-pressed`. The frame's finish is never the only carrier of meaning (it is decoration), and it is exposed to tests as `data-frame-color`, not in accessible names.
 - **Keyboard.** Frames: arrows nudge, Delete removes, Esc deselects. Frame creator: DOM and focus order is picker → fields (Width, Height for rectangles) → Generate → preview on every shell, which follows the task (set, generate, add); CSS grid places the parts where §4 draws them. **Why the focus order differs from the visual order** (the preview sits above or beside the fields): WCAG 1.3.2 and 2.4.3 require a sequence that preserves meaning and operability, not one that copies the layout. Here the preview's name and action depend on what Generate produced, so reaching it after Generate is the meaningful order, and the alternative (preview first) would offer "Add…" with a size the user is about to change. The order is the same on every shell, so it never surprises. Component tests should assert this tab sequence: Rectangle radio (checked) → Width (cm) → Height (cm) → Generate → Add rectangle, … cm. Enter or Space on the preview adds a frame.
-- **Live regions.** Toasts use `role="status"` or `role="alert"`. A hidden `aria-live="polite"` region announces "Frame added", "Frame deleted", "Frame duplicated" and, after Generate, "Ready: rectangle, 40 × 50 cm".
+- **Live regions.** Toasts use `role="status"` or `role="alert"`. A hidden `aria-live="polite"` region announces "Frame added", "Frame deleted", "Frame duplicated" and, after Generate, "Ready: rectangle, 40 × 50 cm"; for frame photos "Photo added", "Photo replaced", "Photo removed" and, entering adjust mode, "Adjusting photo. Drag or use the arrow keys to move it, Escape to finish."
+- **Frame photos.** The `<img>` is decorative (`alt=""`); the frame's name says "with photo" (§3.8). Mat is a real switch (`aria-checked`), and its landscape icon form swaps `mat` / `mat-off` so the state is not color alone.
+- **Adjust mode without dragging (WCAG 2.5.7).** Every pan has a non-drag path: tap a point to center it, the arrow keys, and the Zoom slider for zoom. The adjust state is shown by shape (crop outline, overflow image, veil), not by color alone.
+- **Wall color.** Swatches are radios with paint names; the checked one carries a `check` icon and the name is repeated as visible text in the row's readout. Custom is a labelled native color input, so its picker is the platform's accessible one.
 - **Motion.** §6.4 applies in full.
 
 ---
@@ -710,22 +1006,32 @@ Sentence case, no exclamation marks. Tests should find elements by these exact n
 | Wall fields | textbox | "Wall width (cm)", "Wall height (cm)", "Push gap (cm)"; visible "Width", "Height", "Push gap" | Settings > Wall |
 | Snap to grid | switch | "Snap to grid" | Settings > Grid |
 | Set origin | button | "Set origin on the wall" | Settings > Grid |
-| Frame on the wall | button | "Rectangle 40 × 50 cm" / "Square 40 × 40 cm" / "Circle Ø 40 cm"; `data-frame-color` | Wall |
+| Frame on the wall | button | "Rectangle 40 × 50 cm" / "Square 40 × 40 cm" / "Circle Ø 40 cm"; with a photo, the same plus " with photo" ("Rectangle 40 × 50 cm with photo"); attributes `data-frame-color`, `data-has-photo="true\|false"`, `data-mat="true\|false"` | Wall |
 | Selected frame | region | "Selected frame" | Context panel / right panel |
 | Selection actions | button | "Duplicate", "Delete", "Deselect" | Selected frame |
 | Position fields | textbox | "X (cm)", "Y (cm)" | Selected frame |
+| Frame details tabs | tablist / tab / tabpanel | "Frame details" / "Size", "Photo" (tabpanel labelled by the selected tab) | Selected frame, stacked only |
+| Frame photo group | group | "Frame photo" (visible label) | Selected frame, desktop and narrow desktop |
+| Frame photo actions | button | "Add photo to frame" (visible "Add photo"), "Replace frame photo" (visible "Replace" or icon), "Adjust frame photo" (visible "Adjust" or icon), "Remove frame photo" (visible "Remove" or icon) | Selected frame, all shells (§4.7) |
+| Mat | switch (`aria-checked`) | "Mat" | Selected frame, all shells |
+| Adjust tools | slider / button / text | "Zoom" (readout "150%") / "Done" / coarse "Drag the photo to move it. Pinch to zoom.", fine "Drag the photo to move it, or use the arrow keys." | Selected frame panel while adjusting |
+| Wall color | radiogroup / radio | "Wall color" / "Gallery white", "Warm linen", "Plaster pink", "Pale sage", "Mist blue", "Stone", "Forest green", "Charcoal" | Settings > Wall |
+| Custom wall color | color input (find with `getByLabel`) | "Custom"; readout "Custom #8a6f5c" when active | Settings > Wall |
 | Mode | radiogroup / radio | "Mode" / "Arrange", "Photo", "Grid origin" (phones show "Origin") | Top bar or right rail |
 | History | button | "Undo", "Redo" | Dock, right rail, top bar |
 | Settings | button / dialog | "Settings" / "Settings", "Close settings" | Top bar (stacked, narrow desktop) or right rail |
-| Photo controls | button / slider | "Upload photo", "Replace photo", "Remove photo", "Adjust photo"; "Opacity", "Scale" | Photo tools, Settings |
+| Photo controls (wall photo) | button / slider | "Upload photo", "Replace photo", "Remove photo", "Adjust photo"; "Opacity", "Scale" | Photo tools, Settings |
 | Origin tools | text / button | "Tap the wall where the grid should start." / "Grid starts at 20 × 40 cm" / "Reset to corner", "Done" | Origin tools |
 | Empty wall | text | "Drag a frame onto the wall, or tap the preview to add one." ("click" on fine pointers) | Wall |
 | Photo tools, no photo | text | "Add a photo of your wall to line frames up with it." | Photo tools |
 | Push gap helper | text | "Space kept between frames when they push each other apart." | Settings > Wall |
 | Rotate hint | text / button | "Rotate for a bigger wall" / "Dismiss" | Phone portrait |
-| Live region | status | "Frame added", "Frame deleted", "Frame duplicated", "Ready: rectangle, 40 × 50 cm" | Hidden |
+| Live region | status | "Frame added", "Frame deleted", "Frame duplicated", "Ready: rectangle, 40 × 50 cm", "Photo added", "Photo replaced", "Photo removed", "Adjusting photo. Drag or use the arrow keys to move it, Escape to finish." | Hidden |
 | Toasts | status / alert | "Storage is full, so changes aren't being saved. They stay until you close this tab." / "Saved data couldn't be read, so the wall started fresh. A backup was kept." / "Photos can't be saved in this browser. Your photo stays until you close this tab." | Stage |
+| Frame photo toasts | alert (error, stays) | **`frame-photo-missing`**: "A frame's photo couldn't be found, so that frame is plain again. Add the photo again to see it." / **`frame-photo-unavailable`** (transient load error, photo data kept): "A frame's photo couldn't be loaded right now. Reload to try again." / reused **`image-session-only`**: "Photos can't be saved in this browser. Your photo stays until you close this tab." / reused **`photo-unreadable`**: "That file couldn't be opened as an image." | Stage |
 | Reset dialog | alertdialog | "Reset the wall?" / "Cancel" / "Reset wall" | Dialog |
 | Remove photo dialog | alertdialog | "Remove the photo?" / "Cancel" / "Remove photo" | Dialog |
 
 An action keeps its name everywhere: Generate is always "Generate", Duplicate is announced as "Frame duplicated", and Reset wall opens a dialog whose confirm button is also "Reset wall". The "Frames" palette region is retired; tests that looked for it should use "Frame creator".
+
+**Wall photo vs frame photo.** The wall photo keeps "Upload photo", "Replace photo", "Remove photo" (with its confirm dialog) and "Adjust photo" (Settings > Photo, which enters Photo mode). The frame photo's names all say "frame" ("Add photo to frame", "Replace frame photo", "Adjust frame photo", "Remove frame photo") and none of them contains a wall-photo name, so both sets can share the desktop right panel and `getByRole` matches exactly one either way. The adjust tools' "Done" and Photo tools' "Done" never coexist (adjust mode lives in Arrange).
