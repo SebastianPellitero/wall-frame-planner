@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # WallPlanner
 
 WallPlanner is a mobile-first, static single-page app for planning a gallery wall. You drag frames onto a to-scale wall, let a grid and a soft magnet line them up, and preview the result over a photo of your own wall. Everything runs in the browser, so there is no account and no server.
@@ -73,6 +72,3 @@ Two Claude Code agents live in `.claude/agents/`:
 - `frontend.md` builds the feature code and tests, following the architecture rules above.
 
 The design system, including the exact accessible names the e2e tests rely on, is in `docs/design/design-system.md`.
-=======
-# wall-frame-planner
->>>>>>> c4896eed7728caa85c642610a75f4081b10e0829
