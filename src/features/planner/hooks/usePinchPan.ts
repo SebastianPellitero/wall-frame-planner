@@ -6,6 +6,12 @@ import { usePlannerStore } from "../state/store";
 import type { Point } from "../types";
 import { startPointerSession } from "./pointerSession";
 
+/**
+ * Stage children that keep their own presses: controls, and overlays such as the rotate hint,
+ * toasts and dialogs. A press on them never starts a pan, so their click still fires.
+ */
+const OWN_PRESSES = "button, a, input, select, textarea, [role=dialog], [role=alertdialog], [role=status], [role=alert]";
+
 /** The wheel commits once it has been still this long. */
 const WHEEL_COMMIT_MS = 150;
 
@@ -20,6 +26,8 @@ interface Gesture {
   /** The wall's on-screen top-left at gesture start; pointers are tracked in wall cm from it. */
   wallTopLeft: { left: number; top: number };
   pointers: Map<number, Point>;
+  /** Each pointer's session; stopping one removes its listeners without ending the gesture. */
+  stops: Map<number, () => void>;
 }
 
 /**
@@ -78,11 +86,24 @@ export function usePinchPan({ enabled, wallRef, pxPerCm }: { enabled: boolean; w
     width.jump(bg.width);
   }, [bg.x, bg.y, bg.width, x, y, width]);
 
-  // Leaving Photo mode or unmounting saves a pending wheel zoom.
+  /** Ends a live pointer gesture early, keeping (committing) what the user sees. */
+  const stopGesture = useCallback(() => {
+    const g = gesture.current;
+    if (!g) return;
+    gesture.current = null;
+    for (const stop of g.stops.values()) stop();
+    commit();
+  }, [commit]);
+
+  // Leaving Photo mode or unmounting stops a live gesture and saves a pending wheel zoom.
   useEffect(() => {
-    if (!enabled) flushWheel();
-    return flushWheel;
-  }, [enabled, flushWheel]);
+    const end = () => {
+      stopGesture();
+      flushWheel();
+    };
+    if (!enabled) end();
+    return end;
+  }, [enabled, flushWheel, stopGesture]);
 
   const toCm = (g: Gesture, e: { clientX: number; clientY: number }) =>
     clientToWallCm({ x: e.clientX, y: e.clientY }, g.wallTopLeft, latest.current.pxPerCm);
@@ -90,18 +111,19 @@ export function usePinchPan({ enabled, wallRef, pxPerCm }: { enabled: boolean; w
   const onPointerDown = (e: ReactPointerEvent<HTMLElement>) => {
     if (!latest.current.active || !wallRef.current) return;
     if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (e.target instanceof Element && e.target !== e.currentTarget && e.target.closest(OWN_PRESSES)) return;
     let g = gesture.current;
     if (!g) {
       flushWheel();
       const r = wallRef.current.getBoundingClientRect();
-      g = gesture.current = { wallTopLeft: { left: r.left, top: r.top }, pointers: new Map() };
+      g = gesture.current = { wallTopLeft: { left: r.left, top: r.top }, pointers: new Map(), stops: new Map() };
     }
     if (g.pointers.size >= 2 || g.pointers.has(e.pointerId)) return;
     const session = g;
     const id = e.pointerId;
     session.pointers.set(id, toCm(session, e));
 
-    startPointerSession(e.currentTarget, id, {
+    const stop = startPointerSession(e.currentTarget, id, {
       onMove(ev) {
         const before = [...session.pointers.values()];
         session.pointers.set(id, toCm(session, ev));
@@ -117,11 +139,13 @@ export function usePinchPan({ enabled, wallRef, pxPerCm }: { enabled: boolean; w
       onEnd() {
         // pointercancel ends like a lift: what the user sees is kept.
         session.pointers.delete(id);
+        session.stops.delete(id);
         if (session.pointers.size > 0) return;
         gesture.current = null;
         commit();
       },
     });
+    session.stops.set(id, stop);
   };
 
   // Wheel zoom about the cursor. Non-passive, so the page itself never zooms or scrolls.

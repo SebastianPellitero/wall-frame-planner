@@ -1,5 +1,5 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { createRef } from "react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { createRef, type ReactNode } from "react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../lib/imageStore", async (importOriginal) => ({
@@ -21,12 +21,14 @@ const WALL_LEFT = 100;
 const WALL_TOP = 50;
 const PHOTO: Background = { ...DEFAULT_BACKGROUND, hasImage: true, x: -10, y: -20, width: 400, aspect: 0.75, opacity: 0.6 };
 
-function renderStage() {
+function renderStage(children?: ReactNode) {
   const { width, height } = usePlannerStore.getState().wall;
   const value = { pxPerCm: PX_PER_CM, wallRef: createRef<HTMLDivElement>(), wallPx: { w: width * PX_PER_CM, h: height * PX_PER_CM } };
   render(
     <WallContext value={value}>
-      <WallStage stageRef={() => {}} shell="landscape" />
+      <WallStage stageRef={() => {}} shell="landscape">
+        {children}
+      </WallStage>
     </WallContext>,
   );
   const wall = screen.getByTestId("wall");
@@ -180,6 +182,71 @@ describe("Photo mode gestures", () => {
     firePointer("pointermove", 2, 340, 200);
     firePointer("pointerup", 2, 340, 200);
     expect(bg()).toEqual(DEFAULT_BACKGROUND);
+  });
+
+  it("leaves presses on stage overlays (a hint or toast button) alone, so their click still fires", () => {
+    usePlannerStore.setState({ mode: "photo" });
+    const onClick = vi.fn();
+    const { stage } = renderStage(
+      <div role="status">
+        <button type="button" onClick={onClick}>
+          Dismiss
+        </button>
+        <span data-testid="toast-text">Saved</span>
+      </div>,
+    );
+    stage.setPointerCapture = vi.fn();
+    const writes = vi.fn();
+    const off = usePlannerStore.subscribe((s, prev) => s.background !== prev.background && writes());
+    const button = screen.getByRole("button", { name: "Dismiss" });
+    down(button, 1, 300, 200, "mouse");
+    firePointer("pointermove", 1, 340, 200);
+    firePointer("pointerup", 1, 340, 200);
+    fireEvent.click(button);
+    // Non-button content of an overlay too.
+    down(screen.getByTestId("toast-text"), 2, 300, 200);
+    firePointer("pointermove", 2, 340, 200);
+    firePointer("pointerup", 2, 340, 200);
+    off();
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(stage.setPointerCapture).not.toHaveBeenCalled();
+    expect(writes).not.toHaveBeenCalled();
+    expect(bg().x).toBe(PHOTO.x);
+  });
+
+  it("stops a live gesture when Photo mode ends: it keeps what was shown and ignores later moves", () => {
+    usePlannerStore.setState({ mode: "photo" });
+    const { stage } = renderStage();
+    down(stage, 1, 300, 200);
+    firePointer("pointermove", 1, 320, 200);
+    act(() => usePlannerStore.getState().setMode("arrange"));
+    expect(bg().x).toBe(PHOTO.x + 10);
+    const writes = vi.fn();
+    const off = usePlannerStore.subscribe((s, prev) => s.background !== prev.background && writes());
+    firePointer("pointermove", 1, 400, 200);
+    firePointer("pointerup", 1, 400, 200);
+    off();
+    expect(writes).not.toHaveBeenCalled();
+    // A new Photo-mode gesture starts clean.
+    act(() => usePlannerStore.getState().setMode("photo"));
+    down(stage, 2, 300, 200);
+    firePointer("pointermove", 2, 310, 200);
+    firePointer("pointerup", 2, 310, 200);
+    expect(bg().x).toBe(PHOTO.x + 15);
+  });
+
+  it("stops a live gesture on unmount", () => {
+    usePlannerStore.setState({ mode: "photo" });
+    const { stage } = renderStage();
+    down(stage, 1, 300, 200);
+    firePointer("pointermove", 1, 320, 200);
+    cleanup();
+    const writes = vi.fn();
+    const off = usePlannerStore.subscribe((s, prev) => s.background !== prev.background && writes());
+    firePointer("pointermove", 1, 400, 200);
+    firePointer("pointerup", 1, 400, 200);
+    off();
+    expect(writes).not.toHaveBeenCalled();
   });
 
   it("ignores the right mouse button", () => {

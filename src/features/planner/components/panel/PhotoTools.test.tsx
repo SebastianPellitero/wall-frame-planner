@@ -111,6 +111,13 @@ describe("PhotoTools", () => {
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
+  it.each(SHELLS)("after Remove photo, focus lands on Upload photo, as the trash button is gone (%s)", async (shell) => {
+    render(<PhotoTools shell={shell} />);
+    await userEvent.click(within(tools()).getByRole("button", { name: "Remove photo" }));
+    await userEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Remove photo" }));
+    await waitFor(() => expect(within(tools()).getByRole("button", { name: "Upload photo" })).toHaveFocus());
+  });
+
   it("Upload: downscale → save → cover placement → Photo mode, busy meanwhile", async () => {
     usePlannerStore.setState({ mode: "arrange", background: DEFAULT_BACKGROUND });
     const order: string[] = [];

@@ -29,6 +29,13 @@ describe("initialPlacement", () => {
     expect(initialPlacement(1000, 2000, wall)).toEqual({ x: 0, y: -175, width: 300, aspect: 2 });
   });
 
+  it("caps a panorama at 400% of the wall width, still centered, so the first zoom never jumps", () => {
+    // 10:1 on a 300×250 wall: cover would be 2500 cm wide; the scale range stops at 1200.
+    const p = initialPlacement(10000, 1000, wall);
+    expect(p).toEqual({ x: -450, y: expect.closeTo(65), width: 1200, aspect: 0.1 });
+    expect(zoomAround(p, 1.1, { x: 150, y: 125 }, wall)).toBe(p);
+  });
+
   it("matches the wall exactly when the aspect is the wall's", () => {
     expect(initialPlacement(600, 500, wall)).toEqual({
       x: expect.closeTo(0),

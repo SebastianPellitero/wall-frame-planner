@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { sliderToWidth, widthToSlider, zoomAround, SCALE_T_MAX, SCALE_T_MIN } from "../../lib/photoTransform";
 import { removePhoto, uploadPhoto } from "../../state/photoCommands";
 import { usePlannerStore } from "../../state/store";
@@ -51,6 +52,7 @@ export function UploadPhotoButton({ iconOnly, onUploaded, className }: { iconOnl
         aria-label={iconOnly ? label : undefined}
         title={iconOnly ? label : undefined}
         aria-busy={busy}
+        data-photo-upload=""
         onClick={() => !busy && inputRef.current?.click()}
         className={cx(
           iconOnly ? ICON_BUTTON : hasImage ? SECONDARY_BUTTON : PRIMARY_BUTTON,
@@ -102,12 +104,29 @@ export function ShowPhotoToggle() {
   return <Toggle label="Show photo" checked={visible} onChange={(v) => setBackground({ visible: v })} />;
 }
 
-/** Remove photo, an icon button (phones' Photo tools) or quiet danger text, behind the confirm dialog (§5.11). */
+/**
+ * Remove photo, an icon button (phones' Photo tools) or quiet danger text, behind the confirm
+ * dialog (§5.11). Removing unmounts this button, so focus moves on to Upload photo in the same
+ * panel (inside the Settings sheet too) instead of falling to <body>.
+ */
 export function RemovePhotoButton({ iconOnly, className }: { iconOnly?: boolean; className?: string }) {
   const [confirming, setConfirming] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const confirm = () => {
+    const panel = buttonRef.current?.closest("section");
+    // Commit now, so Upload photo is on screen when focus moves.
+    flushSync(() => {
+      setConfirming(false);
+      void removePhoto();
+    });
+    panel?.querySelector<HTMLElement>("[data-photo-upload]")?.focus();
+  };
+
   return (
     <>
       <button
+        ref={buttonRef}
         type="button"
         aria-label={iconOnly ? "Remove photo" : undefined}
         title={iconOnly ? "Remove photo" : undefined}
@@ -123,10 +142,7 @@ export function RemovePhotoButton({ iconOnly, className }: { iconOnly?: boolean;
         title="Remove the photo?"
         confirmLabel="Remove photo"
         onCancel={() => setConfirming(false)}
-        onConfirm={() => {
-          setConfirming(false);
-          void removePhoto();
-        }}
+        onConfirm={confirm}
       />
     </>
   );

@@ -111,6 +111,16 @@ describe("SettingsSheet", () => {
     await expectClosed();
   });
 
+  it("after Remove photo in the sheet, focus stays in the sheet, on Upload photo", async () => {
+    usePlannerStore.setState({ background: { ...initialProject().background, hasImage: true } });
+    const d = await open();
+    await userEvent.click(within(d).getByRole("button", { name: "Remove photo" }));
+    await userEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Remove photo" }));
+    await waitFor(() => expect(within(d).getByRole("button", { name: "Upload photo" })).toHaveFocus());
+    expect(dialog()).toBeInTheDocument();
+    expect(usePlannerStore.getState().background.hasImage).toBe(false);
+  });
+
   it("'Set origin on the wall' closes the sheet and enters Grid origin mode", async () => {
     const d = await open();
     await userEvent.click(within(d).getByRole("button", { name: "Set origin on the wall" }));

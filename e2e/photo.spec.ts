@@ -150,7 +150,7 @@ test.describe("background photo", () => {
     await dialog.getByRole("button", { name: "Remove photo" }).click();
     await expect(dialog).toBeHidden();
     await expect(photo(page)).toHaveCount(0);
-    await expect(photoTools(page).getByRole("button", { name: "Upload photo" })).toBeVisible();
+    await expect(photoTools(page).getByRole("button", { name: "Upload photo" })).toBeFocused();
 
     await page.reload();
     await expect(page.getByTestId("wall")).toBeVisible();

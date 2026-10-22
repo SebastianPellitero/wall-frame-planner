@@ -13,10 +13,14 @@ export const SCALE_T_MAX = 2;
 const minWidth = (wall: WallSize) => wall.width * 2 ** SCALE_T_MIN;
 const maxWidth = (wall: WallSize) => wall.width * 2 ** SCALE_T_MAX;
 
-/** Cover-fit: the smallest width that still covers the whole wall, centered on it. */
+/**
+ * Cover-fit: the smallest width that still covers the whole wall, centered on it. Capped to the
+ * scale range (at most 400% of the wall width), so a very wide panorama starts at the cap and
+ * leaves a band above and below rather than jumping on the first zoom.
+ */
 export function initialPlacement(imgW: number, imgH: number, wall: WallSize): Placement {
   const aspect = imgH / imgW;
-  const width = Math.max(wall.width, wall.height / aspect);
+  const width = clamp(Math.max(wall.width, wall.height / aspect), minWidth(wall), maxWidth(wall));
   return { x: (wall.width - width) / 2, y: (wall.height - width * aspect) / 2, width, aspect };
 }
 
