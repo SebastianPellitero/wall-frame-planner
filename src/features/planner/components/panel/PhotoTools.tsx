@@ -13,7 +13,7 @@ import {
 import { PanelSection } from "./PanelSection";
 
 const TITLE = "Photo";
-/** The region name: on desktop Settings > Photo is on screen too, as "Photo settings". */
+/** The region name, distinct from Settings > Photo ("Photo settings"). */
 const LABEL = "Photo tools";
 
 /**
@@ -83,8 +83,11 @@ export function PhotoTools({ shell }: { shell: Shell }) {
     <PanelSection title={TITLE} label={LABEL}>
       {hasImage ? (
         <>
-          <OpacitySlider />
-          <ScaleSlider />
+          {/* One grid for both rows, so the two tracks start and end at the same x. */}
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3">
+            <OpacitySlider layout="cells" />
+            <ScaleSlider layout="cells" />
+          </div>
           <UploadPhotoButton className="w-full" />
           <ShowPhotoToggle />
           <RemovePhotoButton className="self-start -ml-3.5" />

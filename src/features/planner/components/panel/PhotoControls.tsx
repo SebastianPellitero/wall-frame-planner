@@ -153,7 +153,7 @@ export function RemovePhotoButton({ iconOnly, className }: { iconOnly?: boolean;
 }
 
 /** Opacity, 0–100% in 5% steps, stored as 0–1. */
-export function OpacitySlider({ layout }: { layout?: "row" | "stacked" }) {
+export function OpacitySlider({ layout }: { layout?: "row" | "stacked" | "cells" }) {
   const percent = usePlannerStore((s) => Math.round(s.background.opacity * 100));
   return (
     <Slider
@@ -170,7 +170,7 @@ export function OpacitySlider({ layout }: { layout?: "row" | "stacked" }) {
 }
 
 /** Scale on the log mapping width = wall.width × 2^t (25–400%), about the wall's center. */
-export function ScaleSlider({ layout }: { layout?: "row" | "stacked" }) {
+export function ScaleSlider({ layout }: { layout?: "row" | "stacked" | "cells" }) {
   const width = usePlannerStore((s) => s.background.width);
   const wall = usePlannerStore((s) => s.wall);
   const onChange = (t: number) => {

@@ -12,8 +12,12 @@ interface SliderProps {
   /** Shown right-aligned and announced as the value, e.g. "60%". */
   readout: string;
   onChange(value: number): void;
-  /** "row" (default): label, track, readout in one 44px row. "stacked": label and readout over a full-width track, for the 132px landscape rail. */
-  layout?: "row" | "stacked";
+  /**
+   * "row" (default): label, track, readout in one 44px row. "stacked": label and readout over a
+   * full-width track, for the 132px landscape rail. "cells": the three parts become cells of the
+   * parent's `grid-cols-[auto_1fr_auto]`, so stacked sliders share one track start and end.
+   */
+  layout?: "row" | "stacked" | "cells";
   className?: string;
 }
 
@@ -26,9 +30,15 @@ export function Slider({ label, value, min, max, step, readout, onChange, layout
   const id = useId();
   const pos = max > min ? clamp((value - min) / (max - min), 0, 1) : 0;
   const stacked = layout === "stacked";
+  const cells = layout === "cells";
 
   return (
-    <div className={cx(stacked ? "grid grid-cols-[1fr_auto] items-center gap-x-2" : "flex h-touch items-center gap-3", className)}>
+    <div
+      className={cx(
+        stacked ? "grid grid-cols-[1fr_auto] items-center gap-x-2" : cells ? "contents" : "flex h-touch items-center gap-3",
+        className,
+      )}
+    >
       <label htmlFor={id} className="shrink-0 text-ui font-medium text-ink">
         {label}
       </label>
@@ -42,11 +52,16 @@ export function Slider({ label, value, min, max, step, readout, onChange, layout
         aria-valuetext={readout}
         onChange={(e) => onChange(Number(e.target.value))}
         style={{ "--slider-pos": String(pos) } as CSSProperties}
-        className={cx("slider h-touch min-w-0", stacked ? "col-span-2 row-start-2" : "flex-1")}
+        className={cx("slider h-touch min-w-0", stacked ? "col-span-2 row-start-2" : !cells && "flex-1")}
       />
       <span
         aria-hidden="true"
-        className={cx("min-w-[4ch] shrink-0 text-right text-ui text-ink-muted tabular-nums", stacked && "col-start-2 row-start-1")}
+        className={cx(
+          "shrink-0 text-right text-ui text-ink-muted tabular-nums",
+          // Fixed, so the track end holds still as the value changes; 5ch fits "100%" (a % is wider than 1ch).
+          cells ? "w-[5ch]" : "min-w-[4ch]",
+          stacked && "col-start-2 row-start-1",
+        )}
       >
         {readout}
       </span>

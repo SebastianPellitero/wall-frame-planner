@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { CmField } from "./CmField";
@@ -83,17 +83,60 @@ describe("CmField", () => {
     expect(screen.getByText("cm")).toHaveClass("right-1.5");
   });
 
-  it("with errorInLabel shows the limits in place of the visible label, so the row keeps its height", async () => {
+  it("with errorInLabel keeps the label and adds the limits on its row, so the row keeps its height (§5.2)", async () => {
     render(<CmField label="Width" value={40} min={1} max={300} onCommit={() => {}} errorInLabel />);
     const input = screen.getByRole("textbox", { name: "Width (cm)" });
-    expect(screen.getByText("Width")).toBeVisible();
     await userEvent.clear(input);
     await userEvent.type(input, "400{Enter}");
     expect(input).toHaveAccessibleDescription("Use 1–300 cm");
-    expect(screen.queryByText("Width")).not.toBeInTheDocument();
-    expect(screen.getByText("Use 1–300 cm")).toHaveClass("text-danger");
-    // Still the label's slot: nothing is added below the field.
-    expect(screen.getByText("Use 1–300 cm").nextElementSibling).toContainElement(input);
+    const label = screen.getByText("Width");
+    expect(label).toBeVisible();
+    expect(label).toHaveClass("text-ink-muted");
+    const limits = label.nextElementSibling as HTMLElement;
+    expect(limits).toHaveTextContent("Use 1–300 cm");
+    expect(limits).toHaveClass("text-danger", "whitespace-nowrap");
+    expect(within(limits).getByText("Use")).toHaveClass("sr-only");
+    expect(label.parentElement).toHaveClass("flex", "justify-between", "gap-1");
+    // Still the label's row: nothing is added below the field.
+    expect(label.parentElement!.nextElementSibling).toContainElement(input);
+    expect(label.parentElement!.nextElementSibling!.nextElementSibling).toBeNull();
+  });
+
+  it("never wraps its helper, and can center it under a centered field (§5.2)", async () => {
+    render(<CmField label="Width" value={40} min={1} max={300} onCommit={() => {}} centerHelper />);
+    const input = screen.getByRole("textbox", { name: "Width (cm)" });
+    await userEvent.clear(input);
+    await userEvent.type(input, "400{Enter}");
+    expect(screen.getByText("Use 1–300 cm")).toHaveClass("whitespace-nowrap", "self-center", "text-caption", "text-danger");
+  });
+
+  it("keeps the danger outline while an invalid field has focus (§5.2)", () => {
+    const { input } = setup();
+    expect(input).toHaveClass("aria-invalid:focus-visible:outline-danger", "aria-invalid:focus:outline-danger");
+  });
+
+  it("condenses the compact value so three digits clear the unit", () => {
+    render(<CmField label="X" value={160} min={0} max={260} onCommit={() => {}} compact />);
+    expect(screen.getByRole("textbox", { name: "X (cm)" })).toHaveClass("font-stretch-semi-condensed", "text-body", "pr-6");
+  });
+
+  it("with an outside helper, renders none itself and reports its text for the owner to show once", async () => {
+    const onInvalidChange = vi.fn();
+    render(
+      <>
+        <CmField label="Width" value={40} min={1} max={300} onCommit={() => {}} helperId="shared" onInvalidChange={onInvalidChange} />
+        <span id="shared">Use 1–300 cm</span>
+      </>,
+    );
+    const input = screen.getByRole("textbox", { name: "Width (cm)" });
+    await userEvent.clear(input);
+    await userEvent.type(input, "400{Enter}");
+    expect(screen.getAllByText("Use 1–300 cm")).toHaveLength(1);
+    expect(input).toHaveAttribute("aria-describedby", "shared");
+    expect(onInvalidChange).toHaveBeenLastCalledWith("Use 1–300 cm");
+    await userEvent.type(input, "{Escape}");
+    expect(input).not.toHaveAttribute("aria-describedby");
+    expect(onInvalidChange).toHaveBeenLastCalledWith(null);
   });
 
   it("inside a form, Enter commits then submits; an invalid value blocks the submit", async () => {

@@ -6,14 +6,12 @@ const seed = (page: Page, shapes: Seed[], grid = GRID_OFF) => seedProject(page, 
 
 const SHOTS = ".superpowers/sdd/2026-10-21-wall-planner-design/shots";
 
-
 async function wallScale(page: Page) {
   const box = (await page.getByTestId("wall").boundingBox())!;
   return { box, ppc: box.width / WALL.width };
 }
 
 const frame = (page: Page, id: string) => page.locator(`[data-testid="frame"][data-shape-id="${id}"]`);
-
 
 /** Screen point at the committed center of a frame. */
 async function centerOf(page: Page, id: string): Promise<Point> {

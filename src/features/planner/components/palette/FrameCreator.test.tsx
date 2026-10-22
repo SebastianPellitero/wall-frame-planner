@@ -150,6 +150,36 @@ describe("FrameCreator", () => {
     expect(usePlannerStore.getState().shapes).toHaveLength(1);
   });
 
+  it("only a primary main-button press swallows the click that follows it", () => {
+    renderCreator();
+    // A right-click or a second finger never adds by itself, and never eats the next click.
+    fireEvent.pointerDown(preview(), { ...pointer, button: 2, clientX: 10, clientY: 10 });
+    windowPointer("pointerup", { clientX: 10, clientY: 10 });
+    fireEvent.pointerDown(preview(), { ...pointer, isPrimary: false, pointerId: 2, clientX: 10, clientY: 10 });
+    fireEvent.click(preview(), { detail: 0 });
+    expect(usePlannerStore.getState().shapes).toHaveLength(1);
+  });
+
+  it("a drag that produces no click leaves the next assistive-tech click working", async () => {
+    renderCreator();
+    fireEvent.pointerDown(preview(), { ...pointer, pointerType: "touch", clientX: 10, clientY: 10 });
+    windowPointer("pointermove", { clientX: 60, clientY: 10 });
+    windowPointer("pointerup", { clientX: 60, clientY: 10 });
+    // The click cycle is over once the pointer is up and its task has run.
+    await act(() => new Promise((r) => setTimeout(r, 0)));
+    fireEvent.click(preview(), { detail: 0 });
+    expect(usePlannerStore.getState().shapes).toHaveLength(1);
+  });
+
+  it("a key press clears a pending pointer press", () => {
+    renderCreator();
+    fireEvent.pointerDown(preview(), { ...pointer, clientX: 10, clientY: 10 });
+    fireEvent.keyDown(preview(), { key: "Tab" });
+    fireEvent.click(preview(), { detail: 0 });
+    expect(usePlannerStore.getState().shapes).toHaveLength(1);
+    windowPointer("pointerup", { clientX: 10, clientY: 10 });
+  });
+
   it("adds on Enter or Space and on an assistive-tech click, ignoring key repeat", () => {
     renderCreator();
     fireEvent.keyDown(preview(), { key: "Enter" });
@@ -172,12 +202,49 @@ describe("FrameCreator", () => {
     expect(color()).toBe(4);
   });
 
-  it("stacked: no caption, and an invalid value's error takes the label's place", async () => {
+  it("stacked: no caption, and an invalid value keeps its label with the limits on the same row", async () => {
     renderCreator("stacked");
     expect(screen.queryByText("40 × 50 cm")).not.toBeInTheDocument();
     await userEvent.clear(field("Width (cm)"));
     await userEvent.type(field("Width (cm)"), "0{Enter}");
-    expect(screen.getByText("Use 1–300 cm")).toBeInTheDocument();
-    expect(screen.queryByText("Width")).not.toBeInTheDocument();
+    expect(field("Width (cm)")).toHaveAccessibleDescription("Use 1–300 cm");
+    expect(screen.getByText("Width")).toBeInTheDocument();
+    expect(screen.getByText("Height")).toBeInTheDocument();
+  });
+
+  it("landscape rail: one helper line below both fields, spanning the two columns (§5.2)", async () => {
+    renderCreator("landscape");
+    await userEvent.clear(field("Width (cm)"));
+    await userEvent.type(field("Width (cm)"), "999");
+    await userEvent.click(screen.getByRole("button", { name: "Generate" }));
+    const helper = screen.getByText("Use 1–300 cm");
+    expect(helper.closest("[data-testid=field-helper]")).toHaveClass("col-span-2", "whitespace-nowrap", "text-caption", "text-danger");
+    expect(field("Width (cm)")).toHaveAccessibleDescription("Use 1–300 cm");
+    // Below the two fields, inside their grid; nothing under either field.
+    const height = field("Height (cm)").closest("label")!;
+    expect(height.nextElementSibling).toBe(helper.closest("[data-testid=field-helper]"));
+    expect(field("Width (cm)").closest("label")!.querySelector(".text-danger")).toBeNull();
+
+    await userEvent.clear(field("Height (cm)"));
+    await userEvent.type(field("Height (cm)"), "999{Enter}");
+    // Still one visible line; each field is described by its own limits.
+    expect(screen.getAllByTestId("field-helper")).toHaveLength(1);
+    expect(field("Height (cm)")).toHaveAccessibleDescription("Use 1–250 cm");
+    expect(field("Width (cm)")).toHaveAccessibleDescription("Use 1–300 cm");
+    expect(screen.getByText("Use 1–250 cm")).not.toHaveClass("sr-only");
+    expect(screen.getByText("Use 1–300 cm")).toHaveClass("sr-only");
+
+    await userEvent.clear(field("Width (cm)"));
+    await userEvent.type(field("Width (cm)"), "50");
+    await userEvent.clear(field("Height (cm)"));
+    await userEvent.type(field("Height (cm)"), "60{Enter}");
+    expect(screen.queryByTestId("field-helper")).not.toBeInTheDocument();
+  });
+
+  it("desktop: the Width helper is centered under the centered field", async () => {
+    renderCreator("desktop");
+    await userEvent.clear(field("Width (cm)"));
+    await userEvent.type(field("Width (cm)"), "999{Enter}");
+    expect(screen.getByText("Use 1–300 cm")).toHaveClass("self-center", "whitespace-nowrap");
   });
 });

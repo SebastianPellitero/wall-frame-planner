@@ -7,6 +7,7 @@ import type { Shape, ShapeKind, Wall } from "../../types";
 import { ICON_BUTTON, SECONDARY_BUTTON, SECONDARY_DANGER_BUTTON } from "../ui/buttons";
 import { CmField } from "../ui/CmField";
 import { cx } from "../ui/cx";
+import { useSharedHelper } from "../ui/useSharedHelper";
 import { CloseIcon, DuplicateIcon, TrashIcon } from "../ui/icons";
 import { rescueFocus } from "../../hooks/rescueFocus";
 import { PanelSection } from "./PanelSection";
@@ -59,6 +60,9 @@ const deselect = () => {
 export function SelectionBar({ shell }: { shell: Shell }) {
   const shape = usePlannerStore((s) => s.shapes.find((shape) => shape.id === s.selectedId));
   const wall = usePlannerStore((s) => s.wall);
+  // The landscape rail's compact pairs each share one helper line below them (§5.2).
+  const sizeHelper = useSharedHelper();
+  const positionHelper = useSharedHelper();
   if (!shape) return null;
 
   const { size, position } = fieldSpecs(shape, wall);
@@ -66,7 +70,7 @@ export function SelectionBar({ shell }: { shell: Shell }) {
   const stacked = shell === "stacked";
   const single = size.length === 1;
 
-  const renderField = (f: FieldSpec, className: string, compact = false) => (
+  const renderField = (f: FieldSpec, className: string, compact = false, helper?: ReturnType<typeof useSharedHelper>) => (
     <CmField
       key={`${shape.id}-${f.key}`}
       label={f.label}
@@ -77,6 +81,7 @@ export function SelectionBar({ shell }: { shell: Shell }) {
       className={className}
       compact={compact}
       errorInLabel={stacked}
+      {...(helper ? helper.bind(f.key) : {})}
     />
   );
 
@@ -131,9 +136,13 @@ export function SelectionBar({ shell }: { shell: Shell }) {
       )}
       <div className="grid grid-cols-2 gap-2">{actions}</div>
       <div className={cx("grid grid-cols-2 gap-x-2", landscape ? "gap-y-2" : "gap-y-3")}>
-        {size.map((f) => renderField(f, cx("min-w-0", single && landscape && "col-span-2"), landscape && !single))}
+        {size.map((f) =>
+          renderField(f, cx("min-w-0", single && landscape && "col-span-2"), landscape && !single, landscape && !single ? sizeHelper : undefined),
+        )}
+        {landscape && !single && sizeHelper.helper}
         {/* X always starts a row, so a lone Side or Diameter sits above X and Y. */}
-        {position.map((f, i) => renderField(f, cx("min-w-0", i === 0 && "col-start-1"), landscape))}
+        {position.map((f, i) => renderField(f, cx("min-w-0", i === 0 && "col-start-1"), landscape, landscape ? positionHelper : undefined))}
+        {landscape && positionHelper.helper}
       </div>
     </PanelSection>
   );

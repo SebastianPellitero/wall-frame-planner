@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SHELL_QUERIES, useShell } from "./useShell";
+import { SHELL_QUERIES, useDesktopNarrow, useShell } from "./useShell";
 
 /** A controllable matchMedia: `set(query, matches)` flips a query and notifies its listeners. */
 function mockMatchMedia() {
@@ -40,6 +40,7 @@ describe("SHELL_QUERIES", () => {
   it("uses exactly the design-system §4.1 media queries", () => {
     expect(SHELL_QUERIES.landscape).toBe("(orientation: landscape) and (max-height: 500px)");
     expect(SHELL_QUERIES.desktop).toBe("(min-width: 1024px) and (min-height: 501px)");
+    expect(SHELL_QUERIES.desktopNarrow).toBe("(min-width: 1024px) and (max-width: 1279px) and (min-height: 501px)");
   });
 });
 
@@ -68,6 +69,19 @@ describe("useShell", () => {
   it("stops listening on unmount", () => {
     const { unmount } = renderHook(() => useShell());
     expect(media.listenerCount()).toBeGreaterThan(0);
+    unmount();
+    expect(media.listenerCount()).toBe(0);
+  });
+});
+
+describe("useDesktopNarrow", () => {
+  it("follows the narrow-desktop query (§4.1, §4.4)", () => {
+    const { result, unmount } = renderHook(() => useDesktopNarrow());
+    expect(result.current).toBe(false);
+    act(() => media.set(SHELL_QUERIES.desktopNarrow, true));
+    expect(result.current).toBe(true);
+    act(() => media.set(SHELL_QUERIES.desktopNarrow, false));
+    expect(result.current).toBe(false);
     unmount();
     expect(media.listenerCount()).toBe(0);
   });

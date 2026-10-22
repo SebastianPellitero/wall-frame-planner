@@ -68,6 +68,9 @@ describe("WallStage", () => {
     const { unmount } = renderStage({ shell: "desktop" });
     expect(screen.getByText("300 cm")).toBeInTheDocument();
     expect(screen.getByText("250 cm")).toBeInTheDocument();
+    // 20px off the wall, clear of the 14px origin crosshair at its corner (§5.13).
+    expect(screen.getByText("300 cm").parentElement).toHaveClass("bottom-full", "mb-5");
+    expect(screen.getByText("250 cm").parentElement).toHaveClass("right-full", "mr-5");
     unmount();
     renderStage({ shell: "landscape" });
     expect(screen.queryByText("300 cm")).not.toBeInTheDocument();
@@ -123,7 +126,23 @@ describe("frames and guides", () => {
     fireEvent.pointerDown(wall);
     expect(usePlannerStore.getState().selectedId).not.toBeNull();
     act(() => usePlannerStore.getState().setMode("arrange"));
-    fireEvent.pointerDown(wall);
+    fireEvent.pointerDown(wall, { isPrimary: true, button: 0 });
+    expect(usePlannerStore.getState().selectedId).toBeNull();
+  });
+
+  it("only a primary main-button press deselects, and never during a drag", () => {
+    renderStage();
+    act(() => void usePlannerStore.getState().addShape("rect"));
+    const id = usePlannerStore.getState().selectedId;
+    const wall = screen.getByTestId("wall");
+    // A second finger while another drags, a right-click, a press while a drag is live.
+    fireEvent.pointerDown(wall, { isPrimary: false, button: 0 });
+    fireEvent.pointerDown(wall, { isPrimary: true, button: 2 });
+    act(() => useDragUi.getState().startDrag(id!));
+    fireEvent.pointerDown(wall, { isPrimary: true, button: 0 });
+    expect(usePlannerStore.getState().selectedId).toBe(id);
+    act(() => useDragUi.getState().endDrag());
+    fireEvent.pointerDown(wall, { isPrimary: true, button: 0 });
     expect(usePlannerStore.getState().selectedId).toBeNull();
   });
 

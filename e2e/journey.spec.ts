@@ -42,11 +42,10 @@ function pointerFor(target: Point, ghostHeightPx: number, testInfo: TestInfo): P
   return { x: target.x, y: target.y + TOUCH_LIFT_PX + ghostHeightPx / 2 };
 }
 
-/** The Deselect button where the shell has one (phones), Esc on desktop. */
-async function deselect(page: Page) {
-  const button = selection(page).getByRole("button", { name: "Deselect" });
-  if (await button.count()) await button.click();
-  else await page.keyboard.press("Escape");
+/** The Deselect button on the phone landscape rail, Esc on desktop (which has none). */
+async function deselect(page: Page, testInfo: TestInfo) {
+  if (testInfo.project.name === "desktop") await page.keyboard.press("Escape");
+  else await selection(page).getByRole("button", { name: "Deselect" }).click();
   await expect(selection(page)).toHaveCount(0);
 }
 
@@ -78,7 +77,9 @@ const onLine = (v: number, origin: number) => {
 
 test("journey: photo, grid, frames, snap, push, history, reload", async ({ page }, testInfo) => {
   const problems: string[] = [];
-  page.on("console", (m) => m.type() === "error" && problems.push(`console: ${m.text()}`));
+  page.on("console", (m) => {
+    if (m.type() === "error") problems.push(`console: ${m.text()}`);
+  });
   page.on("pageerror", (e) => problems.push(`pageerror: ${e.message}`));
 
   await page.goto("/");
@@ -133,7 +134,7 @@ test("journey: photo, grid, frames, snap, push, history, reload", async ({ page 
   await expect(rect).toHaveAttribute("data-h", "60.0");
   await expect(rect).toHaveAttribute("aria-pressed", "true");
   const rectId = (await rect.getAttribute("data-shape-id"))!;
-  await deselect(page);
+  await deselect(page, testInfo);
 
   // 5. A 30 cm square, tapped in twice.
   await creator(page).getByRole("radio", { name: "Square" }).click();
@@ -147,8 +148,9 @@ test("journey: photo, grid, frames, snap, push, history, reload", async ({ page 
   const squares = page.locator('[data-testid="frame"][data-kind="square"]');
   await expect(squares).toHaveCount(2);
   const colors = await frames(page).evaluateAll((els) => els.map((el) => el.getAttribute("data-frame-color")));
-  // Colors are random but never repeat back to back, so the two squares added in a row differ.
+  // Colors are random but never repeat back to back, so each frame differs from the one added before it.
   for (const c of colors) expect(c).toMatch(/^([1-9]|10)$/);
+  expect(colors[1]).not.toBe(colors[0]);
   expect(colors[2]).not.toBe(colors[1]);
 
   const centerOnScreen = async (l: Locator) => {
@@ -171,7 +173,7 @@ test("journey: photo, grid, frames, snap, push, history, reload", async ({ page 
         return onLine(s.x, grid.originX) && onLine(s.y, grid.originY);
       })
       .toBe(true);
-    await deselect(page);
+    await deselect(page, testInfo);
   }
 
   // 6b. Push: drop the rectangle onto a square; the square is pushed clear.
@@ -188,7 +190,7 @@ test("journey: photo, grid, frames, snap, push, history, reload", async ({ page 
       .toBe(true);
     const all = await Promise.all([0, 1, 2].map((i) => committed(frames(page).nth(i))));
     for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) expect(apart(all[i], all[j])).toBe(true);
-    await deselect(page);
+    await deselect(page, testInfo);
   }
 
   // 7. Duplicate, delete the copy; Undo brings it back, Redo removes it again.

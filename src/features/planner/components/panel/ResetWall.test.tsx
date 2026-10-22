@@ -36,7 +36,9 @@ describe("ResetWall", () => {
     const button = screen.getByRole("button", { name: "Reset wall" });
     expect(textColors(button.className)).toEqual(["text-danger"]);
     await userEvent.click(button);
-    expect(dialog().getByText(/Every frame and the photo are removed/)).toBeInTheDocument();
+    expect(
+      dialog().getByText("Every frame and the photo are removed, and all settings go back to their defaults. This can't be undone."),
+    ).toBeInTheDocument();
     expect(dialog().getByRole("button", { name: "Cancel" })).toHaveFocus();
     expect(isModalOpen()).toBe(true);
   });

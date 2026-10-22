@@ -6,7 +6,6 @@ const seed = (page: Page, shapes: Seed[]) => seedProject(page, shapes);
 
 const SHOTS = ".superpowers/sdd/2026-10-21-wall-planner-design/shots";
 
-
 const isDesktop = (testInfo: TestInfo) => testInfo.project.name === "desktop";
 const settingsDialog = (page: Page) => page.getByRole("dialog", { name: "Settings" });
 

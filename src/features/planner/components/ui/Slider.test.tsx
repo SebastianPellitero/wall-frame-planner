@@ -64,3 +64,17 @@ describe("Slider, stacked layout", () => {
     expect(screen.getByText("100%")).toBeInTheDocument();
   });
 });
+
+describe("Slider, cells layout", () => {
+  it("hands label, track and readout to the parent's three-column grid, so rows share one track start and end", () => {
+    render(
+      <div data-testid="grid" className="grid grid-cols-[auto_1fr_auto]">
+        <Slider label="Opacity" value={60} min={0} max={100} step={5} readout="60%" onChange={() => {}} layout="cells" />
+      </div>,
+    );
+    const slider = screen.getByRole("slider", { name: "Opacity" });
+    expect(slider.parentElement).toHaveClass("contents");
+    expect(slider).not.toHaveClass("flex-1");
+    expect(screen.getByText("60%")).toHaveClass("w-[5ch]", "text-right", "tabular-nums");
+  });
+});

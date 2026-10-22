@@ -6,10 +6,11 @@ import { SettingsIcon } from "../ui/icons";
 import { SettingsDialog, type SheetShell } from "./SettingsDialog";
 
 /**
- * The phones' Settings entry (design-system.md §4.5): an icon button at the top bar's right end
- * (stacked) or the right rail's bottom (landscape) that opens the Settings sheet. The sheet is
- * portalled to <body> so it rides above every chrome strip; closing returns focus here.
- * Desktop has no entry: the same sections are always open in the right panel.
+ * The Settings entry (design-system.md §4.5): an icon button at the top bar's right end
+ * (stacked, and narrow desktop with the landscape side sheet) or the right rail's bottom
+ * (landscape) that opens the Settings sheet. The sheet is portalled to <body> so it rides above
+ * every chrome strip; closing returns focus here. A wide desktop has no entry: the same sections
+ * are always open in the right panel.
  */
 export function SettingsSheet({ shell, className }: { shell: SheetShell; className?: string }) {
   const [state, setState] = useState<"closed" | "open" | "closing">("closed");

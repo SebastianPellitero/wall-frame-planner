@@ -94,7 +94,8 @@ export function FrameNode({ shape, pxPerCm }: { shape: Shape; pxPerCm: number })
       className={cx(
         "group absolute top-0 left-0 touch-none select-none",
         "focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-dashed focus-visible:outline-focus",
-        dragging ? "z-frame-lifted" : "z-frames",
+        // Raised from lift until the settle lands (useFrameMotion), not only while dragging.
+        dragging || motionValues.raised ? "z-frame-lifted" : "z-frames",
         circle && "rounded-full",
         arrange ? (dragging ? "cursor-grabbing" : "cursor-grab") : "pointer-events-none",
         Math.min(wPx, hPx) < TOUCH_PX &&
@@ -119,7 +120,7 @@ export function FrameNode({ shape, pxPerCm }: { shape: Shape; pxPerCm: number })
             hCm={shape.h}
             wPx={wPx}
             hPx={hPx}
-            selected={selected && mode !== "photo"}
+            selected={selected && arrange}
             hoverable={arrange && !dragging}
           />
         </motion.div>

@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { initialProject, initialUi } from "../../state/actions";
 import { useDragUi } from "../../state/dragUi";
@@ -87,7 +87,7 @@ describe("FrameNode", () => {
     expect(usePlannerStore.getState().selectedId).toBe("r1");
   });
 
-  it("writes the store once, on release, never while the pointer moves", () => {
+  it("writes the store once, on release, never while the pointer moves", async () => {
     const { frame } = renderFrame();
     let shapeWrites = 0;
     const unsubscribe = usePlannerStore.subscribe((s, prev) => void (s.shapes !== prev.shapes && shapeWrites++));
@@ -105,7 +105,9 @@ describe("FrameNode", () => {
     // 40 px at 2 px/cm = 20 cm to the right
     expect(usePlannerStore.getState().shapes[0]).toMatchObject({ x: 32.3, y: 40 });
     expect(useDragUi.getState().draggingId).toBeNull();
-    expect(frame).toHaveClass("z-frames");
+    // Raised until the settle lands, so it never slips under a later sibling (useFrameMotion).
+    expect(frame).toHaveClass("z-frame-lifted");
+    await waitFor(() => expect(frame).toHaveClass("z-frames"), { timeout: 3000 });
   });
 
   it("commits on pointercancel like a drop", () => {
@@ -114,6 +116,27 @@ describe("FrameNode", () => {
     windowPointer("pointermove", { clientX: 100, clientY: 120 });
     windowPointer("pointercancel", { clientX: 0, clientY: 0 });
     expect(usePlannerStore.getState().shapes[0]).toMatchObject({ x: 12.3, y: 50 });
+  });
+
+  it("a mode change mid-drag ends the drag: one commit where it is, guides cleared, later moves ignored", () => {
+    const { frame } = renderFrame();
+    let shapeWrites = 0;
+    const unsubscribe = usePlannerStore.subscribe((s, prev) => void (s.shapes !== prev.shapes && shapeWrites++));
+    fireEvent.pointerDown(frame, { ...pointer, clientX: 100, clientY: 100 });
+    windowPointer("pointermove", { clientX: 140, clientY: 100 });
+    act(() => useDragUi.getState().setGuides([{ axis: "x", position: 50 }]));
+    expect(useDragUi.getState().draggingId).toBe("r1");
+
+    act(() => usePlannerStore.getState().setMode("photo"));
+    expect(shapeWrites).toBe(1);
+    expect(usePlannerStore.getState().shapes[0]).toMatchObject({ x: 32.3, y: 40 });
+    expect(useDragUi.getState()).toMatchObject({ draggingId: null, guides: [] });
+
+    windowPointer("pointermove", { clientX: 200, clientY: 100 });
+    windowPointer("pointerup", { clientX: 200, clientY: 100 });
+    unsubscribe();
+    expect(shapeWrites).toBe(1);
+    expect(usePlannerStore.getState().shapes[0]).toMatchObject({ x: 32.3, y: 40 });
   });
 
   it("is non-interactive outside Arrange mode", () => {
@@ -142,9 +165,13 @@ describe("FrameNode", () => {
     expect(useDragUi.getState().spawnFrom).not.toBeNull();
   });
 
-  it("hides the brackets in Photo mode even when selected", () => {
-    usePlannerStore.setState({ mode: "photo", selectedId: "r1" });
+  it.each(["photo", "gridOrigin"] as const)("hides the brackets outside Arrange even when selected (%s), and brings them back in Arrange", (mode) => {
+    usePlannerStore.setState({ mode });
     renderFrame();
+    act(() => usePlannerStore.setState({ selectedId: "r1" }));
     expect(screen.queryByTestId("selection-brackets")).not.toBeInTheDocument();
+    act(() => usePlannerStore.getState().setMode("arrange"));
+    expect(usePlannerStore.getState().selectedId).toBe("r1");
+    expect(screen.getByTestId("selection-brackets")).toBeInTheDocument();
   });
 });

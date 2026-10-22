@@ -6,13 +6,11 @@ const seed = (page: Page, shapes: Seed[]) => seedProject(page, shapes);
 
 const SHOTS = ".superpowers/sdd/2026-10-21-wall-planner-design/shots";
 
-
 const frame = (page: Page, id: string) => page.locator(`[data-testid="frame"][data-shape-id="${id}"]`);
 const frames = (page: Page) => page.getByTestId("frame");
 const selection = (page: Page) => page.getByRole("region", { name: "Selected frame" });
 const creator = (page: Page) => page.getByRole("region", { name: "Frame creator" });
 const selField = (page: Page, name: string) => selection(page).getByRole("textbox", { name, exact: true });
-
 
 type Box = Awaited<ReturnType<typeof committed>>;
 const apart = (a: Box, b: Box, gap = WALL.pushGap - 0.01) =>

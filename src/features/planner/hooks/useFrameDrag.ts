@@ -24,7 +24,8 @@ export interface FrameDragOptions {
 /**
  * Pointer Events drag for a frame (mouse, touch and pen share one path). A press that moves
  * less than `dragStartPx` is a tap and only selects. During a drag only the x/y motion values
- * change; the store is written once, through `onDrop`.
+ * change; the store is written once, through `onDrop`. Leaving Arrange mid-drag ends the drag
+ * like a release, where the frame is.
  */
 export function useFrameDrag(options: FrameDragOptions) {
   const [dragging, setDragging] = useState(false);
@@ -33,6 +34,12 @@ export function useFrameDrag(options: FrameDragOptions) {
     latest.current = options;
   });
   const stopSession = useRef<(() => void) | null>(null);
+  /** Ends the live session as a release would (commit once, clear the guides), without a pointerup. */
+  const finishSession = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (!options.enabled) finishSession.current?.();
+  }, [options.enabled]);
 
   useEffect(
     () => () => {
@@ -65,7 +72,18 @@ export function useFrameDrag(options: FrameDragOptions) {
       return computeDrag({ startCm, deltaPx: delta, size, pxPerCm, wall, grid, coarse });
     };
 
-    stopSession.current = startPointerSession(e.currentTarget, e.pointerId, {
+    /** Release or cancel: commit once where the last move left it. */
+    const end = () => {
+      stopSession.current = null;
+      finishSession.current = null;
+      if (!started) return;
+      const { commitCm } = compute();
+      useDragUi.getState().endDrag();
+      setDragging(false);
+      latest.current.onDrop(commitCm);
+    };
+
+    const stop = startPointerSession(e.currentTarget, e.pointerId, {
       onMove(ev) {
         delta = { x: ev.clientX - origin.x, y: ev.clientY - origin.y };
         if (!started) {
@@ -84,19 +102,21 @@ export function useFrameDrag(options: FrameDragOptions) {
         useDragUi.getState().setGuides(r.guides);
       },
       onEnd(ev, cancelled) {
-        stopSession.current = null;
         if (!started) {
+          end();
           if (!cancelled) usePlannerStore.getState().select(id);
           return;
         }
         // A cancel may carry no coordinates, so it lands where the last move was.
         if (!cancelled) delta = { x: ev.clientX - origin.x, y: ev.clientY - origin.y };
-        const { commitCm } = compute();
-        useDragUi.getState().endDrag();
-        setDragging(false);
-        latest.current.onDrop(commitCm);
+        end();
       },
     });
+    stopSession.current = stop;
+    finishSession.current = () => {
+      stop();
+      end();
+    };
   }, []);
 
   return { onPointerDown, dragging };

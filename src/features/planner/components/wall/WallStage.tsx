@@ -2,6 +2,7 @@ import { useCallback, type PointerEvent, type ReactNode, type Ref } from "react"
 import { usePinchPan } from "../../hooks/usePinchPan";
 import type { Shell } from "../../hooks/useShell";
 import { clientToWallCm } from "../../lib/geometry";
+import { useDragUi } from "../../state/dragUi";
 import { usePlannerStore } from "../../state/store";
 import { cx } from "../ui/cx";
 import { BackgroundLayer } from "./BackgroundLayer";
@@ -73,8 +74,10 @@ export function WallStage({ stageRef, shell, children }: { stageRef: Ref<HTMLEle
       usePlannerStore.getState().setGridOrigin(cm);
       return;
     }
-    // A press on the bare wall (not a frame) clears the selection in Arrange mode.
-    if (mode === "arrange" && e.target === e.currentTarget) usePlannerStore.getState().select(null);
+    // A primary press on the bare wall (not a frame) clears the selection in Arrange mode. A second
+    // finger during a touch drag, a right-click or any press while a drag is live leaves it.
+    if (mode !== "arrange" || e.target !== e.currentTarget) return;
+    if (e.isPrimary && e.button === 0 && !useDragUi.getState().draggingId) usePlannerStore.getState().select(null);
   };
 
   return (

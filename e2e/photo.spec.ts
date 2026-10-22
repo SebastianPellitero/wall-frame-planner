@@ -6,7 +6,6 @@ const SHOTS = ".superpowers/sdd/2026-10-21-wall-planner-design/shots";
 
 type StoredBackground = { hasImage: boolean; x: number; y: number; width: number; aspect: number; opacity: number; visible: boolean };
 
-
 const photoTools = (page: Page) => page.getByRole("region", { name: "Photo tools" });
 const photo = (page: Page) => page.getByTestId("background-photo");
 

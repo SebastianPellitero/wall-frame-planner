@@ -24,7 +24,6 @@ const frames = (page: Page) => page.getByTestId("frame");
 const preview = (page: Page) => page.getByRole("button", { name: /^Add (rectangle|square|circle), / });
 const creator = (page: Page) => page.getByRole("region", { name: "Frame creator" });
 
-
 /** Where the finger (or cursor) goes so the ghost's center lands on `target`. */
 function pointerFor(target: Point, ghostHeightPx: number, testInfo: TestInfo): Point {
   if (!testInfo.project.use.hasTouch) return target;

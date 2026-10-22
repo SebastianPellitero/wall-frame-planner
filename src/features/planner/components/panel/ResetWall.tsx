@@ -4,8 +4,7 @@ import { resetWall } from "../../state/projectCommands";
 import { SECONDARY_DANGER_BUTTON } from "../ui/buttons";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 
-const BODY =
-  "Every frame and the photo are removed, and the wall size, push gap, grid and frame sizes go back to their defaults. The undo history is cleared too, so this can't be undone.";
+const BODY = "Every frame and the photo are removed, and all settings go back to their defaults. This can't be undone.";
 
 /**
  * Reset wall (design-system.md §5.6, §5.11): the last item in the Settings content, after a

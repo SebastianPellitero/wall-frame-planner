@@ -148,6 +148,24 @@ describe("SelectionBar", () => {
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("radio", { name: "Rectangle" })));
   });
 
+  it("landscape: each compact pair shares one helper line below it (§5.2)", () => {
+    select([A], "a");
+    renderPanel("landscape");
+    typeAndEnter("X (cm)", "999");
+    const helpers = () => bar().getAllByTestId("field-helper");
+    expect(helpers()).toHaveLength(1);
+    expect(helpers()[0]).toHaveClass("col-span-2", "whitespace-nowrap");
+    expect(field("X (cm)")).toHaveAccessibleDescription("Use 0–260 cm");
+    // After the X/Y pair.
+    expect(field("Y (cm)").closest("label")!.nextElementSibling).toBe(helpers()[0]);
+
+    typeAndEnter("Width (cm)", "0");
+    expect(helpers()).toHaveLength(2);
+    // After the Width/Height pair, before X.
+    expect(field("Height (cm)").closest("label")!.nextElementSibling).toBe(helpers()[0]);
+    expect(field("Width (cm)")).toHaveAccessibleDescription("Use 1–300 cm");
+  });
+
   it("only landscape has Deselect; the other shells deselect by tapping the wall or Esc", () => {
     select([A], "a");
     render(<SelectionBar shell="stacked" />);

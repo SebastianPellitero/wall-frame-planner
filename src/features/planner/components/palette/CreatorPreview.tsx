@@ -37,7 +37,11 @@ export function CreatorPreview({ kind, size, color, generation, caption, classNa
   const [contentRef, content] = useElementSize<HTMLDivElement>();
   /** The newest drawn frame; an exiting one never clears it. */
   const frameRef = useRef<HTMLDivElement | null>(null);
-  /** A pointer press handles its own tap; the click it produces must not add a second frame. */
+  /**
+   * A primary pointer press handles its own tap; the click it produces must not add a second
+   * frame. Cleared once that click cycle is over (a drag produces no click) and on any key, so
+   * it never swallows a later assistive-tech click.
+   */
   const pointerPressed = useRef(false);
   const fit = fitPreview(size, content, caption ? CAPTION_PX : 0);
   const frameKey = `${generation}:${color}`;
@@ -50,7 +54,24 @@ export function CreatorPreview({ kind, size, color, generation, caption, classNa
   }
   const pop = !reduced && popKey === frameKey;
 
+  const onPointerDown = (e: PointerEvent<HTMLElement>) => {
+    if (e.isPrimary && e.button === 0) {
+      pointerPressed.current = true;
+      // The click, if any, fires in the same task as the pointerup; after that the press is spent.
+      const { pointerId } = e;
+      const spent = (ev: globalThis.PointerEvent) => {
+        if (ev.pointerId !== pointerId) return;
+        window.removeEventListener("pointerup", spent);
+        window.removeEventListener("pointercancel", spent);
+        setTimeout(() => (pointerPressed.current = false), 0);
+      };
+      window.addEventListener("pointerup", spent);
+      window.addEventListener("pointercancel", spent);
+    }
+    onPress(e, frameRef.current);
+  };
   const onKeyDown = (e: KeyboardEvent) => {
+    pointerPressed.current = false;
     if (e.key !== "Enter" && e.key !== " ") return;
     e.preventDefault();
     if (!e.repeat) onAdd();
@@ -70,10 +91,7 @@ export function CreatorPreview({ kind, size, color, generation, caption, classNa
       aria-label={previewName(kind, size.w, size.h)}
       data-testid="creator-preview"
       data-frame-color={color}
-      onPointerDown={(e) => {
-        pointerPressed.current = true;
-        onPress(e, frameRef.current);
-      }}
+      onPointerDown={onPointerDown}
       onClick={onClick}
       onKeyDown={onKeyDown}
       className={cx(

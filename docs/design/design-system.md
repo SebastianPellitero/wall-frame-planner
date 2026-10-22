@@ -561,7 +561,7 @@ All buttons are `h-touch px-3.5 rounded-control text-ui font-medium`, 6px icon g
 
 - **Grid:** an SVG `<pattern>` of 1px `grid` lines (`shape-rendering="crispEdges"`) every Grid width (X) and Grid height (Y) cm, offset so a line passes through the origin. Over a visible photo each line gets a 3px `grid-halo` underlay. The two origin lines use `grid-origin`. Hidden entirely while Show grid is off.
 - **Origin marker:** a 14px crosshair, 2.5px `accent` over 5.5px `halo`; in Grid origin mode 20px with a 4px center dot and a `crosshair` cursor. A tap sets the origin and plays one ring pulse (0.6→1.6 scale, fading over 320ms; skipped under reduced motion).
-- **Dimensions (desktop only):** "300 cm" 14px above the top edge and "250 cm" rotated −90° 14px left of the left edge, `text-caption ink-muted tabular-nums font-stretch-semi-condensed`, on a 1px `ink-muted/40` line with 6px end ticks.
+- **Dimensions (desktop only):** "300 cm" 20px above the top edge and "250 cm" rotated −90° 20px left of the left edge (clear of the 14px origin crosshair at the corner), `text-caption ink-muted tabular-nums font-stretch-semi-condensed`, on a 1px `ink-muted/40` line with 6px end ticks.
 
 ### 5.14 Wall surface and edge
 

@@ -74,3 +74,31 @@ test.describe("phone portrait", () => {
     await expect(hint).toBeHidden();
   });
 });
+
+test.describe("narrow desktop", () => {
+  test.use({ viewport: { width: 1024, height: 768 } });
+
+  test("gives the right panel's width to the wall; Settings and the selection move (§4.4)", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "a desktop layout");
+    await page.goto("/");
+    const wall = await expectWallToScale(page);
+    expect(Math.round((await page.getByTestId("stage").boundingBox())!.width)).toBe(744);
+    expect(Math.round(wall.width)).toBe(664);
+    await expect(page.getByRole("region", { name: "Wall" })).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Settings" }).click();
+    const sheet = page.getByRole("dialog", { name: "Settings" });
+    await expect(sheet.getByRole("region", { name: "Wall" })).toBeVisible();
+    await sheet.getByRole("button", { name: "Close settings" }).click();
+    await expect(sheet).toHaveCount(0);
+
+    await page.getByRole("button", { name: /^Add rectangle/ }).click();
+    await page.getByTestId("frame").click();
+    const selection = page.getByRole("region", { name: "Selected frame" });
+    await expect(selection.getByRole("heading", { name: "Selected frame" })).toBeVisible();
+    await expect(selection.getByRole("button", { name: "Duplicate" })).toHaveText("Duplicate");
+    await expect(page.getByRole("region", { name: "Frame creator" })).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("region", { name: "Frame creator" })).toBeVisible();
+  });
+});

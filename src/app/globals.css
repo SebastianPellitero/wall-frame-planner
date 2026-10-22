@@ -11,7 +11,7 @@
 /* ---------------------------------------------------------------------------
  * Layout variants (design-system.md §4). The three layout queries are
  * mutually exclusive except phone-portrait, which is a subset of "stacked"
- * (the unprefixed default).
+ * (the unprefixed default), and desktop-narrow, a subset of desktop.
  * ------------------------------------------------------------------------- */
 @custom-variant phone-portrait {
   @media (max-width: 639px) and (orientation: portrait) {
@@ -25,6 +25,11 @@
 }
 @custom-variant desktop {
   @media (min-width: 1024px) and (min-height: 501px) {
+    @slot;
+  }
+}
+@custom-variant desktop-narrow {
+  @media (min-width: 1024px) and (max-width: 1279px) and (min-height: 501px) {
     @slot;
   }
 }

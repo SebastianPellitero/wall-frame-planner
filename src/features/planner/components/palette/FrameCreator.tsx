@@ -10,6 +10,7 @@ import { PanelSection } from "../panel/PanelSection";
 import { PRIMARY_BUTTON } from "../ui/buttons";
 import { CmField } from "../ui/CmField";
 import { cx } from "../ui/cx";
+import { useSharedHelper } from "../ui/useSharedHelper";
 import { useWallContext } from "../wall/WallContext";
 import { CreatorPreview } from "./CreatorPreview";
 import { DragGhost } from "./DragGhost";
@@ -104,7 +105,10 @@ export function FrameCreator({ shell }: { shell: Shell }) {
     setGeneration((g) => g + 1);
   };
 
-  const fieldProps = { compact: shell === "landscape" && !single, errorInLabel: stacked };
+  // The rail's two compact columns share one helper line below them (§5.2).
+  const compact = shell === "landscape" && !single;
+  const shared = useSharedHelper();
+  const fieldProps = { compact, errorInLabel: stacked };
 
   return (
     <PanelSection title="Frame creator">
@@ -121,7 +125,9 @@ export function FrameCreator({ shell }: { shell: Shell }) {
             {...limits.w}
             onCommit={(w) => setDraft(single ? { w, h: w } : { ...draftRef.current, w })}
             className={cx(layout.width(single), shell === "desktop" && (single ? "col-span-2" : "col-start-2"))}
+            centerHelper={shell === "desktop"}
             {...fieldProps}
+            {...(compact ? shared.bind("w") : {})}
           />
           {!single && (
             <CmField
@@ -132,8 +138,10 @@ export function FrameCreator({ shell }: { shell: Shell }) {
               onCommit={(h) => setDraft({ ...draftRef.current, h })}
               className={layout.height}
               {...fieldProps}
+              {...(compact ? shared.bind("h") : {})}
             />
           )}
+          {compact && shared.helper}
         </div>
         <button
           type="submit"

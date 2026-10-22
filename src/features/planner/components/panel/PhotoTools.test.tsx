@@ -46,6 +46,16 @@ describe("PhotoTools", () => {
     expect(t.queryByRole("button", { name: "Upload photo" })).not.toBeInTheDocument();
   });
 
+  it("desktop: Opacity and Scale share one label | track | readout grid, so their tracks line up", () => {
+    render(<PhotoTools shell="desktop" />);
+    const opacity = screen.getByRole("slider", { name: "Opacity" });
+    const scale = screen.getByRole("slider", { name: "Scale" });
+    const grid = opacity.parentElement!.parentElement!;
+    expect(grid).toHaveClass("grid", "grid-cols-[auto_1fr_auto]", "items-center", "gap-x-3");
+    expect(scale.parentElement!.parentElement).toBe(grid);
+    expect(opacity.parentElement).toHaveClass("contents");
+  });
+
   it.each(SHELLS)("with no photo, offers only Upload photo and Done (%s)", (shell) => {
     usePlannerStore.setState({ background: DEFAULT_BACKGROUND });
     render(<PhotoTools shell={shell} />);

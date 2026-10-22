@@ -27,7 +27,6 @@ async function wallAspect(page: Page) {
   return box.width / box.height;
 }
 
-
 async function openSettings(page: Page, testInfo: TestInfo) {
   if (isDesktop(testInfo)) return page;
   const sheet = page.getByRole("dialog", { name: "Settings" });
