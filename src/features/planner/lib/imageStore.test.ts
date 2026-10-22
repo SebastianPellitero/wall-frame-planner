@@ -1,10 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { get, set } from "idb-keyval";
 import {
+  deleteAllFramePhotos,
   deleteBackgroundImage,
+  deleteFramePhotos,
   downscaleImage,
   fitWithin,
+  listFramePhotoIds,
   loadBackgroundImage,
+  loadFramePhoto,
   saveBackgroundImage,
+  saveFramePhoto,
 } from "./imageStore";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -47,5 +53,33 @@ describe("background image storage", () => {
     expect(loaded).toBeDefined();
     await deleteBackgroundImage();
     expect(await loadBackgroundImage()).toBeUndefined();
+  });
+});
+
+describe("frame photo storage", () => {
+  const blob = () => new Blob(["frame-bytes"], { type: "image/jpeg" });
+
+  it("saves each photo under wallplanner:frame-photo:<imageId>, and loads it back", async () => {
+    expect(await loadFramePhoto("a")).toBeUndefined();
+    await saveFramePhoto("a", blob());
+    expect(await get("wallplanner:frame-photo:a")).toBeDefined();
+    expect(await loadFramePhoto("a")).toBeDefined();
+  });
+
+  it("lists only frame photo ids, and deletes some or all of them, leaving other keys alone", async () => {
+    await saveFramePhoto("b", blob());
+    await saveFramePhoto("c", blob());
+    await saveBackgroundImage(blob());
+    await set("unrelated", 1);
+    expect((await listFramePhotoIds()).sort()).toEqual(["a", "b", "c"]);
+
+    await deleteFramePhotos(["a", "c"]);
+    expect(await listFramePhotoIds()).toEqual(["b"]);
+    await deleteFramePhotos([]);
+
+    await deleteAllFramePhotos();
+    expect(await listFramePhotoIds()).toEqual([]);
+    expect(await loadBackgroundImage()).toBeDefined();
+    expect(await get("unrelated")).toBe(1);
   });
 });

@@ -5,7 +5,7 @@ import * as collisionMath from "./collisionMath";
 import { resolveOverlaps } from "./collision";
 import { round1 } from "./geometry";
 
-const wall: Wall = { width: 200, height: 200, pushGap: 3 };
+const wall: Wall = { width: 200, height: 200, pushGap: 3, color: "#f4f5f1" };
 
 const shape = (id: string, kind: ShapeKind, x: number, y: number, w: number, h: number = w): Shape => ({
   id,
@@ -15,6 +15,7 @@ const shape = (id: string, kind: ShapeKind, x: number, y: number, w: number, h: 
   w,
   h,
   color: 1,
+  mat: true,
 });
 const rect = (id: string, x: number, y: number, w: number, h: number) => shape(id, "rect", x, y, w, h);
 const circle = (id: string, x: number, y: number, d: number) => shape(id, "circle", x, y, d, d);
@@ -53,7 +54,7 @@ describe("resolveOverlaps", () => {
     const out = resolveOverlaps([a, b], "a", wall);
     expect(out[0]).toBe(a);
     expect(out[1]).not.toBe(b);
-    expect(out[1]).toEqual({ id: "b", kind: "rect", x: 93, y: 50, w: 40, h: 40, color: 1 }); // a.right 90 + gap 3
+    expect(out[1]).toEqual({ id: "b", kind: "rect", x: 93, y: 50, w: 40, h: 40, color: 1, mat: true }); // a.right 90 + gap 3
   });
 
   it("keeps the anchor fixed and the order intact when the anchor is not first", () => {
@@ -120,7 +121,7 @@ describe("resolveOverlaps", () => {
   });
 
   it("applies the first candidate, clamped, when no direction can clear the overlap", () => {
-    const small: Wall = { width: 100, height: 100, pushGap: 3 };
+    const small: Wall = { width: 100, height: 100, pushGap: 3, color: "#f4f5f1" };
     const a = rect("a", 0, 0, 100, 100);
     const b = rect("b", 10, 10, 20, 20);
     const out = resolveOverlaps([a, b], "a", small);
@@ -129,7 +130,7 @@ describe("resolveOverlaps", () => {
   });
 
   it("terminates on a fully packed wall without throwing", () => {
-    const packed: Wall = { width: 100, height: 100, pushGap: 3 };
+    const packed: Wall = { width: 100, height: 100, pushGap: 3, color: "#f4f5f1" };
     const shapes: Shape[] = [];
     for (let row = 0; row < 3; row++) {
       for (let col = 0; col < 3; col++) {
@@ -149,7 +150,7 @@ describe("resolveOverlaps", () => {
   });
 
   it("never throws on a crowded wall, even with a tiny maxIter", () => {
-    const packed: Wall = { width: 100, height: 100, pushGap: 3 };
+    const packed: Wall = { width: 100, height: 100, pushGap: 3, color: "#f4f5f1" };
     const shapes = [
       rect("a", 30, 30, 40, 40),
       rect("b", 10, 10, 40, 40),
@@ -228,7 +229,7 @@ describe("resolveOverlaps", () => {
 
   it("never leaves a pushed frame overlapping the anchor when a neighbor is jammed against the wall (regression)", () => {
     // Found by fuzzing: the anchor pushes s1 away, and s2 (jammed against the left wall) pushed it straight back.
-    const jammed: Wall = { width: 100, height: 100, pushGap: 3 };
+    const jammed: Wall = { width: 100, height: 100, pushGap: 3, color: "#f4f5f1" };
     const shapes = [rect("s0", 5, 25, 32, 20), rect("s1", 5, 44, 26, 31), rect("s2", 5, 46, 20, 19)];
     const out = resolveOverlaps(shapes, "s0", jammed);
     for (const s of out.slice(1)) expect(collision.overlaps(byId(out, "s0"), s, jammed.pushGap)).toBe(false);

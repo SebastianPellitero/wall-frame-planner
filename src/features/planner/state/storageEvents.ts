@@ -7,7 +7,11 @@ export type StorageEvent =
   /** The project says there is a photo, but its image is gone (storage cleared); the photo was reset. */
   | { type: "image-missing" }
   /** IndexedDB failed while loading the photo; the photo and its placement are kept for a later reload. */
-  | { type: "image-unavailable" };
+  | { type: "image-unavailable" }
+  /** A frame's image is gone (storage cleared); the photo was removed from the frames using it. */
+  | { type: "frame-photo-missing" }
+  /** IndexedDB failed while loading a frame's image; the frame keeps its photo data for a later reload. */
+  | { type: "frame-photo-unavailable" };
 
 type Listener = (e: StorageEvent) => void;
 

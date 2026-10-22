@@ -1,8 +1,9 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useShell } from "../hooks/useShell";
 import { useShortcuts } from "../hooks/useShortcuts";
 import { useWallScale } from "../hooks/useWallScale";
 import { STAGE_PADDING_PX } from "../lib/wallScale";
+import { gcFramePhotos } from "../state/framePhotoCommands";
 import { usePlannerStore } from "../state/store";
 import { DesktopShell } from "./shell/DesktopShell";
 import { LandscapeShell } from "./shell/LandscapeShell";
@@ -17,6 +18,8 @@ import { WallStage } from "./wall/WallStage";
 export function PlannerApp() {
   const shell = useShell();
   useShortcuts();
+  // Once per load, after hydration: stored frame photos nothing uses are deleted.
+  useEffect(() => void gcFramePhotos(), []);
   const wall = usePlannerStore((s) => s.wall);
   const { stageRef, pxPerCm, wallPx } = useWallScale(wall, shell === "desktop" ? STAGE_PADDING_PX.desktop : STAGE_PADDING_PX.phone);
   const wallRef = useRef<HTMLDivElement>(null);

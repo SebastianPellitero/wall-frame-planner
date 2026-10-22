@@ -8,8 +8,8 @@ import {
 } from "./defaults";
 
 describe("defaults", () => {
-  it("DEFAULT_WALL is 300 x 250 cm with a 3 cm push gap", () => {
-    expect(DEFAULT_WALL).toEqual({ width: 300, height: 250, pushGap: 3 });
+  it("DEFAULT_WALL is 300 x 250 cm with a 3 cm push gap, painted the default wall color", () => {
+    expect(DEFAULT_WALL).toEqual({ width: 300, height: 250, pushGap: 3, color: "#f4f5f1" });
   });
 
   it("DEFAULT_GRID is off, snapping, 10 cm spacing, origin at the wall corner", () => {

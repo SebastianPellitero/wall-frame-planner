@@ -32,14 +32,14 @@ describe("WallSettings", () => {
   });
 
   it("commits the wall size through setWall, which clamps frames inside a shrunken wall", async () => {
-    usePlannerStore.setState({ shapes: [{ id: "a", kind: "rect", x: 250, y: 20, w: 40, h: 50, color: 1 }] });
+    usePlannerStore.setState({ shapes: [{ id: "a", kind: "rect", x: 250, y: 20, w: 40, h: 50, color: 1, mat: true }] });
     render(<WallSettings />);
     await typeAndEnter("Wall width (cm)", "200");
     expect(state().wall.width).toBe(200);
     expect(state().shapes[0].x).toBe(160);
     await typeAndEnter("Wall height (cm)", "180");
     await typeAndEnter("Push gap (cm)", "5");
-    expect(state().wall).toEqual({ width: 200, height: 180, pushGap: 5 });
+    expect(state().wall).toEqual({ width: 200, height: 180, pushGap: 5, color: "#f4f5f1" });
   });
 
   it("rejects a wall under 10 cm and a push gap over 50 cm", async () => {
@@ -47,7 +47,7 @@ describe("WallSettings", () => {
     expect(await typeAndEnter("Wall width (cm)", "9")).toHaveAttribute("aria-invalid", "true");
     expect(await typeAndEnter("Push gap (cm)", "51")).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByText("Use 0–50 cm")).toBeInTheDocument();
-    expect(state().wall).toEqual({ width: 300, height: 250, pushGap: 3 });
+    expect(state().wall).toEqual({ width: 300, height: 250, pushGap: 3, color: "#f4f5f1" });
   });
 });
 

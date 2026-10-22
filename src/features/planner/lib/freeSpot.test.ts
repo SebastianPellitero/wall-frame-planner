@@ -3,7 +3,7 @@ import type { Shape, ShapeKind, Wall } from "../types";
 import { overlaps } from "./collision";
 import { findFreeSpot } from "./freeSpot";
 
-const wall: Wall = { width: 300, height: 250, pushGap: 3 };
+const wall: Wall = { width: 300, height: 250, pushGap: 3, color: "#f4f5f1" };
 const rectSize = { kind: "rect" as const, w: 40, h: 50 };
 
 const shape = (id: string, kind: ShapeKind, x: number, y: number, w: number, h: number = w): Shape => ({
@@ -14,6 +14,7 @@ const shape = (id: string, kind: ShapeKind, x: number, y: number, w: number, h: 
   w,
   h,
   color: 1,
+  mat: true,
 });
 
 /** A shape of `size` whose center sits at (cx, cy). */
@@ -87,7 +88,7 @@ describe("findFreeSpot", () => {
   });
 
   it("returns null when the shape cannot fit next to what is already there", () => {
-    const tight: Wall = { width: 100, height: 100, pushGap: 3 };
+    const tight: Wall = { width: 100, height: 100, pushGap: 3, color: "#f4f5f1" };
     const big = { kind: "rect" as const, w: 60, h: 60 };
     const existing = shape("a", "rect", 0, 0, 60, 60);
     expect(findFreeSpot(big, [existing], tight, { x: 50, y: 50 })).toBeNull();
@@ -112,7 +113,7 @@ describe("findFreeSpot", () => {
     expect(findFreeSpot(rectSize, [blocker], wall, near)).toEqual({ x: 175, y: 100 });
 
     // A wall exactly as wide as the shape allows only vertical moves; north and south tie at 55 cm
-    const narrow: Wall = { width: 40, height: 250, pushGap: 3 };
+    const narrow: Wall = { width: 40, height: 250, pushGap: 3, color: "#f4f5f1" };
     const mid = centeredAt("m", rectSize, 20, 125);
     expect(findFreeSpot(rectSize, [mid], narrow, { x: 20, y: 125 })).toEqual({ x: 0, y: 155 });
 

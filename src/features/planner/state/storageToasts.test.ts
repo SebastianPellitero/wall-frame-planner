@@ -12,12 +12,17 @@ describe("storageToast", () => {
       "image-session-only": "Photos can't be saved in this browser. Your photo stays until you close this tab.",
       "image-missing": "Your wall photo couldn't be found. Upload it again to see it.",
       "image-unavailable": "Your wall photo couldn't be loaded right now. Reload to try again.",
+      "frame-photo-missing": "A frame's photo couldn't be found, so that frame is plain again. Add the photo again to see it.",
+      "frame-photo-unavailable": "A frame's photo couldn't be loaded right now. Reload to try again.",
     });
   });
 
   it("maps every storage problem to an error toast keyed by the event type", () => {
     expect(storageToast({ type: "corrupt", backupKey: "k" })).toEqual({ key: "corrupt", tone: "error", message: STORAGE_COPY.corrupt });
     expect(storageToast({ type: "image-missing" })).toMatchObject({ key: "image-missing", tone: "error" });
+    // Several frames can share a missing image; one toast (same key) covers them.
+    expect(storageToast({ type: "frame-photo-missing" })).toMatchObject({ key: "frame-photo-missing", tone: "error" });
+    expect(storageToast({ type: "frame-photo-unavailable" })).toMatchObject({ key: "frame-photo-unavailable", tone: "error" });
   });
 
   it("throttles write-failed to once per 30 s, since it can fire on every commit", () => {

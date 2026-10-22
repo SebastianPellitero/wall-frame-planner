@@ -244,7 +244,7 @@ describe("settings actions", () => {
     store.getState().setWall({ width: 100, height: 80 });
     expect(shapeOf(store, id)).toMatchObject({ x: 60, y: 30, w: 40, h: 50 });
     store.getState().setWall({ width: 1, height: 1, pushGap: 80 });
-    expect(store.getState().wall).toEqual({ width: 10, height: 10, pushGap: 50 });
+    expect(store.getState().wall).toEqual({ width: 10, height: 10, pushGap: 50, color: "#f4f5f1" });
     store.getState().setWall({ pushGap: -4 });
     expect(store.getState().wall.pushGap).toBe(0);
   });
@@ -390,7 +390,7 @@ describe("pushedIds", () => {
   });
 
   it("commitShape lists the pushed neighbors, nearest to the anchor first", () => {
-    const rect = (id: string, x: number) => ({ id, kind: "rect" as const, x, y: 75, w: 40, h: 50, color: 1 as const });
+    const rect = (id: string, x: number) => ({ id, kind: "rect" as const, x, y: 75, w: 40, h: 50, color: 1 as const, mat: true });
     // A row: far is listed first so array order can't pass for distance order.
     store.setState({ shapes: [rect("far", 175), rect("a", 10), rect("near", 130), { ...rect("untouched", 250), y: 190 }] });
     // The anchor at 112..152 overlaps near (130..170), which is pushed right into far (175..215).

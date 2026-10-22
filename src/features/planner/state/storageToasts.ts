@@ -9,6 +9,8 @@ export const STORAGE_COPY: Record<StorageEvent["type"], string> = {
   "image-session-only": "Photos can't be saved in this browser. Your photo stays until you close this tab.",
   "image-missing": "Your wall photo couldn't be found. Upload it again to see it.",
   "image-unavailable": "Your wall photo couldn't be loaded right now. Reload to try again.",
+  "frame-photo-missing": "A frame's photo couldn't be found, so that frame is plain again. Add the photo again to see it.",
+  "frame-photo-unavailable": "A frame's photo couldn't be loaded right now. Reload to try again.",
 };
 
 /** A failed save can fire on every commit; the toast shows at most once per this window. */

@@ -97,10 +97,11 @@ describe("persistence", () => {
     const store = createPlannerStore({ name });
     const s = store.getState();
     expect(s).toMatchObject({ paletteKind: "square", creatorColor: 9 });
-    expect(s.wall).toEqual({ width: 400, height: 300, pushGap: 5 });
+    expect(s.wall).toEqual({ width: 400, height: 300, pushGap: 5, color: "#f4f5f1" });
     expect(s.grid.enabled).toBe(true);
     expect(s.background).toMatchObject({ hasImage: true, opacity: 0.4, visible: false });
-    expect(s.shapes).toEqual([shape]);
+    // A save from before frame photos gets the mat on.
+    expect(s.shapes).toEqual([{ ...shape, mat: true }]);
     expect(s.selectedId).toBeNull();
     expect(s.mode).toBe("arrange");
     expect(store.temporal.getState().pastStates).toHaveLength(0);

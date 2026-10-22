@@ -1,6 +1,7 @@
+import { DEFAULT_WALL_COLOR } from "./lib/wallColor";
 import type { Background, Grid, ShapeKind, Wall } from "./types";
 
-export const DEFAULT_WALL: Wall = { width: 300, height: 250, pushGap: 3 };
+export const DEFAULT_WALL: Wall = { width: 300, height: 250, pushGap: 3, color: DEFAULT_WALL_COLOR };
 
 export const DEFAULT_GRID: Grid = {
   enabled: false,

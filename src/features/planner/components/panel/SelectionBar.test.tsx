@@ -11,10 +11,10 @@ import { textColors } from "../ui/textColors.testUtil";
 import { WallContext } from "../wall/WallContext";
 import { SelectionBar } from "./SelectionBar";
 
-const A: Shape = { id: "a", kind: "rect", x: 20, y: 30, w: 40, h: 50, color: 4 };
-const B: Shape = { id: "b", kind: "rect", x: 70, y: 30, w: 40, h: 50, color: 6 };
-const SQUARE: Shape = { id: "s", kind: "square", x: 0, y: 0, w: 30, h: 30, color: 2 };
-const CIRCLE: Shape = { id: "c", kind: "circle", x: 0, y: 0, w: 30, h: 30, color: 1 };
+const A: Shape = { id: "a", kind: "rect", x: 20, y: 30, w: 40, h: 50, color: 4, mat: true };
+const B: Shape = { id: "b", kind: "rect", x: 70, y: 30, w: 40, h: 50, color: 6, mat: true };
+const SQUARE: Shape = { id: "s", kind: "square", x: 0, y: 0, w: 30, h: 30, color: 2, mat: true };
+const CIRCLE: Shape = { id: "c", kind: "circle", x: 0, y: 0, w: 30, h: 30, color: 1, mat: true };
 
 function select(shapes: Shape[], id: string) {
   usePlannerStore.setState({ shapes, selectedId: id });

@@ -6,7 +6,7 @@ import { useDragUi } from "./dragUi";
 import { deleteFrame, duplicateFrame, nudgeFrame, redo, undo } from "./frameCommands";
 import { usePlannerStore } from "./store";
 
-const A: Shape = { id: "a", kind: "rect", x: 20, y: 30, w: 40, h: 50, color: 4 };
+const A: Shape = { id: "a", kind: "rect", x: 20, y: 30, w: 40, h: 50, color: 4, mat: true };
 
 beforeEach(() => {
   usePlannerStore.setState({ ...initialProject(), ...initialUi, shapes: [A], selectedId: "a" });

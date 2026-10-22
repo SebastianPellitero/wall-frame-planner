@@ -196,7 +196,7 @@ describe("clientToWallCm", () => {
 
 describe("fitShapesToWall", () => {
   const wall = { width: 100, height: 80 };
-  const shape = (o: Partial<Shape>): Shape => ({ id: "a", kind: "rect", x: 0, y: 0, w: 40, h: 50, color: 1, ...o });
+  const shape = (o: Partial<Shape>): Shape => ({ id: "a", kind: "rect", x: 0, y: 0, w: 40, h: 50, color: 1, mat: true, ...o });
 
   it("returns the same array when every shape already fits", () => {
     const shapes = [shape({ x: 10, y: 10 }), shape({ id: "b", x: 60, y: 30 })];

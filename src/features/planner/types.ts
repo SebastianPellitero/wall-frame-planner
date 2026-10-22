@@ -4,6 +4,21 @@ export type { FrameColor };
 
 export type ShapeKind = "rect" | "square" | "circle";
 
+/**
+ * A photo in a frame (design-system.md §3.8). The image lives in IndexedDB under its `imageId`;
+ * duplicates share the id. It always covers its opening; `zoom` and the focus choose the crop.
+ */
+export interface FramePhoto {
+  imageId: string;
+  /** Image height / width. */
+  aspect: number;
+  /** 1 (cover) to 4. */
+  zoom: number;
+  /** The image point (0–1 of its width and height) at the center of the opening. */
+  focusX: number;
+  focusY: number;
+}
+
 /** Top-left corner (x, y) and size (w, h) in cm, relative to the wall's top-left. square/circle: w === h (circle: diameter). */
 export interface Shape {
   id: string;
@@ -14,6 +29,9 @@ export interface Shape {
   h: number;
   /** One of the ten curated finishes (design-system.md §3.2). Duplicates copy it. */
   color: FrameColor;
+  photo?: FramePhoto;
+  /** The mat between moulding and opening (§3.8). Off: the opening fills the moulding. */
+  mat: boolean;
 }
 
 export interface Rect {
@@ -32,6 +50,8 @@ export interface Wall {
   width: number;
   height: number;
   pushGap: number;
+  /** Wall paint, `#rrggbb` (§5.18). Not in undo, like the wall size. */
+  color: string;
 }
 
 export interface Grid {

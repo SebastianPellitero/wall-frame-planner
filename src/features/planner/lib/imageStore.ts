@@ -1,6 +1,9 @@
-import { del, get, set } from "idb-keyval";
+import { del, delMany, get, keys, set } from "idb-keyval";
 
 const KEY = "wallplanner:background";
+/** Frame photos (spec "Storage"): one key per image, shared by every frame using that `imageId`. */
+const FRAME_PHOTO_PREFIX = "wallplanner:frame-photo:";
+const framePhotoKey = (imageId: string) => FRAME_PHOTO_PREFIX + imageId;
 const SMALL_FILE_BYTES = 1.5 * 1024 * 1024;
 
 /** Thrown when IndexedDB cannot be used, so the UI can say the photo only lasts for this session. */
@@ -71,3 +74,21 @@ export const saveBackgroundImage = (blob: Blob): Promise<void> => guarded(() => 
 export const loadBackgroundImage = (): Promise<Blob | undefined> => guarded(() => get<Blob>(KEY));
 
 export const deleteBackgroundImage = (): Promise<void> => guarded(() => del(KEY));
+
+export const saveFramePhoto = (imageId: string, blob: Blob): Promise<void> => guarded(() => set(framePhotoKey(imageId), blob));
+
+export const loadFramePhoto = (imageId: string): Promise<Blob | undefined> => guarded(() => get<Blob>(framePhotoKey(imageId)));
+
+/** The `imageId` of every stored frame photo. */
+export const listFramePhotoIds = (): Promise<string[]> =>
+  guarded(async () =>
+    (await keys()).flatMap((k) => (typeof k === "string" && k.startsWith(FRAME_PHOTO_PREFIX) ? [k.slice(FRAME_PHOTO_PREFIX.length)] : [])),
+  );
+
+export const deleteFramePhotos = (imageIds: readonly string[]): Promise<void> =>
+  guarded(async () => {
+    if (imageIds.length > 0) await delMany(imageIds.map(framePhotoKey));
+  });
+
+/** Reset wall: every frame photo goes. */
+export const deleteAllFramePhotos = async (): Promise<void> => deleteFramePhotos(await listFramePhotoIds());

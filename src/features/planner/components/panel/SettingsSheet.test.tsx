@@ -152,7 +152,7 @@ describe("SettingsSheet, with focus fallen to <body> (a tap on a caption or labe
   }
 
   async function openThenDropFocus() {
-    usePlannerStore.setState({ shapes: [{ id: "a", kind: "rect", x: 20, y: 30, w: 40, h: 50, color: 1 }], selectedId: "a" });
+    usePlannerStore.setState({ shapes: [{ id: "a", kind: "rect", x: 20, y: 30, w: 40, h: 50, color: 1, mat: true }], selectedId: "a" });
     render(<WithShortcuts />);
     await userEvent.click(settingsButton());
     (document.activeElement as HTMLElement).blur();

@@ -33,7 +33,7 @@ describe("sanitizeProject", () => {
       grid: { spacingX: 0, spacingY: -3, originX: 9999, originY: -5 },
       background: { opacity: 7, width: 0, aspect: 0 },
     });
-    expect(out.wall).toEqual({ width: 10, height: DEFAULT_WALL.height, pushGap: 50 });
+    expect(out.wall).toEqual({ width: 10, height: DEFAULT_WALL.height, pushGap: 50, color: DEFAULT_WALL.color });
     expect(out.grid).toMatchObject({ spacingX: 0.5, spacingY: 0.5, originX: 10, originY: 0 });
     expect(out.background).toMatchObject({ opacity: 1, width: 1, aspect: DEFAULT_BACKGROUND.aspect });
   });
@@ -55,7 +55,7 @@ describe("sanitizeProject", () => {
         { ...good, id: "a", x: 50 },
       ],
     });
-    expect(out.shapes).toEqual([{ ...good, color: colorFromId("a") }]);
+    expect(out.shapes).toEqual([{ ...good, color: colorFromId("a"), mat: true }]);
   });
 
   it("coerces square and circle to w === h", () => {
@@ -79,7 +79,7 @@ describe("sanitizeProject", () => {
         { id: "b", kind: "rect", x: 10.04, y: 10.06, w: 20, h: 20 },
       ],
     });
-    expect(out.shapes[0]).toEqual({ id: "a", kind: "rect", x: 0, y: 0, w: 100, h: 1, color: colorFromId("a") });
+    expect(out.shapes[0]).toEqual({ id: "a", kind: "rect", x: 0, y: 0, w: 100, h: 1, color: colorFromId("a"), mat: true });
     expect(out.shapes[1]).toMatchObject({ x: 10, y: 10.1 });
   });
 
@@ -119,5 +119,59 @@ describe("sanitizeProject", () => {
     expect(sanitizeProject({ creatorColor: 4, paletteKind: "circle" })).toMatchObject({ creatorColor: 4, paletteKind: "circle" });
     expect(sanitizeProject({ creatorColor: 12, paletteKind: "hexagon" }, 6)).toMatchObject({ creatorColor: 6, paletteKind: "rect" });
     expect(sanitizeProject({}).creatorColor).toBe(1);
+  });
+
+  it("keeps a #rrggbb wall color (lowercased) and defaults anything else", () => {
+    expect(sanitizeProject({ wall: { color: "#2F4A3F" } }).wall.color).toBe("#2f4a3f");
+    for (const bad of ["#abc", "red", "2f4a3f", 42, null]) {
+      expect(sanitizeProject({ wall: { color: bad } }).wall.color).toBe(DEFAULT_WALL.color);
+    }
+  });
+
+  describe("frame photo and mat", () => {
+    const base = { id: "a", kind: "rect", x: 0, y: 0, w: 40, h: 50 };
+    const photo = { imageId: "img-1", aspect: 0.75, zoom: 1.5, focusX: 0.3, focusY: 0.6 };
+    const one = (shape: object) => sanitizeProject({ shapes: [shape] }).shapes[0];
+
+    it("defaults mat to true and keeps a boolean", () => {
+      expect(one(base).mat).toBe(true);
+      expect(one({ ...base, mat: false }).mat).toBe(false);
+      expect(one({ ...base, mat: "no" }).mat).toBe(true);
+    });
+
+    it("keeps a valid photo as is, and a shape without one has no photo key", () => {
+      expect(one({ ...base, photo }).photo).toEqual(photo);
+      expect(one(base)).not.toHaveProperty("photo");
+    });
+
+    it("clamps zoom to 1–4 and focus to 0–1, and defaults missing crop values", () => {
+      expect(one({ ...base, photo: { ...photo, zoom: 9, focusX: -1, focusY: 3 } }).photo).toEqual({
+        ...photo,
+        zoom: 4,
+        focusX: 0,
+        focusY: 1,
+      });
+      expect(one({ ...base, photo: { ...photo, zoom: 0.2 } }).photo?.zoom).toBe(1);
+      expect(one({ ...base, photo: { imageId: "img-1", aspect: 2 } }).photo).toEqual({
+        imageId: "img-1",
+        aspect: 2,
+        zoom: 1,
+        focusX: 0.5,
+        focusY: 0.5,
+      });
+    });
+
+    it.each([
+      ["not an object", "img-1"],
+      ["no imageId", { ...photo, imageId: undefined }],
+      ["an empty imageId", { ...photo, imageId: "" }],
+      ["a missing aspect", { ...photo, aspect: undefined }],
+      ["a zero aspect", { ...photo, aspect: 0 }],
+      ["a non-finite aspect", { ...photo, aspect: Infinity }],
+    ])("drops a photo with %s but keeps the frame", (_, bad) => {
+      const out = one({ ...base, photo: bad });
+      expect(out).toMatchObject({ id: "a", mat: true });
+      expect(out).not.toHaveProperty("photo");
+    });
   });
 });

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Shape } from "../types";
 import { pushOrder } from "./pushOrder";
 
-const sq = (id: string, x: number, y: number): Shape => ({ id, kind: "square", x, y, w: 10, h: 10, color: 1 });
+const sq = (id: string, x: number, y: number): Shape => ({ id, kind: "square", x, y, w: 10, h: 10, color: 1, mat: true });
 
 describe("pushOrder", () => {
   it("lists only the frames whose object changed, without the anchor", () => {

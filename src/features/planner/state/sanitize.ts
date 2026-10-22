@@ -1,7 +1,9 @@
 import { DEFAULT_BACKGROUND, DEFAULT_GRID, DEFAULT_PALETTE_SIZES, DEFAULT_WALL } from "../defaults";
 import { colorFromId, isFrameColor, type FrameColor } from "../lib/frameColors";
+import { ZOOM_MAX, ZOOM_MIN } from "../lib/framePhoto";
 import { clamp, clampSize, clampToWall, round1 } from "../lib/geometry";
-import type { Background, Grid, PersistedSlice, Shape, ShapeKind, Wall } from "../types";
+import { isHexColor } from "../lib/wallColor";
+import type { Background, FramePhoto, Grid, PersistedSlice, Shape, ShapeKind, Wall } from "../types";
 
 const KINDS: readonly ShapeKind[] = ["rect", "square", "circle"];
 
@@ -17,6 +19,7 @@ function sanitizeWall(raw: unknown): Wall {
     width: Math.max(10, num(o.width, DEFAULT_WALL.width)),
     height: Math.max(10, num(o.height, DEFAULT_WALL.height)),
     pushGap: clamp(num(o.pushGap, DEFAULT_WALL.pushGap), 0, 50),
+    color: isHexColor(o.color) ? o.color.toLowerCase() : DEFAULT_WALL.color,
   };
 }
 
@@ -46,6 +49,21 @@ function sanitizeBackground(raw: unknown): Background {
   };
 }
 
+/** A frame photo needs an image id and a positive aspect; the crop is clamped or defaulted. Anything else drops the photo. */
+function sanitizePhoto(raw: unknown): FramePhoto | undefined {
+  if (!isObj(raw)) return undefined;
+  const { imageId, aspect } = raw;
+  if (typeof imageId !== "string" || imageId === "") return undefined;
+  if (typeof aspect !== "number" || !Number.isFinite(aspect) || aspect <= 0) return undefined;
+  return {
+    imageId,
+    aspect,
+    zoom: clamp(num(raw.zoom, ZOOM_MIN), ZOOM_MIN, ZOOM_MAX),
+    focusX: clamp(num(raw.focusX, 0.5), 0, 1),
+    focusY: clamp(num(raw.focusY, 0.5), 0, 1),
+  };
+}
+
 function sanitizeShapes(raw: unknown, wall: Wall): Shape[] {
   if (!Array.isArray(raw)) return [];
   const seen = new Set<string>();
@@ -61,7 +79,17 @@ function sanitizeShapes(raw: unknown, wall: Wall): Shape[] {
     seen.add(id);
     // Saves from before frame colors get a varied color that is stable across reloads.
     const finish = isFrameColor(color) ? color : colorFromId(id);
-    out.push({ id, kind: kind as ShapeKind, x: round1(pos.x), y: round1(pos.y), ...size, color: finish });
+    const photo = sanitizePhoto(item.photo);
+    out.push({
+      id,
+      kind: kind as ShapeKind,
+      x: round1(pos.x),
+      y: round1(pos.y),
+      ...size,
+      color: finish,
+      ...(photo ? { photo } : {}),
+      mat: bool(item.mat, true),
+    });
   }
   return out;
 }

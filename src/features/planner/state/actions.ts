@@ -5,7 +5,9 @@ import { findFreeSpot } from "../lib/freeSpot";
 import { clamp, clampSize, clampToWall, fitShapesToWall, round1 } from "../lib/geometry";
 import { newId } from "../lib/id";
 import { pushOrder } from "../lib/pushOrder";
+import { isHexColor } from "../lib/wallColor";
 import type { FrameColor, PersistedSlice, Point, Shape, ShapeKind, Wall } from "../types";
+import { createFramePhotoActions } from "./framePhotoActions";
 import type { PlannerActions, PlannerState, PlannerUiSlice } from "./storeTypes";
 
 type Set = (partial: Partial<PlannerState> | ((s: PlannerState) => Partial<PlannerState>)) => void;
@@ -48,7 +50,7 @@ function resolveWithOrder(shapes: Shape[], anchorId: string, wall: Wall): Pick<P
 
 /** A shape of `kind` and `size` whose center is at `center`, kept inside the wall. */
 function centeredShape(
-  base: Pick<Shape, "id" | "kind" | "color">,
+  base: Pick<Shape, "id" | "kind" | "color" | "mat">,
   size: { w: number; h: number },
   center: Point,
   wall: Wall,
@@ -76,10 +78,12 @@ export function createActions(set: Set, get: Get, history: History): PlannerActi
   };
 
   return {
+    ...createFramePhotoActions(set, get, history),
+
     addShape(kind, at, opts) {
       const { wall, paletteSizes, shapes, creatorColor: color } = get();
       const size = clampSize(kind, paletteSizes[kind].w, paletteSizes[kind].h, wall);
-      const base = { id: newId(), kind, color };
+      const base = { id: newId(), kind, color, mat: true };
       const shape = at
         ? centeredShape(base, size, at, wall)
         : placeNear({ ...base, x: 0, y: 0, ...size }, { x: wall.width / 2, y: wall.height / 2 }, shapes, wall);
@@ -140,6 +144,7 @@ export function createActions(set: Set, get: Get, history: History): PlannerActi
         width: Math.max(10, patch.width ?? old.width),
         height: Math.max(10, patch.height ?? old.height),
         pushGap: clamp(patch.pushGap ?? old.pushGap, 0, 50),
+        color: isHexColor(patch.color) ? patch.color.toLowerCase() : old.color,
       };
       // Frames and creator sizes shrink and move to fit, as sanitize does on reload. The wall is
       // not in history, so neither is this: undo re-fits what it restores instead (fitToWall).

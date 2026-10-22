@@ -7,7 +7,7 @@ import { usePlannerStore } from "../state/store";
 import type { Shape } from "../types";
 import { useShortcuts } from "./useShortcuts";
 
-const A: Shape = { id: "a", kind: "rect", x: 20, y: 30, w: 40, h: 50, color: 4 };
+const A: Shape = { id: "a", kind: "rect", x: 20, y: 30, w: 40, h: 50, color: 4, mat: true };
 
 function Harness() {
   useShortcuts();
