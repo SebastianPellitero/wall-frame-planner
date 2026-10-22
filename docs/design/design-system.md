@@ -131,7 +131,7 @@ Frame shadows open with the two-tone keyline `0 0 0 1px var(--color-frame-edge),
 
 ### 2.6 Z-index (`z-*`)
 
-The stage is its own stacking context (`relative isolate overflow-hidden`): `wall 0` < `photo 1` < `grid 2` < `guides 5` < `frames 10` < `frame-lifted 20` < `guides-live 25` (guides during a live drag ride above the dragged frame so a center guide stays visible).
+The stage is its own stacking context (`relative isolate overflow-hidden`): `wall 0` < `photo 1` < `grid 2` < `frames 10` < `frame-lifted 20` < `guides-live 25`. Snap guides exist only during a live drag and are **always** drawn at `z-guides-live`, above every frame including the dragged one, so a center guide stays visible (decided in the T5 review; the cost is that a guide may cross a resting frame's label for the length of the gesture). `z-guides` (5) is kept as a token but is unused.
 
 App level: `chrome 40` (bars, rails, dock, panels) < `float 50` (rotate hint) < `scrim 60` < `sheet 70` < `ghost 80` (drag ghost from the preview, portalled to `body`) < `dialog 85` < `toast 90`.
 
@@ -244,6 +244,7 @@ The outer element is `rounded-full` with no border. Its moulding is its own back
 | Being pushed | Nudge layer at opacity 1 while moving, back to 0 at rest | Motion and shadow |
 | Snapped | Frame unchanged; laser guides light up (§5.12), plus haptic | Guide line |
 | Photo mode | `opacity-35`, `pointer-events-none`, no brackets | — |
+| Grid origin mode | Full opacity, no brackets (the selection is kept and its brackets return in Arrange) | — |
 
 None of these states tints the moulding, so no state depends on the finish. Brackets, focus outline and guides sit outside the moulding (on wall or photo), each with its own white underlay, so they hold ≥3:1 next to Black as well as Gallery white.
 
@@ -263,6 +264,7 @@ None of these states tints the moulding, so no state depends on the finish. Brac
 |---|---|---|
 | **Landscape rails** (phones held sideways, any short window) | `(orientation: landscape) and (max-height: 500px)` | `phone-landscape:` |
 | **Desktop** | `(min-width: 1024px) and (min-height: 501px)` | `desktop:` |
+| ↳ narrow desktop | `(min-width: 1024px) and (max-width: 1279px) and (min-height: 501px)` | `desktop-narrow:` (§4.4) |
 | **Stacked** (default: phone portrait, tablets in portrait, narrow windows) | everything else | unprefixed |
 | ↳ phone-portrait extras | `(max-width: 639px) and (orientation: portrait)` | `phone-portrait:` |
 
@@ -363,7 +365,8 @@ Build the stacked shell unprefixed and then override. The root is `h-dvh`, and e
 - **Top bar:** `bg-surface border-b border-line`; wordmark left, horizontal mode switch centered, Undo/Redo right.
 - **Left sidebar** (`w-sidebar` 280px, `p-4`, content 248px, `overflow-y-auto overscroll-contain`): Frame creator above Matrix control, as in the sketch. The sidebar widens from 248 to 280px because the sketch gives the creator a real preview with the Height field beside it. At 1280px the stage is 680px (wall area 600px) instead of 712px. That costs the wall 5% of scale, and in exchange the creator is usable at a glance.
 - **Sidebar budget:** title 28 + 12 + picker 44 + 12 + preview row 152 + 8 + Width field 64 + 12 + Generate 44 = **376px**; Matrix control 24 + 28 + 12 + 64 + 8 + 44 = 180px. Everything fits from a 645px-tall viewport; below that, down to the 501px desktop minimum, the creator (376 + 32 padding + 56 bar = 464px) is still fully visible and only the Matrix control scrolls.
-- **Right panel:** always open, scrolls independently: Selected frame (only while selected), Wall, Grid (Snap to grid, Set origin), Photo, then Reset wall last in the scroll.
+- **Right panel:** always open, scrolls independently: Selected frame (only while selected), Wall, Grid (Snap to grid, Set origin), Photo, then Reset wall last in the scroll. **In Photo mode the panel's Photo section is not rendered**: the sidebar's Photo tools hold the same controls, and each accessible name ("Show photo", "Opacity", "Replace photo", "Remove photo") must appear once per screen.
+- **Narrow desktop (`desktop-narrow:`, 1024–1279px wide).** Two fixed panels (280 + 320) leave a 1024px window a 424px stage and a 344 × 287 wall: less than half the screen, against the sketch's ≈67% canvas. So below 1280px the right panel is not rendered. The top bar's right group becomes Undo, Redo, Settings (`size-touch` icon button, name "Settings"), which opens the landscape side sheet (§5.6: `w-sheet`, `rounded-l-sheet`, `scrim-light`, the same sections in the same order; no Matrix control, which stays in the sidebar). A selection replaces the sidebar's Frame creator with the Selected frame section (serif `text-title` "Selected frame", Duplicate and Delete with labels, Width/Height over X/Y), and deselecting brings the creator back, as on landscape. At 1024 × 768 the stage becomes 744px wide and the wall 664 × 553 (2.21 px/cm instead of 1.15).
 - **Stage:** wall dimensions sit in the stage padding (§5.13), toasts at the bottom-center.
 
 ### 4.5 Placement summary
@@ -378,7 +381,7 @@ Build the stacked shell unprefixed and then override. The root is `h-dvh`, and e
 | Snap to grid, Set origin | Settings sheet | Side sheet | Right panel, Grid section |
 | Mode switch | Top bar, horizontal | Right rail, vertical | Top bar, centered |
 | Undo / Redo | Dock row A, right end | **Right rail, above Settings** | Top bar, right |
-| Settings entry | Top bar, right | Right rail, bottom | None (panel always open) |
+| Settings entry | Top bar, right | Right rail, bottom | None (panel always open); top bar right on narrow desktop |
 | Selection bar | Replaces dock rows A and B | Replaces the left-rail body | Right panel, first section |
 | Toasts | Stage bottom, above hint and dock | Stage bottom-center | Stage bottom-center |
 | Rotate hint | Stage bottom (`phone-portrait:` only) | — | — |
@@ -465,7 +468,10 @@ Width                ◄ text-caption ink-muted, 4px gap
 - `<input type="text" inputmode="decimal">` inside a `<label>`, `w-field` by default or `flex-1` in rows. The visible label is short; the accessible name follows the e2e contract (§8): "Width (cm)", "Height (cm)", "Side (cm)", "Diameter (cm)", "X (cm)", "Y (cm)", "Grid height (cm)", "Grid width (cm)", "Wall width (cm)", "Wall height (cm)", "Push gap (cm)". `CmField` needs an optional accessible-name override for the grid and wall fields, whose visible labels are "Height", "Width" and "Push gap"; every name starts or ends with words that contain the visible text, so label-in-name holds (WCAG 2.5.3).
 - **Compact variant** (landscape rail, 62px wide): `pl-2 pr-6`, unit at `right-1.5`, value still `text-body`. Three digits fit; longer values scroll inside the input.
 - Focus puts a 2px `focus` ring on the border (`outline-offset: -1px`). Values commit on Enter or blur; Esc reverts; focusing selects all. Inside the Frame creator, Enter submits the form (Generate).
-- An invalid value gets `border-danger`, `aria-invalid` and a helper line in `text-caption text-danger`, e.g. "Use 1–300 cm".
+- An invalid value gets `border-danger`, `aria-invalid` and a helper line in `text-caption text-danger`, e.g. "Use 1–300 cm". The border stays `danger` while focused: the focus ring on an invalid field uses `outline-danger`. The helper never wraps (`whitespace-nowrap`) and never changes the height of a row it shares:
+  - **Default and desktop creator:** one line under the field; under the centered desktop Width field it is centered too and may overflow the 76px field width.
+  - **Landscape rail (compact, 2 columns):** the helper renders once, below the two-field grid, `col-span-2`, one line ("Use 1–300 cm"), so the rail grows by 20px, not 40px.
+  - **Stacked dock (`errorInLabel`):** the label row keeps the field's name: `flex justify-between gap-1`, label in `ink-muted` left, limits `1–300 cm` in `text-danger` right. The field's name is never replaced.
 
 ### 5.3 Segmented controls (Mode switch, Shape picker)
 
@@ -545,11 +551,11 @@ All buttons are `h-touch px-3.5 rounded-control text-ui font-medium`, 6px icon g
 
 ### 5.11 Confirm dialog (Reset wall, Remove photo)
 
-- `role="alertdialog"`, centered, `w-[min(360px,calc(100vw-32px))] bg-surface rounded-tile shadow-sheet p-5 z-dialog`, over `scrim`. Title "Reset the wall?" (serif `text-title`); body `text-ui ink-muted`: "Every frame is removed and the wall goes back to its defaults." Buttons right-aligned: Cancel (secondary, initial focus) and Reset wall (danger).
+- `role="alertdialog"`, centered, `w-[min(360px,calc(100vw-32px))] bg-surface rounded-tile shadow-sheet p-5 z-dialog`, over `scrim`. Title "Reset the wall?" (serif `text-title`); body `text-ui ink-muted`: "Every frame and the photo are removed, and all settings go back to their defaults. This can't be undone." (two lines at 360px; the undo history being cleared is what "can't be undone" means, so it needs no second sentence) Buttons right-aligned: Cancel (secondary, initial focus) and Reset wall (danger).
 
 ### 5.12 Snap guide
 
-- A 2px line across the full wall in one axis, clipped to the wall, `data-testid="snap-guide"`, at most one per axis. `bg-laser shadow-laser`; fades in over 60ms, out over 120ms. It sits at `z-guides` at rest and `z-guides-live` during a drag.
+- A 2px line across the full wall in one axis, clipped to the wall, `data-testid="snap-guide"`, at most one per axis. `bg-laser shadow-laser`; fades in over 60ms, out over 120ms. Guides render only while a drag is live, always at `z-guides-live` (§2.6).
 
 ### 5.13 Grid lines, origin and wall dimensions
 
@@ -710,7 +716,7 @@ Sentence case, no exclamation marks. Tests should find elements by these exact n
 | Position fields | textbox | "X (cm)", "Y (cm)" | Selected frame |
 | Mode | radiogroup / radio | "Mode" / "Arrange", "Photo", "Grid origin" (phones show "Origin") | Top bar or right rail |
 | History | button | "Undo", "Redo" | Dock, right rail, top bar |
-| Settings | button / dialog | "Settings" / "Settings", "Close settings" | Top bar or right rail |
+| Settings | button / dialog | "Settings" / "Settings", "Close settings" | Top bar (stacked, narrow desktop) or right rail |
 | Photo controls | button / slider | "Upload photo", "Replace photo", "Remove photo", "Adjust photo"; "Opacity", "Scale" | Photo tools, Settings |
 | Origin tools | text / button | "Tap the wall where the grid should start." / "Grid starts at 20 × 40 cm" / "Reset to corner", "Done" | Origin tools |
 | Empty wall | text | "Drag a frame onto the wall, or tap the preview to add one." ("click" on fine pointers) | Wall |
