@@ -9,6 +9,15 @@ export function pxToCm(px: number, pxPerCm: number): number {
   return px / pxPerCm;
 }
 
+/**
+ * A client (screen) point to wall cm, given the wall element's on-screen top-left: the one
+ * conversion for drops and Grid origin taps. Before the wall has a scale it returns the origin.
+ */
+export function clientToWallCm(client: Point, wallTopLeft: { left: number; top: number }, pxPerCm: number): Point {
+  if (!(pxPerCm > 0)) return { x: 0, y: 0 };
+  return { x: (client.x - wallTopLeft.left) / pxPerCm, y: (client.y - wallTopLeft.top) / pxPerCm };
+}
+
 /** Rounds to 0.1 cm so stored state carries no float noise. Never returns -0. */
 export function round1(n: number): number {
   return Math.round(n * 10) / 10 + 0;

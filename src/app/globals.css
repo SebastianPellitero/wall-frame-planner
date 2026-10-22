@@ -358,3 +358,62 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Slider (design-system.md §5.7): a native range restyled. The 44px input is the hit area;
+   the 4px track fills with the accent up to the thumb's center (--slider-pos, 0..1, set by
+   the component); the 22px thumb carries the focus ring. */
+@layer components {
+  .slider {
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    --slider-stop: calc(11px + (100% - 22px) * var(--slider-pos, 0));
+  }
+  .slider:focus-visible {
+    outline: none;
+  }
+  .slider::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background: linear-gradient(to right, var(--color-accent) var(--slider-stop), var(--color-surface-sunken) var(--slider-stop));
+    box-shadow: inset 0 0 0 1px var(--color-line-strong);
+  }
+  .slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    margin-top: -9px;
+    border-radius: var(--radius-pill);
+    border: 1.5px solid var(--color-line-strong);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-raised);
+  }
+  .slider:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  .slider::-moz-range-track {
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-sunken);
+    box-shadow: inset 0 0 0 1px var(--color-line-strong);
+  }
+  .slider::-moz-range-progress {
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--color-accent);
+  }
+  .slider::-moz-range-thumb {
+    box-sizing: border-box;
+    width: 22px;
+    height: 22px;
+    border-radius: var(--radius-pill);
+    border: 1.5px solid var(--color-line-strong);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-raised);
+  }
+  .slider:focus-visible::-moz-range-thumb {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}

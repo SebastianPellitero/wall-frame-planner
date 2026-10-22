@@ -5,6 +5,7 @@
 import { MIN_SIZE_CM } from "../defaults";
 import type { Grid, Point, ShapeKind, Wall } from "../types";
 import { computeDrag } from "./dragMath";
+import { clientToWallCm } from "./geometry";
 import { ghostTouchLiftPx } from "./physics";
 import type { SnapGuide } from "./snap";
 
@@ -71,10 +72,8 @@ export type GhostPlacement =
  */
 export function placeGhost({ centerPx, wallRect, size, pxPerCm, wall, grid, coarse }: GhostInput): GhostPlacement {
   if (!(pxPerCm > 0) || !isInside(centerPx, wallRect)) return { overWall: false };
-  const startCm = {
-    x: (centerPx.x - wallRect.left) / pxPerCm - size.w / 2,
-    y: (centerPx.y - wallRect.top) / pxPerCm - size.h / 2,
-  };
+  const center = clientToWallCm(centerPx, wallRect, pxPerCm);
+  const startCm = { x: center.x - size.w / 2, y: center.y - size.h / 2 };
   const r = computeDrag({ startCm, deltaPx: { x: 0, y: 0 }, size, pxPerCm, wall, grid, coarse });
   return {
     overWall: true,

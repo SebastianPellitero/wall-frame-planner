@@ -113,7 +113,8 @@ export function createActions(set: Set, get: Get, clearHistory: () => void): Pla
     },
 
     select: (id) => set({ selectedId: id }),
-    setMode: (mode) => set({ mode }),
+    // Grid origin mode shows the grid, so the user can see what they are placing (§4.6).
+    setMode: (mode) => set((s) => (mode === "gridOrigin" && !s.grid.enabled ? { mode, grid: { ...s.grid, enabled: true } } : { mode })),
     setPaletteKind: (paletteKind) => set({ paletteKind }),
 
     generate(kind, size) {

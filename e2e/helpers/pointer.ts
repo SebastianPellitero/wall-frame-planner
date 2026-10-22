@@ -22,6 +22,11 @@ export async function createPointer(page: Page, testInfo: TestInfo): Promise<Poi
   return touchPointer(page, await page.context().newCDPSession(page));
 }
 
+/** Real touch through CDP, for blocks that turn touch on with `test.use` (the project's own `use` may not). */
+export async function createTouchPointer(page: Page): Promise<Pointer> {
+  return touchPointer(page, await page.context().newCDPSession(page));
+}
+
 function mousePointer(page: Page): Pointer {
   return {
     async down(at) {

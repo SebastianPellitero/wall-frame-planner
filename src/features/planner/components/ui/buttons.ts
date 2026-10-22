@@ -10,3 +10,7 @@ export const SECONDARY_BUTTON =
 /** Icon button: borderless, 44×44, 20px icon; `text-ink-disabled` when disabled. */
 export const ICON_BUTTON =
   "grid size-touch shrink-0 place-items-center rounded-control text-ink transition-colors duration-quick can-hover:enabled:hover:bg-surface-pressed active:enabled:bg-surface-pressed disabled:text-ink-disabled";
+
+/** Primary: the accent fill, for the main action of a group (Generate, Done). */
+export const PRIMARY_BUTTON =
+  "inline-flex h-touch shrink-0 items-center justify-center gap-1.5 rounded-control bg-accent px-3.5 text-ui font-medium text-on-accent transition-colors duration-quick can-hover:hover:bg-accent-hover active:bg-accent-pressed";

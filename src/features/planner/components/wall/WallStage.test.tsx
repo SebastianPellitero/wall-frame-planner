@@ -127,6 +127,21 @@ describe("frames and guides", () => {
     expect(usePlannerStore.getState().selectedId).toBeNull();
   });
 
+  it("in Grid origin mode a tap sets the origin at the pointer, in wall cm, and stays in the mode", () => {
+    renderStage({ pxPerCm: 2 });
+    const wall = screen.getByTestId("wall");
+    wall.getBoundingClientRect = () => ({ left: 100, top: 50, width: 600, height: 500 }) as DOMRect;
+    fireEvent.pointerDown(wall, { isPrimary: true, button: 0, clientX: 160, clientY: 130 });
+    expect(usePlannerStore.getState().grid).toMatchObject({ originX: 0, originY: 0 });
+    act(() => usePlannerStore.getState().setMode("gridOrigin"));
+    fireEvent.pointerDown(wall, { isPrimary: true, button: 0, clientX: 160, clientY: 130 });
+    expect(usePlannerStore.getState().grid).toMatchObject({ originX: 30, originY: 40 });
+    // A tap through the grid layer counts too; the store clamps to the wall.
+    fireEvent.pointerDown(screen.getByTestId("grid"), { isPrimary: true, button: 0, clientX: 900, clientY: 60 });
+    expect(usePlannerStore.getState().grid).toMatchObject({ originX: 300, originY: 5 });
+    expect(usePlannerStore.getState().mode).toBe("gridOrigin");
+  });
+
   it("draws a laser line across the wall for each active guide", () => {
     renderStage({ pxPerCm: 2 });
     expect(screen.queryByTestId("snap-guide")).not.toBeInTheDocument();
@@ -142,5 +157,17 @@ describe("frames and guides", () => {
     expect(horizontal.style.top).toBe("200px");
     expect(vertical.parentElement).toHaveClass("z-guides-live", "overflow-hidden", "pointer-events-none");
     act(() => useDragUi.getState().endDrag());
+  });
+});
+
+describe("origin marker", () => {
+  it("pulses once per new origin in Grid origin mode, and not in Arrange", () => {
+    usePlannerStore.setState({ mode: "gridOrigin" });
+    renderStage();
+    expect(screen.queryByTestId("origin-pulse")).not.toBeInTheDocument();
+    act(() => usePlannerStore.getState().setGridOrigin({ x: 40, y: 30 }));
+    expect(screen.getByTestId("origin-pulse")).toBeInTheDocument();
+    act(() => usePlannerStore.getState().setMode("arrange"));
+    expect(screen.queryByTestId("origin-pulse")).not.toBeInTheDocument();
   });
 });

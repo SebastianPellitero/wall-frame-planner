@@ -53,3 +53,15 @@ describe("Toggle", () => {
     expect(knob.parentElement).toHaveClass("bg-accent");
   });
 });
+
+describe("Toggle, disabled", () => {
+  it("cannot be flipped and says so", async () => {
+    const onChange = vi.fn();
+    render(<Toggle label="Snap to grid" checked onChange={onChange} disabled />);
+    const sw = screen.getByRole("switch", { name: "Snap to grid" });
+    expect(sw).toBeDisabled();
+    await userEvent.click(sw);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(sw).toHaveClass("text-ink-disabled");
+  });
+});

@@ -261,6 +261,16 @@ describe("settings actions", () => {
     expect(store.getState().grid).toMatchObject({ originX: 300, originY: 250 });
   });
 
+  it("entering Grid origin mode turns the grid on, so the user sees what they place; leaving keeps it on", () => {
+    expect(store.getState().grid.enabled).toBe(false);
+    store.getState().setMode("photo");
+    expect(store.getState().grid.enabled).toBe(false);
+    store.getState().setMode("gridOrigin");
+    expect(store.getState()).toMatchObject({ mode: "gridOrigin", grid: { enabled: true } });
+    store.getState().setMode("arrange");
+    expect(store.getState().grid.enabled).toBe(true);
+  });
+
   it("setBackground clamps opacity and width", () => {
     store.getState().setBackground({ opacity: 3, width: 0 });
     expect(store.getState().background).toMatchObject({ opacity: 1, width: 1 });

@@ -4,6 +4,7 @@ import {
   clamp,
   clampSize,
   clampToWall,
+  clientToWallCm,
   cmToPx,
   pxToCm,
   round1,
@@ -178,5 +179,15 @@ describe("clampSize", () => {
   it("rounds with round1", () => {
     expect(clampSize("rect", 40.04, 50.06, wall)).toEqual({ w: 40, h: 50.1 });
     expect(clampSize("circle", 30.26, 0, wall)).toEqual({ w: 30.3, h: 30.3 });
+  });
+});
+
+describe("clientToWallCm", () => {
+  it("converts a client point to wall cm from the wall's on-screen top-left", () => {
+    expect(clientToWallCm({ x: 160, y: 130 }, { left: 100, top: 50 }, 2)).toEqual({ x: 30, y: 40 });
+  });
+
+  it("returns the origin before the wall has a scale", () => {
+    expect(clientToWallCm({ x: 160, y: 130 }, { left: 100, top: 50 }, 0)).toEqual({ x: 0, y: 0 });
   });
 });

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { gridLines } from "../../lib/gridLines";
 import { usePlannerStore } from "../../state/store";
+import { OriginMarker } from "./OriginMarker";
 import { useWallContext } from "./WallContext";
 
 /** Centers a 1px line on a device pixel. */
@@ -34,10 +35,6 @@ export function GridLayer() {
     ...ys.filter((y) => isOrigin(y, grid.originY)).map(horizontal),
   ];
 
-  const ox = grid.originX * pxPerCm;
-  const oy = grid.originY * pxPerCm;
-  const arm = settingOrigin ? 10 : 7; // 20px / 14px crosshair
-  const cross = `M${ox - arm} ${oy}H${ox + arm}M${ox} ${oy - arm}V${oy + arm}`;
 
   return (
     <svg
@@ -68,11 +65,7 @@ export function GridLayer() {
           </g>
         </g>
       )}
-      <g data-testid="grid-origin-marker" fill="none" strokeLinecap="round" strokeLinejoin="round">
-        <path d={cross} className="stroke-halo" strokeWidth={5.5} />
-        <path d={cross} className="stroke-accent" strokeWidth={2.5} />
-        {settingOrigin && <circle cx={ox} cy={oy} r={2} className="fill-accent" />}
-      </g>
+      <OriginMarker x={grid.originX} y={grid.originY} pxPerCm={pxPerCm} setting={settingOrigin} />
     </svg>
   );
 }

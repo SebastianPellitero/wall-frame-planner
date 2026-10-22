@@ -1,5 +1,6 @@
 import type { PointerEvent, ReactNode, Ref } from "react";
 import type { Shell } from "../../hooks/useShell";
+import { clientToWallCm } from "../../lib/geometry";
 import { usePlannerStore } from "../../state/store";
 import { cx } from "../ui/cx";
 import { FramesLayer } from "./FramesLayer";
@@ -33,8 +34,15 @@ export function WallStage({ stageRef, shell, children }: { stageRef: Ref<HTMLEle
   const width = usePlannerStore((s) => s.wall.width);
   const height = usePlannerStore((s) => s.wall.height);
 
-  // A press on the bare wall (not a frame) clears the selection in Arrange mode.
   const onWallPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    // Grid origin mode: a tap anywhere on the wall (frames are inert here) moves the origin.
+    if (mode === "gridOrigin") {
+      if (!e.isPrimary || e.button !== 0) return;
+      const cm = clientToWallCm({ x: e.clientX, y: e.clientY }, e.currentTarget.getBoundingClientRect(), pxPerCm);
+      usePlannerStore.getState().setGridOrigin(cm);
+      return;
+    }
+    // A press on the bare wall (not a frame) clears the selection in Arrange mode.
     if (mode === "arrange" && e.target === e.currentTarget) usePlannerStore.getState().select(null);
   };
 

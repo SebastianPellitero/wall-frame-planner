@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { ContextPanel } from "../ContextPanel";
 import { HistoryButtons } from "../HistoryButtons";
 import { ModeSwitch } from "../ModeSwitch";
+import { SettingsSheet } from "../panel/SettingsSheet";
 import { Wordmark } from "./Wordmark";
 
 /** Phone portrait, tablets in portrait and narrow windows (design-system.md §4.2). */
@@ -12,7 +13,8 @@ export function StackedShell({ stage }: { stage: ReactNode }) {
         <div className="flex h-bar items-center gap-4">
           <Wordmark className="hidden sm:block" />
           <ModeSwitch orientation="horizontal" />
-          {/* T8: Settings button (right end) and the settings bottom sheet; its Grid section holds the Matrix control on stacked (§5.6) */}
+          {/* The bottom sheet; its Grid section holds the Matrix control on stacked (§5.6). */}
+          <SettingsSheet shell="stacked" className="ml-auto -mr-2.5" />
         </div>
       </header>
       {stage}

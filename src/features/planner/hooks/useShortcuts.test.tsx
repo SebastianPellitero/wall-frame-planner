@@ -24,6 +24,9 @@ function Harness() {
         </button>
       </div>
       <button type="button">Other</button>
+      <div role="dialog" aria-modal="true" aria-label="Settings">
+        <button type="button">In dialog</button>
+      </div>
     </>
   );
 }
@@ -114,6 +117,14 @@ describe("useShortcuts", () => {
     // Other keys still act from there.
     press("Delete", {}, screen.getByRole("radio"));
     expect(a()).toBeUndefined();
+  });
+
+  it("leaves every key alone inside a modal dialog (the Settings sheet), where Delete must not remove the frame", () => {
+    const inDialog = screen.getByRole("button", { name: "In dialog" });
+    expect(press("Delete", {}, inDialog)).toBe(false);
+    expect(press("z", { ctrlKey: true }, inDialog)).toBe(false);
+    expect(press("ArrowRight", {}, inDialog)).toBe(false);
+    expect(a()).toMatchObject({ x: 20 });
   });
 
   it("acts from ordinary buttons", () => {

@@ -7,6 +7,8 @@ import { rescueFocus } from "./rescueFocus";
 
 /** Text entry keeps every key, including Ctrl+Z (its own undo). */
 const TYPING = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
+/** A modal dialog (the Settings sheet) owns its keys; the wall behind it is out of reach. */
+const MODAL = '[aria-modal="true"]';
 /** Radio groups (mode switch, shape picker) move their checked option with the arrows. */
 const OWNS_ARROWS = '[role="radiogroup"]';
 
@@ -14,8 +16,8 @@ const isMac = () => /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
 
 /**
  * Desktop keyboard shortcuts (design-system.md §7), one document-level keydown. The mapping
- * is `resolveShortcut`; this decides whether a key may act: never while typing, never during
- * a drag, and outside Arrange or without a selection only Undo and Redo.
+ * is `resolveShortcut`; this decides whether a key may act: never while typing or inside a
+ * modal dialog, never during a drag, and outside Arrange or without a selection only Undo and Redo.
  */
 export function useShortcuts() {
   useEffect(() => {
@@ -24,7 +26,7 @@ export function useShortcuts() {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented || useDragUi.getState().draggingId !== null) return;
       const target = e.target instanceof Element ? e.target : null;
-      if (target?.closest(TYPING)) return;
+      if (target?.closest(TYPING) || target?.closest(MODAL)) return;
       const action = resolveShortcut(e, { mac });
       if (!action) return;
 

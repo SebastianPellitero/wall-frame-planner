@@ -5,6 +5,7 @@ import { sizeLimits } from "../../lib/paletteMath";
 import { usePlannerStore } from "../../state/store";
 import type { ShapeKind } from "../../types";
 import { PanelSection } from "../panel/PanelSection";
+import { PRIMARY_BUTTON } from "../ui/buttons";
 import { CmField } from "../ui/CmField";
 import { cx } from "../ui/cx";
 import { useWallContext } from "../wall/WallContext";
@@ -132,7 +133,7 @@ export function FrameCreator({ shell }: { shell: Shell }) {
         <button
           type="submit"
           className={cx(
-            "h-touch shrink-0 rounded-control bg-accent px-3.5 text-ui font-medium text-on-accent can-hover:hover:bg-accent-hover active:bg-accent-pressed",
+            PRIMARY_BUTTON,
             layout.generate,
           )}
         >
