@@ -61,13 +61,15 @@ export function ModeSwitch({ orientation }: { orientation: "horizontal" | "verti
             role="radio"
             aria-checked={checked}
             aria-label={name}
+            title={vertical ? name : undefined}
             tabIndex={checked ? 0 : -1}
             onClick={() => setMode(value)}
             onKeyDown={(event) => onKeyDown(event, index)}
             className={cx(
               "relative shrink-0 transition-colors duration-quick ease-out-soft",
               vertical
-                ? "flex size-[52px] flex-col items-center justify-center gap-0.5 rounded-tile"
+                ? // Below 340px tall the rail goes icon-only (§4.3); the name stays in aria-label and title.
+                "flex size-[52px] flex-col items-center justify-center gap-0.5 rounded-tile [@media(max-height:340px)]:size-touch"
                 : "h-touch rounded-pill px-3.5 text-ui",
               checked ? "font-semibold text-ink" : "font-medium text-ink-muted can-hover:hover:text-ink",
             )}
@@ -85,7 +87,7 @@ export function ModeSwitch({ orientation }: { orientation: "horizontal" | "verti
             {vertical ? (
               <>
                 <Icon size={20} className="relative" />
-                <span className="relative text-micro font-stretch-semi-condensed">{short}</span>
+                <span className="relative text-micro font-stretch-semi-condensed [@media(max-height:340px)]:hidden">{short}</span>
               </>
             ) : short === name ? (
               <span className="relative">{name}</span>

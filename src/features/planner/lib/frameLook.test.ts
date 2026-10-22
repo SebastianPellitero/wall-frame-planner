@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bracketArmPx, frameLabel, frameName, labelTier, matPx, mouldingPx } from "./frameLook";
+import { bracketArmPx, frameLabel, frameName, labelTier, matPx, mouldingPx, previewCaption, previewName } from "./frameLook";
 
 describe("mouldingPx", () => {
   it("is 6% of the short side, clamped to 2..10 px", () => {
@@ -72,5 +72,18 @@ describe("labelTier", () => {
     expect(labelTier("circle", 40, 40, 70, 70)).toBe("full"); // 0.8 × (70 − 8) = 49.6 ≥ "Ø 40" 34.4
     expect(labelTier("circle", 40, 40, 30, 30)).toBe("compact"); // 0.8 × 26 = 20.8 ≥ "Ø40" 20.5
     expect(labelTier("circle", 40, 40, 28, 28)).toBe("hidden"); // 0.8 × 24 = 19.2
+  });
+});
+
+describe("previewName and previewCaption (§5.1, §8)", () => {
+  it("name the Frame creator preview by what it adds", () => {
+    expect(previewName("rect", 40, 50)).toBe("Add rectangle, 40 × 50 cm");
+    expect(previewName("square", 40, 40)).toBe("Add square, 40 × 40 cm");
+    expect(previewName("circle", 40, 40)).toBe("Add circle, Ø 40 cm");
+  });
+
+  it("caption the preview with the size and unit", () => {
+    expect(previewCaption("rect", 40, 50)).toBe("40 × 50 cm");
+    expect(previewCaption("circle", 30.5, 30.5)).toBe("Ø 30.5 cm");
   });
 });

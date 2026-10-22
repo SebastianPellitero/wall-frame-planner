@@ -1,15 +1,20 @@
 import { DEFAULT_BACKGROUND, DEFAULT_GRID, DEFAULT_PALETTE_SIZES, DEFAULT_WALL } from "../defaults";
 import { resolveOverlaps } from "../lib/collision";
+import { pickFrameColor } from "../lib/frameColors";
 import { findFreeSpot } from "../lib/freeSpot";
 import { clamp, clampSize, clampToWall, round1 } from "../lib/geometry";
 import { newId } from "../lib/id";
 import { pushOrder } from "../lib/pushOrder";
-import type { PersistedSlice, Point, Shape, ShapeKind, Wall } from "../types";
+import type { FrameColor, PersistedSlice, Point, Shape, Wall } from "../types";
 import type { PlannerActions, PlannerState, PlannerUiSlice } from "./storeTypes";
 
 type Set = (partial: Partial<PlannerState> | ((s: PlannerState) => Partial<PlannerState>)) => void;
 type Get = () => PlannerState;
 
+/**
+ * Defaults. The creator color is rolled here, which only runs in the browser: the editor is
+ * client-only (PlannerAppLoader), and a saved color replaces it on hydration (§5.1).
+ */
 export function initialProject(): PersistedSlice {
   return {
     wall: { ...DEFAULT_WALL },
@@ -21,10 +26,12 @@ export function initialProject(): PersistedSlice {
       square: { ...DEFAULT_PALETTE_SIZES.square },
       circle: { ...DEFAULT_PALETTE_SIZES.circle },
     },
+    paletteKind: "rect",
+    creatorColor: pickFrameColor(),
   };
 }
 
-export const initialUi: PlannerUiSlice = { selectedId: null, mode: "arrange", paletteKind: "rect", pushedIds: [] };
+export const initialUi: PlannerUiSlice = { selectedId: null, mode: "arrange", pushedIds: [] };
 
 /** `shapes` with overlaps pushed away from `anchorId`, plus the stagger order of what moved. */
 function resolveWithOrder(shapes: Shape[], anchorId: string, wall: Wall): Pick<PlannerState, "shapes" | "pushedIds"> {
@@ -33,34 +40,44 @@ function resolveWithOrder(shapes: Shape[], anchorId: string, wall: Wall): Pick<P
 }
 
 /** A shape of `kind` and `size` whose center is at `center`, kept inside the wall. */
-function centeredShape(id: string, kind: ShapeKind, size: { w: number; h: number }, center: Point, wall: Wall): Shape {
+function centeredShape(
+  base: Pick<Shape, "id" | "kind" | "color">,
+  size: { w: number; h: number },
+  center: Point,
+  wall: Wall,
+): Shape {
   const pos = clampToWall({ x: center.x - size.w / 2, y: center.y - size.h / 2, ...size }, wall);
-  return { id, kind, ...size, x: round1(pos.x), y: round1(pos.y) };
+  return { ...base, ...size, x: round1(pos.x), y: round1(pos.y) };
 }
 
 /** Places `shape` at the free spot nearest its center, or where it is (clamped) when the wall is full. */
 function placeNear(shape: Shape, near: Point, shapes: Shape[], wall: Wall): Shape {
   const spot = findFreeSpot(shape, shapes, wall, near);
-  if (!spot) return centeredShape(shape.id, shape.kind, shape, near, wall);
+  if (!spot) return centeredShape(shape, shape, near, wall);
   return { ...shape, x: round1(spot.x), y: round1(spot.y) };
 }
 
 export function createActions(set: Set, get: Get, clearHistory: () => void): PlannerActions {
-  const insert = (shape: Shape, select: boolean): string => {
+  const insert = (shape: Shape, select: boolean, creatorColor?: FrameColor): string => {
     const { shapes, wall, selectedId } = get();
-    set({ ...resolveWithOrder([...shapes, shape], shape.id, wall), selectedId: select ? shape.id : selectedId });
+    set({
+      ...resolveWithOrder([...shapes, shape], shape.id, wall),
+      selectedId: select ? shape.id : selectedId,
+      ...(creatorColor === undefined ? {} : { creatorColor }),
+    });
     return shape.id;
   };
 
   return {
     addShape(kind, at, opts) {
-      const { wall, paletteSizes, shapes } = get();
+      const { wall, paletteSizes, shapes, creatorColor: color } = get();
       const size = clampSize(kind, paletteSizes[kind].w, paletteSizes[kind].h, wall);
-      const id = newId();
+      const base = { id: newId(), kind, color };
       const shape = at
-        ? centeredShape(id, kind, size, at, wall)
-        : placeNear({ id, kind, x: 0, y: 0, ...size }, { x: wall.width / 2, y: wall.height / 2 }, shapes, wall);
-      return insert(shape, opts?.select !== false);
+        ? centeredShape(base, size, at, wall)
+        : placeNear({ ...base, x: 0, y: 0, ...size }, { x: wall.width / 2, y: wall.height / 2 }, shapes, wall);
+      // The next frame always gets a different finish.
+      return insert(shape, opts?.select !== false, pickFrameColor(color));
     },
 
     commitShape(id, patch) {
@@ -99,9 +116,14 @@ export function createActions(set: Set, get: Get, clearHistory: () => void): Pla
     setMode: (mode) => set({ mode }),
     setPaletteKind: (paletteKind) => set({ paletteKind }),
 
-    setPaletteSize(kind, size) {
-      const clamped = clampSize(kind, size.w, size.h, get().wall);
-      set((s) => ({ paletteSizes: { ...s.paletteSizes, [kind]: clamped } }));
+    generate(kind, size) {
+      const { wall, creatorColor } = get();
+      const clamped = clampSize(kind, size.w, size.h, wall);
+      set((s) => ({
+        paletteSizes: { ...s.paletteSizes, [kind]: clamped },
+        paletteKind: kind,
+        creatorColor: pickFrameColor(creatorColor),
+      }));
     },
 
     setWall(patch) {

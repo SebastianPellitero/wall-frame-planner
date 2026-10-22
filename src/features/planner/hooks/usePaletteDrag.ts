@@ -7,6 +7,8 @@ import { ghostCenter, placeGhost, type GhostPlacement } from "../lib/paletteMath
 import {
   dragStartPx,
   flyBack,
+  flyBackFadeDelayMs,
+  flyBackFadeMs,
   ghostFollow,
   ghostOffWallOpacity,
   lift,
@@ -19,13 +21,14 @@ import {
 import type { SnapGuide } from "../lib/snap";
 import { useDragUi } from "../state/dragUi";
 import { usePlannerStore } from "../state/store";
-import type { Point, ShapeKind } from "../types";
+import type { FrameColor, Point, ShapeKind } from "../types";
 import { startPointerSession } from "./pointerSession";
 
-/** The ghost being drawn: which frame, at what size in cm. `key` changes per drag. */
+/** The ghost being drawn: which frame, at what size in cm, in which finish. `key` changes per drag. */
 export interface GhostState {
   kind: ShapeKind;
   size: { w: number; h: number };
+  color: FrameColor;
   key: number;
 }
 
@@ -39,23 +42,19 @@ export interface GhostMotion {
   rotate: MotionValue<number>;
 }
 
-/** Tap-to-add (§5.1): the kind becomes active and a frame goes to the nearest free spot, unselected. */
+/** Tap-to-add (§5.1): the kind becomes current and a frame goes to the nearest free spot, unselected. */
 export function addFromPalette(kind: ShapeKind) {
   const store = usePlannerStore.getState();
   store.setPaletteKind(kind);
   store.addShape(kind, undefined, { select: false });
 }
 
-/** Fly-back fades out over its last 120 ms (§6.3); `flyBack` settles in about 225 ms. */
-const FLY_BACK_FADE_MS = 120;
-const FLY_BACK_FADE_DELAY_MS = 105;
-
 /**
  * Drag a new frame from any source element onto the wall (design-system.md §5.15, §6.3). A
  * press that moves less than `dragStartPx` is a tap and adds at the nearest free spot. Past it,
- * a true-size ghost follows the pointer, snaps over the wall and publishes guides; a drop on
- * the wall adds the frame there, anything else flies the ghost back to the source. Only motion
- * values change during the drag; the store is written once, on release.
+ * a true-size ghost follows the pointer, snaps over the wall (drawn where it will land) and
+ * publishes guides; a drop on the wall adds the frame there, anything else flies the ghost back
+ * to the source. Only motion values change during the drag; the store is written once, on release.
  */
 export function usePaletteDrag() {
   const { pxPerCm, wallRef } = useWallContext();
@@ -104,6 +103,7 @@ export function usePaletteDrag() {
       const mv = latest.current.motion;
       let started = false;
       let size = { w: 0, h: 0 };
+      let color: FrameColor = 1;
       let fromScale = 1;
       let key = 0;
       let placement: GhostPlacement = { overWall: false };
@@ -118,9 +118,11 @@ export function usePaletteDrag() {
 
       const begin = () => {
         started = true;
-        const { wall, paletteSizes, setPaletteKind } = usePlannerStore.getState();
+        const { wall, paletteSizes, creatorColor, setPaletteKind } = usePlannerStore.getState();
         setPaletteKind(kind);
         size = clampSize(kind, paletteSizes[kind].w, paletteSizes[kind].h, wall);
+        // The drop adds a frame in the creator color, so the ghost wears it too.
+        color = creatorColor;
         const { w, h } = px();
         fromScale = w > 0 && h > 0 ? Math.min(from.width / w, from.height / h) : 1;
         mv.x.jump(fromCenter.x - w / 2);
@@ -131,7 +133,7 @@ export function usePaletteDrag() {
         mv.rotate.jump(0);
         overWall.current = false;
         key = ++ghostKey.current;
-        setGhost({ kind, size, key });
+        setGhost({ kind, size, color, key });
         if (latest.current.reduced) mv.scale.jump(1);
         else animate(mv.scale, 1, ghostFollow);
       };
@@ -172,7 +174,7 @@ export function usePaletteDrag() {
           ...move,
           onComplete: () => setGhost((g) => (g?.key === key ? null : g)),
         });
-        animate(mv.opacity, 0, r ? tween(reducedMotion.tweenMs) : tween(FLY_BACK_FADE_MS, FLY_BACK_FADE_DELAY_MS / 1000));
+        animate(mv.opacity, 0, r ? tween(reducedMotion.tweenMs) : tween(flyBackFadeMs, flyBackFadeDelayMs / 1000));
       };
 
       stopSession.current = startPointerSession(e.currentTarget, e.pointerId, {

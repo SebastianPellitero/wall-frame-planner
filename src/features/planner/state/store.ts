@@ -16,6 +16,8 @@ const pickPersisted = (s: PlannerState): PersistedSlice => ({
   background: s.background,
   shapes: s.shapes,
   paletteSizes: s.paletteSizes,
+  paletteKind: s.paletteKind,
+  creatorColor: s.creatorColor,
 });
 
 /** A fresh store. Tests use this for isolation; the app uses the `usePlannerStore` singleton. */
@@ -40,7 +42,8 @@ export function createPlannerStore(opts: { storage?: PersistStorage<PersistedSli
         storage: opts.storage ?? safeStorage,
         partialize: pickPersisted,
         migrate: (persisted) => sanitizeProject(persisted),
-        merge: (persisted, current) => ({ ...current, ...sanitizeProject(persisted) }),
+        // A save without a creator color keeps the one rolled for this session.
+        merge: (persisted, current) => ({ ...current, ...sanitizeProject(persisted, current.creatorColor) }),
       },
     ),
   );

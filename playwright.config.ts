@@ -8,7 +8,7 @@ export default defineConfig({
   retries: 0,
   reporter: [["list"]],
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    baseURL: `http://127.0.0.1:${PORT}`,
     trace: "retain-on-failure",
   },
   projects: [
@@ -21,7 +21,7 @@ export default defineConfig({
   webServer: {
     // The real static export, independent of any `next dev` running in this folder.
     command: `npm run build && node e2e/serve-static.mjs ${PORT}`,
-    url: `http://localhost:${PORT}`,
+    url: `http://127.0.0.1:${PORT}`,
     reuseExistingServer: true,
     timeout: 180_000,
   },

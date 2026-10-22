@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_GRID } from "../defaults";
-import { ghostCenter, isInside, placeGhost, sizeLimits } from "./paletteMath";
+import { fitPreview, ghostCenter, isInside, placeGhost, sizeLimits } from "./paletteMath";
 import { ghostTouchLiftPx } from "./physics";
 
 const WALL = { width: 300, height: 250 };
@@ -75,10 +75,37 @@ describe("placeGhost", () => {
     expect(r.overWall && r.guides.map((g) => g.axis)).toEqual(["x", "y"]);
   });
 
-  it("clamps the landing spot inside the wall near an edge", () => {
+  it("clamps the landing spot inside the wall near an edge and draws the ghost there", () => {
     // Center 5 cm from the right edge: the 40 cm frame would stick out by 15 cm.
     const r = placeGhost({ ...base, centerPx: { x: 100 + 2 * 295, y: 300 } });
     expect(r.overWall && r.commitCm).toEqual({ x: 260, y: 100 });
     expect(r.overWall && r.centerCm).toEqual({ x: 280, y: 125 });
+    // It lands where it is drawn (§5.15): no rubber band past the edge.
+    expect(r.overWall && r.topLeftPx).toEqual({ x: 100 + 2 * 260, y: 50 + 2 * 100 });
+  });
+
+  it("draws at the rounded landing spot", () => {
+    // Top-left cm (80.04, 100.06) rounds to (80, 100.1).
+    const r = placeGhost({ ...base, centerPx: { x: 100 + 2 * 100.04, y: 50 + 2 * 125.06 } });
+    expect(r.overWall && r.commitCm).toEqual({ x: 80, y: 100.1 });
+    expect(r.overWall && r.topLeftPx.y).toBeCloseTo(50 + 2 * 100.1, 9);
+  });
+});
+
+describe("fitPreview", () => {
+  it("scales the frame to fit the room above the caption, keeping its aspect ratio", () => {
+    // Content box 148 × 128, caption 20: room 148 × 108. 40 × 60 is height-bound: 108 / 60 = 1.8 px/cm.
+    expect(fitPreview({ w: 40, h: 60 }, { w: 148, h: 128 }, 20)).toEqual({ w: 72, h: 108 });
+    // A wide frame is width-bound: 148 / 200 = 0.74 px/cm.
+    expect(fitPreview({ w: 200, h: 50 }, { w: 148, h: 128 }, 20)).toEqual({ w: 148, h: 37 });
+  });
+
+  it("scales small frames up as well as large ones down", () => {
+    expect(fitPreview({ w: 5, h: 5 }, { w: 88, h: 44 }, 0)).toEqual({ w: 44, h: 44 });
+  });
+
+  it("is empty before the box is measured or when there is no room", () => {
+    expect(fitPreview({ w: 40, h: 50 }, { w: 0, h: 0 }, 20)).toEqual({ w: 0, h: 0 });
+    expect(fitPreview({ w: 40, h: 50 }, { w: 60, h: 20 }, 20)).toEqual({ w: 0, h: 0 });
   });
 });

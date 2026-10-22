@@ -1,0 +1,169 @@
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { createRef } from "react";
+import { beforeEach, describe, expect, it } from "vitest";
+import type { Shell } from "../../hooks/useShell";
+import { initialProject, initialUi } from "../../state/actions";
+import { useDragUi } from "../../state/dragUi";
+import { usePlannerStore } from "../../state/store";
+import { WallContext } from "../wall/WallContext";
+import { FrameCreator } from "./FrameCreator";
+
+const pointer = { isPrimary: true, button: 0, pointerId: 1, pointerType: "mouse" };
+const windowPointer = (type: string, init: Record<string, number>) => {
+  const e = new Event(type) as Event & Record<string, number>;
+  for (const [k, v] of Object.entries({ pointerId: 1, ...init })) Object.defineProperty(e, k, { value: v });
+  act(() => void window.dispatchEvent(e));
+};
+
+function renderCreator(shell: Shell = "landscape") {
+  const wallRef = createRef<HTMLDivElement>();
+  return render(
+    <WallContext value={{ pxPerCm: 2, wallRef, wallPx: { w: 600, h: 500 } }}>
+      <FrameCreator shell={shell} />
+    </WallContext>,
+  );
+}
+
+const preview = () => screen.getByRole("button", { name: /^Add / });
+const field = (name: string) => screen.getByRole("textbox", { name });
+const radio = (name: string) => screen.getByRole("radio", { name });
+const color = () => Number(preview().getAttribute("data-frame-color"));
+const tap = (el: Element) => {
+  fireEvent.pointerDown(el, { ...pointer, clientX: 10, clientY: 10 });
+  windowPointer("pointerup", { clientX: 11, clientY: 10 });
+};
+
+beforeEach(() => {
+  usePlannerStore.setState({ ...initialProject(), ...initialUi, creatorColor: 4 });
+  useDragUi.getState().endDrag();
+});
+
+describe("FrameCreator", () => {
+  it("is the 'Frame creator' region with the shape picker, fields, Generate and the preview", () => {
+    renderCreator("desktop");
+    const region = screen.getByRole("region", { name: "Frame creator" });
+    expect(within(region).getByRole("heading", { name: "Frame creator" })).toBeInTheDocument();
+    expect(within(region).getByRole("radiogroup", { name: "Shape" })).toBeInTheDocument();
+    expect(radio("Rectangle")).toHaveAttribute("aria-checked", "true");
+    expect(field("Width (cm)")).toHaveValue("40");
+    expect(field("Height (cm)")).toHaveValue("50");
+    expect(within(region).getByRole("button", { name: "Generate" })).toHaveAttribute("type", "submit");
+    expect(preview()).toHaveAccessibleName("Add rectangle, 40 × 50 cm");
+    expect(preview()).toHaveAttribute("data-frame-color", "4");
+    expect(preview()).toHaveClass("touch-none", "rounded-tile", "bg-wall");
+    expect(screen.getByText("40 × 50 cm")).toBeInTheDocument();
+  });
+
+  it("tabs picker → Width → Height → Generate → preview", async () => {
+    renderCreator("desktop");
+    const order = [radio("Rectangle"), field("Width (cm)"), field("Height (cm)"), screen.getByRole("button", { name: "Generate" }), preview()];
+    order[0].focus();
+    for (const next of order.slice(1)) {
+      await userEvent.tab();
+      expect(next).toHaveFocus();
+    }
+  });
+
+  it("the shape picker swaps the inputs and keeps the color", async () => {
+    renderCreator();
+    await userEvent.click(radio("Circle"));
+    expect(screen.getAllByRole("textbox").map((i) => i.getAttribute("aria-label"))).toEqual(["Diameter (cm)"]);
+    expect(field("Diameter (cm)")).toHaveValue("30");
+    expect(preview()).toHaveAccessibleName("Add circle, Ø 30 cm");
+    expect(color()).toBe(4);
+    // Arrow keys move the selection, like the mode switch.
+    fireEvent.keyDown(radio("Circle"), { key: "ArrowLeft" });
+    expect(radio("Square")).toHaveAttribute("aria-checked", "true");
+    expect(radio("Square")).toHaveFocus();
+    expect(field("Side (cm)")).toHaveValue("30");
+    expect(usePlannerStore.getState().paletteKind).toBe("square");
+  });
+
+  it("changes the preview only on Generate, which also rolls a new color", async () => {
+    renderCreator();
+    await userEvent.clear(field("Width (cm)"));
+    await userEvent.type(field("Width (cm)"), "60");
+    await userEvent.clear(field("Height (cm)"));
+    await userEvent.type(field("Height (cm)"), "40");
+    await userEvent.tab();
+    expect(preview()).toHaveAccessibleName("Add rectangle, 40 × 50 cm");
+    expect(usePlannerStore.getState().paletteSizes.rect).toEqual({ w: 40, h: 50 });
+
+    await userEvent.click(screen.getByRole("button", { name: "Generate" }));
+    expect(preview()).toHaveAccessibleName("Add rectangle, 60 × 40 cm");
+    expect(screen.getByText("60 × 40 cm")).toBeInTheDocument();
+    expect(color()).not.toBe(4);
+    expect(usePlannerStore.getState().paletteSizes.rect).toEqual({ w: 60, h: 40 });
+  });
+
+  it("Enter in a field generates", async () => {
+    renderCreator();
+    await userEvent.clear(field("Height (cm)"));
+    await userEvent.type(field("Height (cm)"), "70{Enter}");
+    expect(preview()).toHaveAccessibleName("Add rectangle, 40 × 70 cm");
+    expect(field("Height (cm)")).toHaveFocus();
+  });
+
+  it("an invalid field blocks Generate, shows its error and gets focus", async () => {
+    renderCreator();
+    await userEvent.clear(field("Width (cm)"));
+    await userEvent.type(field("Width (cm)"), "999");
+    await userEvent.click(screen.getByRole("button", { name: "Generate" }));
+    expect(field("Width (cm)")).toHaveAttribute("aria-invalid", "true");
+    expect(field("Width (cm)")).toHaveFocus();
+    expect(screen.getByText("Use 1–300 cm")).toBeInTheDocument();
+    expect(preview()).toHaveAccessibleName("Add rectangle, 40 × 50 cm");
+    expect(color()).toBe(4);
+  });
+
+  it("tapping the preview adds an unselected frame in its color, then the color changes", () => {
+    renderCreator();
+    tap(preview());
+    const [shape] = usePlannerStore.getState().shapes;
+    expect(shape).toMatchObject({ kind: "rect", w: 40, h: 50, color: 4 });
+    expect(usePlannerStore.getState().selectedId).toBeNull();
+    expect(color()).not.toBe(4);
+    const next = color();
+    tap(preview());
+    expect(usePlannerStore.getState().shapes.map((s) => s.color)).toEqual([4, next]);
+  });
+
+  it("the click that follows a pointer tap does not add a second frame", () => {
+    renderCreator();
+    tap(preview());
+    fireEvent.click(preview(), { detail: 1 });
+    expect(usePlannerStore.getState().shapes).toHaveLength(1);
+  });
+
+  it("adds on Enter or Space and on an assistive-tech click, ignoring key repeat", () => {
+    renderCreator();
+    fireEvent.keyDown(preview(), { key: "Enter" });
+    fireEvent.keyDown(preview(), { key: "Enter", repeat: true });
+    fireEvent.keyDown(preview(), { key: " " });
+    fireEvent.click(preview(), { detail: 0 });
+    expect(usePlannerStore.getState().shapes).toHaveLength(3);
+    expect(usePlannerStore.getState().selectedId).toBeNull();
+  });
+
+  it("drags a ghost in the preview's color; dropped off the wall it adds nothing and keeps the color", () => {
+    renderCreator();
+    fireEvent.pointerDown(preview(), { ...pointer, clientX: 10, clientY: 10 });
+    windowPointer("pointermove", { clientX: 30, clientY: 10 });
+    expect(screen.getByTestId("drag-ghost")).toHaveAttribute("data-frame-color", "4");
+    expect(screen.getByTestId("drag-ghost")).toHaveAttribute("data-kind", "rect");
+    // The wall ref is unattached, so every point is off the wall.
+    windowPointer("pointerup", { clientX: 40, clientY: 10 });
+    expect(usePlannerStore.getState().shapes).toEqual([]);
+    expect(color()).toBe(4);
+  });
+
+  it("stacked: no caption, and an invalid value's error takes the label's place", async () => {
+    renderCreator("stacked");
+    expect(screen.queryByText("40 × 50 cm")).not.toBeInTheDocument();
+    await userEvent.clear(field("Width (cm)"));
+    await userEvent.type(field("Width (cm)"), "0{Enter}");
+    expect(screen.getByText("Use 1–300 cm")).toBeInTheDocument();
+    expect(screen.queryByText("Width")).not.toBeInTheDocument();
+  });
+});

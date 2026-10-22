@@ -11,14 +11,14 @@ export function StackedShell({ stage }: { stage: ReactNode }) {
         <div className="flex h-bar items-center gap-4">
           <Wordmark className="hidden sm:block" />
           <ModeSwitch orientation="horizontal" />
-          {/* T8: Settings button (right end) and the settings bottom sheet */}
+          {/* T8: Settings button (right end) and the settings bottom sheet; its Grid section holds the Matrix control on stacked (§5.6) */}
         </div>
       </header>
       {stage}
       <div className="relative z-chrome shrink-0 border-t border-line bg-surface px-gutter pt-2 pb-[calc(8px+var(--spacing-safe-bottom))]">
         <div className="mx-auto w-full sm:max-w-[560px]">
           <ContextPanel shell="stacked" />
-          {/* T7: Undo/Redo at the right end of dock row A, Arrange only (Photo and Grid origin show Done there) */}
+          {/* T7: Undo/Redo at the right end of dock row A (shrink the Frame creator preview basis in LAYOUT.stacked), Arrange only */}
         </div>
       </div>
     </div>

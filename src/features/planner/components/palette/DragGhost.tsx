@@ -6,8 +6,9 @@ import { cx } from "../ui/cx";
 import { FrameVisual } from "../wall/FrameVisual";
 
 /**
- * The palette drag ghost (design-system.md §5.15): a full frame at its true on-wall size,
- * portalled to `body` at `z-ghost`. Every change during the drag is a motion value.
+ * The drag ghost from the Frame creator preview (design-system.md §5.15): a full frame at its
+ * true on-wall size in the preview's finish, portalled to `body` at `z-ghost`. Every change
+ * during the drag is a motion value.
  */
 export function DragGhost({ ghost, motion: mv, pxPerCm }: { ghost: GhostState; motion: GhostMotion; pxPerCm: number }) {
   const reduced = useReducedMotion() === true;
@@ -20,6 +21,7 @@ export function DragGhost({ ghost, motion: mv, pxPerCm }: { ghost: GhostState; m
       aria-hidden="true"
       data-testid="drag-ghost"
       data-kind={ghost.kind}
+      data-frame-color={ghost.color}
       className="pointer-events-none fixed top-0 left-0 z-ghost"
       style={{ x: mv.x, y: mv.y, width: wPx, height: hPx, scale: mv.scale, opacity: mv.opacity }}
     >

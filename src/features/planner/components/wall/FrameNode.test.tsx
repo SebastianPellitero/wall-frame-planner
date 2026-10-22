@@ -6,7 +6,7 @@ import { usePlannerStore } from "../../state/store";
 import type { Shape } from "../../types";
 import { FrameNode } from "./FrameNode";
 
-const RECT: Shape = { id: "r1", kind: "rect", x: 12.3, y: 40, w: 40, h: 50 };
+const RECT: Shape = { id: "r1", kind: "rect", x: 12.3, y: 40, w: 40, h: 50, color: 3 };
 
 function renderFrame(shape: Shape = RECT, pxPerCm = 2) {
   usePlannerStore.setState({ shapes: [shape] });
@@ -41,15 +41,28 @@ describe("FrameNode", () => {
     expect(frame.style.width).toBe("80px");
     expect(frame.style.height).toBe("100px");
     expect(frame).toHaveClass("touch-none");
+    expect(frame).toHaveAttribute("data-frame-color", "3");
+  });
+
+  it("draws square corners and the per-frame tokens (§3.1)", () => {
+    const { frame } = renderFrame();
+    const layers = [frame, ...frame.querySelectorAll("*")].filter((el) => el.tagName === "DIV");
+    expect(layers.some((el) => [...el.classList].some((c) => c.startsWith("rounded")))).toBe(false);
+    const body = frame.querySelector("[data-frame-body]") as HTMLElement;
+    // Shadows are utilities on the colored subtree, never a bare var() inline (§2).
+    expect(body).toHaveClass("shadow-frame-rest");
+    expect(body.getAttribute("style") ?? "").not.toMatch(/shadow/);
+    expect(body.firstElementChild).toHaveClass("bg-mat", "inset-shadow-mat");
+    expect(screen.getByText("40 × 50")).toHaveClass("text-frame-ink");
   });
 
   it("names circles by diameter", () => {
-    renderFrame({ id: "c1", kind: "circle", x: 0, y: 0, w: 30, h: 30 });
+    renderFrame({ id: "c1", kind: "circle", x: 0, y: 0, w: 30, h: 30, color: 1 });
     expect(screen.getByRole("button", { name: "Circle Ø 30 cm" })).toBeInTheDocument();
   });
 
   it("switches the label tier with the on-screen size", () => {
-    const square: Shape = { id: "s1", kind: "square", x: 0, y: 0, w: 40, h: 40 };
+    const square: Shape = { id: "s1", kind: "square", x: 0, y: 0, w: 40, h: 40, color: 1 };
     const { rerender } = renderFrame(square, 2);
     expect(screen.getByText("40 × 40")).toHaveClass("text-caption", "font-stretch-semi-condensed");
     rerender(<FrameNode shape={square} pxPerCm={1} />);
@@ -65,7 +78,8 @@ describe("FrameNode", () => {
     windowPointer("pointerup", { clientX: 11, clientY: 10 });
     expect(usePlannerStore.getState().selectedId).toBe("r1");
     expect(frame).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByTestId("selection-brackets")).toBeInTheDocument();
+    expect(screen.getByTestId("selection-brackets")).toHaveAttribute("stroke-linecap", "square");
+    expect(screen.getByTestId("selection-brackets")).toHaveAttribute("stroke-linejoin", "miter");
 
     act(() => usePlannerStore.getState().select(null));
     fireEvent.keyDown(frame, { key: "Enter" });

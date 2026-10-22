@@ -75,6 +75,7 @@ export function FrameNode({ shape, pxPerCm }: { shape: Shape; pxPerCm: number })
       data-y={shape.y.toFixed(1)}
       data-w={shape.w.toFixed(1)}
       data-h={shape.h.toFixed(1)}
+      data-frame-color={shape.color}
       role="button"
       tabIndex={arrange ? 0 : -1}
       aria-label={frameName(shape.kind, shape.w, shape.h)}

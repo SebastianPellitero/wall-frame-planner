@@ -1,3 +1,7 @@
+import type { FrameColor } from "./lib/frameColors";
+
+export type { FrameColor };
+
 export type ShapeKind = "rect" | "square" | "circle";
 
 /** Top-left corner (x, y) and size (w, h) in cm, relative to the wall's top-left. square/circle: w === h (circle: diameter). */
@@ -8,6 +12,8 @@ export interface Shape {
   y: number;
   w: number;
   h: number;
+  /** One of the ten curated finishes (design-system.md §3.2). Duplicates copy it. */
+  color: FrameColor;
 }
 
 export interface Rect {
@@ -62,7 +68,10 @@ export interface PersistedSlice {
   grid: Grid;
   background: Background;
   shapes: Shape[];
+  /** Frame creator (§5.1): the last generated size per shape, the current shape and the preview's color. */
   paletteSizes: Record<ShapeKind, { w: number; h: number }>;
+  paletteKind: ShapeKind;
+  creatorColor: FrameColor;
 }
 
-export type Mode ="arrange" | "photo" | "gridOrigin";
+export type Mode = "arrange" | "photo" | "gridOrigin";

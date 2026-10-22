@@ -80,7 +80,7 @@ function EmptyWallCopy() {
     <div className="pointer-events-none absolute inset-0 grid place-items-center p-4">
       <p className="max-w-[24ch] text-center font-serif text-lead text-balance text-ink-muted">
         Drag a frame onto the wall, or <span className="can-hover:hidden">tap</span>
-        <span className="hidden can-hover:inline">click</span> one to add it.
+        <span className="hidden can-hover:inline">click</span> the preview to add one.
       </p>
     </div>
   );

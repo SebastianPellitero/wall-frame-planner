@@ -1,6 +1,6 @@
 /**
- * Geometry of dragging a new frame from a source (palette tile) onto the wall
- * (design-system.md §5.15). Client px in, wall cm out; no React, no DOM.
+ * Geometry of the Frame creator: fitting its preview, and dragging a new frame from the
+ * preview onto the wall (design-system.md §5.1, §5.15). Client px in, wall cm out; no React, no DOM.
  */
 import { MIN_SIZE_CM } from "../defaults";
 import type { Grid, Point, ShapeKind, Wall } from "../types";
@@ -55,7 +55,7 @@ export type GhostPlacement =
   | { overWall: false }
   | {
       overWall: true;
-      /** Where to draw the ghost's true-size box, in client px: snapped, rubber-banded like a frame. */
+      /** Where to draw the ghost's true-size box, in client px: exactly where it will land (`commitCm`). */
       topLeftPx: Point;
       /** Where the frame lands on drop: snapped, clamped and rounded, in wall cm. */
       commitCm: Point;
@@ -64,7 +64,11 @@ export type GhostPlacement =
       guides: SnapGuide[];
     };
 
-/** Hit-tests the ghost's center against the wall and, over it, places the frame exactly like a dragged one. */
+/**
+ * Hit-tests the ghost's center against the wall and, over it, places the frame exactly like a
+ * dragged one: snapped, clamped inside the wall and rounded. The ghost is drawn at that landing
+ * spot, so the drop lands where it is drawn (§5.15).
+ */
 export function placeGhost({ centerPx, wallRect, size, pxPerCm, wall, grid, coarse }: GhostInput): GhostPlacement {
   if (!(pxPerCm > 0) || !isInside(centerPx, wallRect)) return { overWall: false };
   const startCm = {
@@ -74,9 +78,21 @@ export function placeGhost({ centerPx, wallRect, size, pxPerCm, wall, grid, coar
   const r = computeDrag({ startCm, deltaPx: { x: 0, y: 0 }, size, pxPerCm, wall, grid, coarse });
   return {
     overWall: true,
-    topLeftPx: { x: wallRect.left + r.displayPx.x, y: wallRect.top + r.displayPx.y },
+    topLeftPx: { x: wallRect.left + r.commitCm.x * pxPerCm, y: wallRect.top + r.commitCm.y * pxPerCm },
     commitCm: r.commitCm,
     centerCm: { x: r.commitCm.x + size.w / 2, y: r.commitCm.y + size.h / 2 },
     guides: r.guides,
   };
+}
+
+/**
+ * The preview frame's px size (§5.1): the frame scaled to fit the box's content area (inside its
+ * padding) minus the caption's height, keeping its aspect ratio. Zero until there is room.
+ */
+export function fitPreview(sizeCm: { w: number; h: number }, contentPx: { w: number; h: number }, captionPx: number): { w: number; h: number } {
+  const roomW = contentPx.w;
+  const roomH = contentPx.h - captionPx;
+  if (!(roomW > 0 && roomH > 0 && sizeCm.w > 0 && sizeCm.h > 0)) return { w: 0, h: 0 };
+  const scale = Math.min(roomW / sizeCm.w, roomH / sizeCm.h);
+  return { w: sizeCm.w * scale, h: sizeCm.h * scale };
 }

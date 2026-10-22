@@ -19,7 +19,7 @@ afterEach(() => {
 });
 
 describe("persistence", () => {
-  it("saves only the project slice: no selection, mode, palette kind or history", () => {
+  it("saves only the project and creator slice: no selection, mode or history", () => {
     const name = nextName();
     const store = createPlannerStore({ name });
     store.getState().addShape("rect");
@@ -29,11 +29,13 @@ describe("persistence", () => {
 
     const blob = saved(name);
     expect(blob.version).toBe(1);
-    expect(Object.keys(blob.state).sort()).toEqual(["background", "grid", "paletteSizes", "shapes", "wall"]);
+    expect(Object.keys(blob.state).sort()).toEqual(["background", "creatorColor", "grid", "paletteKind", "paletteSizes", "shapes", "wall"]);
+    // §5.1: the current shape, sizes and color persist.
+    expect(blob.state.paletteKind).toBe("circle");
     expect(blob.state.shapes).toHaveLength(1);
     expect(blob.state.grid.enabled).toBe(true);
     const raw = localStorage.getItem(name) ?? "";
-    expect(raw).not.toMatch(/selectedId|paletteKind|pastStates|futureStates|"mode"/);
+    expect(raw).not.toMatch(/selectedId|pastStates|futureStates|"mode"/);
   });
 
   it("persists the result of undo and redo", () => {
@@ -76,7 +78,7 @@ describe("persistence", () => {
 
   it("rehydrates from a valid save, with an empty undo history and no selection", () => {
     const name = nextName();
-    const shape = { id: "s1", kind: "circle", x: 10, y: 20, w: 30, h: 30 };
+    const shape = { id: "s1", kind: "circle", x: 10, y: 20, w: 30, h: 30, color: 8 };
     localStorage.setItem(
       name,
       JSON.stringify({
@@ -87,11 +89,14 @@ describe("persistence", () => {
           background: { hasImage: true, x: 1, y: 2, width: 300, aspect: 0.5, opacity: 0.4, visible: false },
           shapes: [shape],
           paletteSizes: DEFAULT_PALETTE_SIZES,
+          paletteKind: "square",
+          creatorColor: 9,
         },
       }),
     );
     const store = createPlannerStore({ name });
     const s = store.getState();
+    expect(s).toMatchObject({ paletteKind: "square", creatorColor: 9 });
     expect(s.wall).toEqual({ width: 400, height: 300, pushGap: 5 });
     expect(s.grid.enabled).toBe(true);
     expect(s.background).toMatchObject({ hasImage: true, opacity: 0.4, visible: false });
@@ -138,5 +143,16 @@ describe("persistence", () => {
     expect(() => store.getState().addShape("rect")).not.toThrow();
     expect(store.getState().shapes).toHaveLength(1);
     expect(events.some((e) => e.type === "write-failed")).toBe(true);
+  });
+
+  it("rolls a first creator color when the save has none, and saves it with the next change", () => {
+    const name = nextName();
+    localStorage.setItem(name, JSON.stringify({ version: 1, state: { shapes: [] } }));
+    const store = createPlannerStore({ name });
+    const color = store.getState().creatorColor;
+    expect(color).toBeGreaterThanOrEqual(1);
+    expect(color).toBeLessThanOrEqual(10);
+    store.getState().setGrid({ enabled: true });
+    expect(createPlannerStore({ name }).getState().creatorColor).toBe(color);
   });
 });

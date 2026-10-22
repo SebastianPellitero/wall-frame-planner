@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_GRID, DEFAULT_PALETTE_SIZES, DEFAULT_WALL } from "../defaults";
 import { overlaps } from "../lib/collision";
+import { isFrameColor } from "../lib/frameColors";
 import { createPlannerStore } from "./store";
 
 let n = 0;
@@ -31,6 +32,78 @@ describe("initial state", () => {
     expect(s.selectedId).toBeNull();
     expect(s.mode).toBe("arrange");
     expect(s.paletteKind).toBe("rect");
+    expect(isFrameColor(s.creatorColor)).toBe(true);
+  });
+});
+
+describe("frame colors", () => {
+  it("addShape uses the creator color, then rolls a different one", () => {
+    store.setState({ creatorColor: 4 });
+    const first = store.getState().addShape("rect", { x: 50, y: 50 });
+    expect(shapeOf(store, first).color).toBe(4);
+    const next = store.getState().creatorColor;
+    expect(next).not.toBe(4);
+    const second = store.getState().addShape("rect", { x: 200, y: 150 }, { select: false });
+    expect(shapeOf(store, second).color).toBe(next);
+    expect(store.getState().creatorColor).not.toBe(next);
+  });
+
+  it("consecutive adds always differ in color", () => {
+    let prev = 0;
+    for (let i = 0; i < 12; i++) {
+      const id = store.getState().addShape("square", undefined, { select: false });
+      const { color } = shapeOf(store, id);
+      expect(color).not.toBe(prev);
+      prev = color;
+    }
+  });
+
+  it("duplicateShape copies the original's color and leaves the creator color alone", () => {
+    store.setState({ creatorColor: 2 });
+    const a = store.getState().addShape("rect", { x: 100, y: 100 });
+    const creator = store.getState().creatorColor;
+    const copy = store.getState().duplicateShape(a) as string;
+    expect(shapeOf(store, copy).color).toBe(2);
+    expect(store.getState().creatorColor).toBe(creator);
+  });
+
+  it("keeps the creator color out of undo history", () => {
+    store.getState().addShape("rect", undefined, { select: false });
+    const past = history(store);
+    const before = store.getState().creatorColor;
+    store.getState().generate("rect", { w: 20, h: 30 });
+    expect(history(store)).toBe(past);
+    const rolled = store.getState().creatorColor;
+    expect(rolled).not.toBe(before);
+    undo(store);
+    expect(store.getState().shapes).toEqual([]);
+    expect(store.getState().creatorColor).toBe(rolled);
+  });
+});
+
+describe("generate", () => {
+  it("sets the kind's size, makes it the current shape and rolls a new color", () => {
+    store.setState({ creatorColor: 5 });
+    store.getState().generate("circle", { w: 44, h: 44 });
+    const s = store.getState();
+    expect(s.paletteSizes.circle).toEqual({ w: 44, h: 44 });
+    expect(s.paletteKind).toBe("circle");
+    expect(s.creatorColor).not.toBe(5);
+    expect(isFrameColor(s.creatorColor)).toBe(true);
+  });
+
+  it("clamps the size to the wall (square and circle by the shorter side)", () => {
+    store.getState().generate("square", { w: 9999, h: 5 });
+    expect(store.getState().paletteSizes.square).toEqual({ w: 250, h: 250 });
+    store.getState().generate("rect", { w: 0.2, h: 900 });
+    expect(store.getState().paletteSizes.rect).toEqual({ w: 1, h: 250 });
+  });
+
+  it("makes the next added frame that size and color", () => {
+    store.getState().generate("rect", { w: 40, h: 60 });
+    const color = store.getState().creatorColor;
+    const id = store.getState().addShape("rect", { x: 100, y: 100 });
+    expect(shapeOf(store, id)).toMatchObject({ w: 40, h: 60, color });
   });
 });
 
@@ -71,8 +144,8 @@ describe("addShape", () => {
   });
 
   it("uses the palette size, clamped to the wall", () => {
+    store.getState().generate("rect", { w: 40, h: 50 });
     store.getState().setWall({ width: 20, height: 20 });
-    store.getState().setPaletteSize("rect", { w: 40, h: 50 });
     const id = store.getState().addShape("rect");
     expect(shapeOf(store, id)).toMatchObject({ w: 20, h: 20, x: 0, y: 0 });
   });
@@ -184,11 +257,6 @@ describe("settings actions", () => {
     expect(store.getState().background.opacity).toBe(0);
   });
 
-  it("setPaletteSize clamps with clampSize", () => {
-    store.getState().setPaletteSize("square", { w: 9999, h: 5 });
-    expect(store.getState().paletteSizes.square).toEqual({ w: 250, h: 250 });
-  });
-
   it("select, setMode and setPaletteKind update the UI slice", () => {
     store.getState().select("x");
     store.getState().setMode("photo");
@@ -227,7 +295,7 @@ describe("undo / redo", () => {
     store.getState().select("x");
     store.getState().setMode("gridOrigin");
     store.getState().setPaletteKind("square");
-    store.getState().setPaletteSize("rect", { w: 20, h: 20 });
+    store.getState().generate("rect", { w: 20, h: 20 });
     store.getState().setGrid({ enabled: true, spacingX: 5 });
     store.getState().setGridOrigin({ x: 10, y: 10 });
     store.getState().setBackground({ opacity: 0.5 });
@@ -253,6 +321,7 @@ describe("undo / redo", () => {
     expect(s.grid).toEqual(DEFAULT_GRID);
     expect(s.selectedId).toBeNull();
     expect(s.mode).toBe("arrange");
+    expect(isFrameColor(s.creatorColor)).toBe(true);
     expect(history(store)).toBe(0);
     expect(store.temporal.getState().futureStates).toHaveLength(0);
   });
@@ -264,7 +333,7 @@ describe("pushedIds", () => {
   });
 
   it("commitShape lists the pushed neighbors, nearest to the anchor first", () => {
-    const rect = (id: string, x: number) => ({ id, kind: "rect" as const, x, y: 75, w: 40, h: 50 });
+    const rect = (id: string, x: number) => ({ id, kind: "rect" as const, x, y: 75, w: 40, h: 50, color: 1 as const });
     // A row: far is listed first so array order can't pass for distance order.
     store.setState({ shapes: [rect("far", 175), rect("a", 10), rect("near", 130), { ...rect("untouched", 250), y: 190 }] });
     // The anchor at 112..152 overlaps near (130..170), which is pushed right into far (175..215).

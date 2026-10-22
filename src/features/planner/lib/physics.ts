@@ -35,7 +35,7 @@ export const settleRotate: SpringPreset = { type: "spring", stiffness: 260, damp
 export const push: SpringPreset = { type: "spring", stiffness: 240, damping: 28, mass: 1.2 };
 /** Ghost position and size (about 65 ms of lag). */
 export const ghostFollow: SpringPreset = { type: "spring", stiffness: 700, damping: 46, mass: 0.6 };
-/** Ghost returning to its tile. */
+/** Ghost returning to the Frame creator preview. */
 export const flyBack: SpringPreset = { type: "spring", stiffness: 380, damping: 32, mass: 0.8 };
 /** Tap-to-add appearance (scale). */
 export const popIn: SpringPreset = { type: "spring", stiffness: 460, damping: 26, mass: 1 };
@@ -117,3 +117,11 @@ export function tween(ms: number, delaySec?: number): TweenPreset {
 export const popInFadeMs = 120;
 /** Opacity fade of a deleted frame (§6.3). */
 export const removeFadeMs = 140;
+
+/** The fly-back ghost fades over the last 120 ms of its ~225 ms `flyBack` flight (§6.3). */
+export const flyBackFadeMs = 120;
+export const flyBackFadeDelayMs = 105;
+/** Generate: the new preview frame scales from this to 1 on `popIn` (§6.2). */
+export const generateFromScale = 0.92;
+/** The preview's Generate and color-roll cross-fade: `duration-quick` (§2.7, §6.3). */
+export const crossFadeMs = 140;

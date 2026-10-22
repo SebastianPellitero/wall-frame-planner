@@ -30,11 +30,21 @@ export function frameLabel(kind: ShapeKind, wCm: number, hCm: number, tier: Excl
   return `${formatCm(wCm)}${sep}×${sep}${formatCm(hCm)}`;
 }
 
-const KIND_NAME: Record<ShapeKind, string> = { rect: "Rectangle", square: "Square", circle: "Circle" };
+export const KIND_NAME: Record<ShapeKind, string> = { rect: "Rectangle", square: "Square", circle: "Circle" };
 
 /** Accessible name (§7), e.g. "Rectangle 40 × 50 cm". */
 export function frameName(kind: ShapeKind, wCm: number, hCm: number): string {
   return `${KIND_NAME[kind]} ${frameLabel(kind, wCm, hCm, "full")} cm`;
+}
+
+/** The Frame creator preview's caption (§5.1), e.g. "40 × 50 cm" or "Ø 40 cm". */
+export function previewCaption(kind: ShapeKind, wCm: number, hCm: number): string {
+  return `${frameLabel(kind, wCm, hCm, "full")} cm`;
+}
+
+/** The preview's accessible name (§8), e.g. "Add rectangle, 40 × 50 cm". */
+export function previewName(kind: ShapeKind, wCm: number, hCm: number): string {
+  return `Add ${KIND_NAME[kind].toLowerCase()}, ${previewCaption(kind, wCm, hCm)}`;
 }
 
 /** Room for the label inside the moulding: `w − 2t`, or `0.8 × (d − 2t)` for circles. */

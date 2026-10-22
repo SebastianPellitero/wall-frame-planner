@@ -7,7 +7,7 @@ import { usePlannerStore } from "../state/store";
 import { ContextPanel } from "./ContextPanel";
 import { WallContext } from "./wall/WallContext";
 
-/** The palette reads the wall scale and ref, so the panel renders inside the wall context. */
+/** The Frame creator reads the wall scale and ref, so the panel renders inside the wall context. */
 function renderPanel(shell: Shell) {
   const value = { pxPerCm: 2, wallRef: createRef<HTMLDivElement>(), wallPx: { w: 600, h: 500 } };
   return render(
@@ -17,7 +17,7 @@ function renderPanel(shell: Shell) {
   );
 }
 
-const PANELS = ["Frames", "Selected frame", "Photo", "Grid origin"];
+const PANELS = ["Frame creator", "Selected frame", "Photo", "Grid origin"];
 
 function expectOnly(name: string) {
   expect(screen.getByRole("region", { name })).toBeInTheDocument();
@@ -35,7 +35,7 @@ beforeEach(() => {
 describe("ContextPanel", () => {
   it.each(["stacked", "landscape", "desktop"] as const)("shows the palette in Arrange with nothing selected (%s)", (shell) => {
     renderPanel(shell);
-    expectOnly("Frames");
+    expectOnly("Frame creator");
   });
 
   it.each(["stacked", "landscape"] as const)("shows the selection when a frame is selected (%s)", (shell) => {
@@ -43,13 +43,13 @@ describe("ContextPanel", () => {
     selectNewShape();
     expectOnly("Selected frame");
     act(() => usePlannerStore.getState().select(null));
-    expectOnly("Frames");
+    expectOnly("Frame creator");
   });
 
   it("keeps the palette on desktop, where the selection lives in the right panel", () => {
     renderPanel("desktop");
     selectNewShape();
-    expectOnly("Frames");
+    expectOnly("Frame creator");
   });
 
   it.each(["stacked", "landscape", "desktop"] as const)("shows the photo and origin tools by mode, even with a selection (%s)", (shell) => {
@@ -60,7 +60,20 @@ describe("ContextPanel", () => {
     act(() => usePlannerStore.getState().setMode("gridOrigin"));
     expectOnly("Grid origin");
     act(() => usePlannerStore.getState().setMode("arrange"));
-    expectOnly(shell === "desktop" ? "Frames" : "Selected frame");
+    expectOnly(shell === "desktop" ? "Frame creator" : "Selected frame");
+  });
+
+  it.each(["landscape", "desktop"] as const)("shows the Matrix control under the Frame creator (%s)", (shell) => {
+    renderPanel(shell);
+    const creator = screen.getByRole("region", { name: "Frame creator" });
+    const matrix = screen.getByRole("region", { name: "Matrix control" });
+    expect(creator.compareDocumentPosition(matrix) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("leaves the Matrix control to Settings on stacked, where the dock has no room (§4.2)", () => {
+    renderPanel("stacked");
+    expect(screen.queryByRole("region", { name: "Matrix control" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("context-panel")).toHaveClass("h-[128px]");
   });
 
   it("keeps the same container element while the content swaps", () => {

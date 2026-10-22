@@ -11,6 +11,8 @@ interface FrameVisualProps {
   selected: boolean;
   /** Arrange mode: desktop hover deepens the shadow. */
   hoverable: boolean;
+  /** False where a caption outside the frame carries the size (the Frame creator preview). */
+  showLabel?: boolean;
 }
 
 const LABEL_CLASS = {
@@ -20,19 +22,21 @@ const LABEL_CLASS = {
 
 /**
  * The frame look (design-system.md §3): mitred moulding, mat, picture opening with its bevel,
- * the size label tier that fits, and the selection brackets. Purely visual.
+ * the size label tier that fits, and the selection brackets. Purely visual. Square corners on
+ * every layer of a rectangle or square. The colors come from the nearest `data-frame-color`
+ * ancestor, which every caller sets (§3.2).
  */
-export function FrameVisual({ kind, wCm, hCm, wPx, hPx, selected, hoverable }: FrameVisualProps) {
+export function FrameVisual({ kind, wCm, hCm, wPx, hPx, selected, hoverable, showLabel = true }: FrameVisualProps) {
   const s = Math.min(wPx, hPx);
   const t = mouldingPx(s);
   const m = matPx(s);
-  const tier = labelTier(kind, wCm, hCm, wPx, hPx);
+  const tier = showLabel ? labelTier(kind, wCm, hCm, wPx, hPx) : "hidden";
   const circle = kind === "circle";
   const hover = hoverable && "can-hover:group-hover:shadow-frame-hover";
 
   const label = tier !== "hidden" && (
     <div className="pointer-events-none absolute inset-0 grid place-items-center" aria-hidden="true">
-      <span className={cx("font-medium whitespace-nowrap text-ink tabular-nums tracking-label", LABEL_CLASS[tier])}>
+      <span className={cx("font-medium whitespace-nowrap text-frame-ink tabular-nums tracking-label", LABEL_CLASS[tier])}>
         {frameLabel(kind, wCm, hCm, tier)}
       </span>
     </div>
@@ -51,7 +55,7 @@ export function FrameVisual({ kind, wCm, hCm, wPx, hPx, selected, hoverable }: F
       style={circle ? undefined : { borderWidth: t }}
     >
       <div
-        className={cx("absolute bg-mat", circle ? "rounded-full" : "inset-0")}
+        className={cx("absolute bg-mat inset-shadow-mat", circle ? "rounded-full" : "inset-0")}
         style={{ padding: m, ...(circle ? { inset: t } : null) }}
       >
         <div className={cx("size-full bg-aperture inset-shadow-aperture", circle && "rounded-full")} />
@@ -62,7 +66,7 @@ export function FrameVisual({ kind, wCm, hCm, wPx, hPx, selected, hoverable }: F
   );
 }
 
-/** Four crop-mark L's just outside the frame's box (§3.6): a halo stroke under an accent stroke. */
+/** Four crop-mark L's just outside the frame's box (§3.7): a halo stroke under an accent stroke, square like the frames. */
 function SelectionBrackets({ wPx, hPx, offset, arm }: { wPx: number; hPx: number; offset: number; arm: number }) {
   const W = wPx + 8;
   const H = hPx + 8;
@@ -77,8 +81,8 @@ function SelectionBrackets({ wPx, hPx, offset, arm }: { wPx: number; hPx: number
       className="pointer-events-none absolute overflow-visible"
       style={{ left: -offset, top: -offset }}
       fill="none"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      strokeLinecap="square"
+      strokeLinejoin="miter"
     >
       <path d={d} className="stroke-halo" strokeWidth={5.5} />
       <path d={d} className="stroke-accent" strokeWidth={2.5} />

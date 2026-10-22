@@ -14,6 +14,7 @@ const shape = (id: string, kind: ShapeKind, x: number, y: number, w: number, h: 
   y,
   w,
   h,
+  color: 1,
 });
 const rect = (id: string, x: number, y: number, w: number, h: number) => shape(id, "rect", x, y, w, h);
 const circle = (id: string, x: number, y: number, d: number) => shape(id, "circle", x, y, d, d);
@@ -52,7 +53,7 @@ describe("resolveOverlaps", () => {
     const out = resolveOverlaps([a, b], "a", wall);
     expect(out[0]).toBe(a);
     expect(out[1]).not.toBe(b);
-    expect(out[1]).toEqual({ id: "b", kind: "rect", x: 93, y: 50, w: 40, h: 40 }); // a.right 90 + gap 3
+    expect(out[1]).toEqual({ id: "b", kind: "rect", x: 93, y: 50, w: 40, h: 40, color: 1 }); // a.right 90 + gap 3
   });
 
   it("keeps the anchor fixed and the order intact when the anchor is not first", () => {

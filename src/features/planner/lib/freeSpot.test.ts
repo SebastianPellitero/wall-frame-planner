@@ -13,6 +13,7 @@ const shape = (id: string, kind: ShapeKind, x: number, y: number, w: number, h: 
   y,
   w,
   h,
+  color: 1,
 });
 
 /** A shape of `size` whose center sits at (cx, cy). */

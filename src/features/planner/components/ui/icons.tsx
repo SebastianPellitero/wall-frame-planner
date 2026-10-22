@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 
-/** design-system.md §5: 24-unit viewBox, 1.75 currentColor stroke, round caps and joins. 20px in icon buttons, 18px next to text. */
-function Icon({ size = 20, className, children }: { size?: 18 | 20; className?: string; children: ReactNode }) {
+/**
+ * design-system.md §5: 24-unit viewBox, 1.75 currentColor stroke, round caps and joins (square
+ * for the shape glyphs). 20px in icon buttons, 18px next to text.
+ */
+function Icon({ size = 20, className, square, children }: { size?: 18 | 20; className?: string; square?: boolean; children: ReactNode }) {
   return (
     <svg
       width={size}
@@ -10,8 +13,8 @@ function Icon({ size = 20, className, children }: { size?: 18 | 20; className?: 
       fill="none"
       stroke="currentColor"
       strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      strokeLinecap={square ? "square" : "round"}
+      strokeLinejoin={square ? "miter" : "round"}
       aria-hidden="true"
       focusable="false"
       className={className}
@@ -61,5 +64,29 @@ export const RotateIcon = (p: IconProps) => (
 export const CloseIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M6 6l12 12M18 6 6 18" />
+  </Icon>
+);
+
+/** Shape glyphs (§5): a frame and its opening, square-joined like the frames. A 12×16 portrait rectangle. */
+export const ShapeRectIcon = (p: IconProps) => (
+  <Icon {...p} square>
+    <rect x="6" y="4" width="12" height="16" />
+    <rect x="9" y="7.5" width="6" height="9" />
+  </Icon>
+);
+
+/** 14×14. */
+export const ShapeSquareIcon = (p: IconProps) => (
+  <Icon {...p} square>
+    <rect x="5" y="5" width="14" height="14" />
+    <rect x="8.5" y="8.5" width="7" height="7" />
+  </Icon>
+);
+
+/** Diameter 15. */
+export const ShapeCircleIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="7.5" />
+    <circle cx="12" cy="12" r="4" />
   </Icon>
 );

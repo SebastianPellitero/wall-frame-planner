@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_BACKGROUND, DEFAULT_GRID, DEFAULT_PALETTE_SIZES, DEFAULT_WALL } from "../defaults";
+import { colorFromId } from "../lib/frameColors";
 import { sanitizeProject } from "./sanitize";
 
 const defaults = {
@@ -8,6 +9,8 @@ const defaults = {
   background: DEFAULT_BACKGROUND,
   shapes: [],
   paletteSizes: DEFAULT_PALETTE_SIZES,
+  paletteKind: "rect",
+  creatorColor: 1,
 };
 
 describe("sanitizeProject", () => {
@@ -52,7 +55,7 @@ describe("sanitizeProject", () => {
         { ...good, id: "a", x: 50 },
       ],
     });
-    expect(out.shapes).toEqual([good]);
+    expect(out.shapes).toEqual([{ ...good, color: colorFromId("a") }]);
   });
 
   it("coerces square and circle to w === h", () => {
@@ -76,7 +79,7 @@ describe("sanitizeProject", () => {
         { id: "b", kind: "rect", x: 10.04, y: 10.06, w: 20, h: 20 },
       ],
     });
-    expect(out.shapes[0]).toEqual({ id: "a", kind: "rect", x: 0, y: 0, w: 100, h: 1 });
+    expect(out.shapes[0]).toEqual({ id: "a", kind: "rect", x: 0, y: 0, w: 100, h: 1, color: colorFromId("a") });
     expect(out.shapes[1]).toMatchObject({ x: 10, y: 10.1 });
   });
 
@@ -85,5 +88,36 @@ describe("sanitizeProject", () => {
     expect(out.paletteSizes.rect).toEqual({ w: 60, h: 80 });
     expect(out.paletteSizes.square).toEqual(DEFAULT_PALETTE_SIZES.square);
     expect(out.paletteSizes.circle).toEqual({ w: 1, h: 1 });
+  });
+
+  it("keeps a valid frame color and gives a missing or invalid one a stable color from the id", () => {
+    const base = { kind: "rect", x: 0, y: 0, w: 10, h: 10 };
+    const raw = {
+      shapes: [
+        { ...base, id: "kept", color: 7 },
+        { ...base, id: "missing" },
+        { ...base, id: "zero", color: 0 },
+        { ...base, id: "big", color: 11 },
+        { ...base, id: "frac", color: 2.5 },
+        { ...base, id: "str", color: "frame-3" },
+      ],
+    };
+    const colors = sanitizeProject(raw).shapes.map((s) => [s.id, s.color]);
+    expect(colors).toEqual([
+      ["kept", 7],
+      ["missing", colorFromId("missing")],
+      ["zero", colorFromId("zero")],
+      ["big", colorFromId("big")],
+      ["frac", colorFromId("frac")],
+      ["str", colorFromId("str")],
+    ]);
+    // Deterministic: the same save always gets the same colors.
+    expect(sanitizeProject(raw).shapes.map((s) => s.color)).toEqual(colors.map(([, c]) => c));
+  });
+
+  it("keeps a valid creator color and shape, otherwise uses the given fallback color and rect", () => {
+    expect(sanitizeProject({ creatorColor: 4, paletteKind: "circle" })).toMatchObject({ creatorColor: 4, paletteKind: "circle" });
+    expect(sanitizeProject({ creatorColor: 12, paletteKind: "hexagon" }, 6)).toMatchObject({ creatorColor: 6, paletteKind: "rect" });
+    expect(sanitizeProject({}).creatorColor).toBe(1);
   });
 });

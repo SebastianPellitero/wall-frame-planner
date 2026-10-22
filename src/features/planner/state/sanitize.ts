@@ -1,4 +1,5 @@
 import { DEFAULT_BACKGROUND, DEFAULT_GRID, DEFAULT_PALETTE_SIZES, DEFAULT_WALL } from "../defaults";
+import { colorFromId, isFrameColor, type FrameColor } from "../lib/frameColors";
 import { clamp, clampSize, clampToWall, round1 } from "../lib/geometry";
 import type { Background, Grid, PersistedSlice, Shape, ShapeKind, Wall } from "../types";
 
@@ -51,14 +52,16 @@ function sanitizeShapes(raw: unknown, wall: Wall): Shape[] {
   const out: Shape[] = [];
   for (const item of raw) {
     if (!isObj(item)) continue;
-    const { id, kind, x, y, w, h } = item;
+    const { id, kind, x, y, w, h, color } = item;
     if (typeof id !== "string" || id === "" || seen.has(id)) continue;
     if (!KINDS.includes(kind as ShapeKind)) continue;
     if (![x, y, w, h].every((v) => typeof v === "number" && Number.isFinite(v))) continue;
     const size = clampSize(kind as ShapeKind, w as number, h as number, wall);
     const pos = clampToWall({ x: x as number, y: y as number, ...size }, wall);
     seen.add(id);
-    out.push({ id, kind: kind as ShapeKind, x: round1(pos.x), y: round1(pos.y), ...size });
+    // Saves from before frame colors get a varied color that is stable across reloads.
+    const finish = isFrameColor(color) ? color : colorFromId(id);
+    out.push({ id, kind: kind as ShapeKind, x: round1(pos.x), y: round1(pos.y), ...size, color: finish });
   }
   return out;
 }
@@ -73,8 +76,12 @@ function sanitizePalette(raw: unknown, wall: Wall): PersistedSlice["paletteSizes
   return { rect: one("rect"), square: one("square"), circle: one("circle") };
 }
 
-/** Turns anything read from storage into a valid project slice, filling gaps from the defaults. */
-export function sanitizeProject(raw: unknown): PersistedSlice {
+/**
+ * Turns anything read from storage into a valid project slice, filling gaps from the defaults.
+ * Deterministic: a missing creator color becomes `creatorColorFallback` (the store passes the
+ * one it rolled on the client).
+ */
+export function sanitizeProject(raw: unknown, creatorColorFallback: FrameColor = 1): PersistedSlice {
   const o = isObj(raw) ? raw : {};
   const wall = sanitizeWall(o.wall);
   return {
@@ -83,5 +90,7 @@ export function sanitizeProject(raw: unknown): PersistedSlice {
     background: sanitizeBackground(o.background),
     shapes: sanitizeShapes(o.shapes, wall),
     paletteSizes: sanitizePalette(o.paletteSizes, wall),
+    paletteKind: KINDS.includes(o.paletteKind as ShapeKind) ? (o.paletteKind as ShapeKind) : "rect",
+    creatorColor: isFrameColor(o.creatorColor) ? o.creatorColor : creatorColorFallback,
   };
 }

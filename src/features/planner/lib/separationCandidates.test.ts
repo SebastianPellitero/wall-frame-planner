@@ -9,6 +9,7 @@ const shape = (kind: ShapeKind, x: number, y: number, w: number, h: number = w):
   y,
   w,
   h,
+  color: 1,
 });
 const rect = (x: number, y: number, w: number, h: number) => shape("rect", x, y, w, h);
 const circle = (x: number, y: number, d: number) => shape("circle", x, y, d, d);

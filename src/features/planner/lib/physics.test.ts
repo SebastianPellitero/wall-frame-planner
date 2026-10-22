@@ -154,3 +154,20 @@ describe("choreography fades (§6.3)", () => {
     expect(physics.removeFadeMs).toBe(140);
   });
 });
+
+describe("frame creator motion (§6.2, §6.3)", () => {
+  it("fly-back fades over its last 120 ms, starting 105 ms into the ~225 ms flight", () => {
+    expect(physics.flyBackFadeMs).toBe(120);
+    expect(physics.flyBackFadeDelayMs).toBe(105);
+  });
+
+  it("Generate pops the preview frame in from 0.92", () => {
+    expect(physics.generateFromScale).toBe(0.92);
+  });
+});
+
+describe("preview cross-fade (§6.3)", () => {
+  it("runs over duration-quick", () => {
+    expect(physics.crossFadeMs).toBe(140);
+  });
+});

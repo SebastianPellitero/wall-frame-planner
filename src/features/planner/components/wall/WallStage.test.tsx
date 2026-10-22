@@ -43,7 +43,7 @@ describe("WallStage", () => {
   it("shows the empty-wall copy with tap/click switched by CSS only", () => {
     renderStage();
     const copy = screen.getByText(EMPTY_COPY);
-    expect(copy).toHaveTextContent("Drag a frame onto the wall, or tapclick one to add it.");
+    expect(copy).toHaveTextContent("Drag a frame onto the wall, or tapclick the preview to add one.");
     expect(screen.getByText("tap")).toHaveClass("can-hover:hidden");
     expect(screen.getByText("click")).toHaveClass("hidden", "can-hover:inline");
   });

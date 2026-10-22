@@ -50,4 +50,12 @@ describe("ModeSwitch", () => {
     await userEvent.keyboard("{End}");
     expect(usePlannerStore.getState().mode).toBe("gridOrigin");
   });
+
+  it("vertical: below 340px tall the items shrink to icon-only 44px, keeping name and title (§4.3)", () => {
+    render(<ModeSwitch orientation="vertical" />);
+    const photo = screen.getByRole("radio", { name: "Photo" });
+    expect(photo).toHaveClass("size-[52px]", "[@media(max-height:340px)]:size-touch");
+    expect(photo).toHaveAttribute("title", "Photo");
+    expect(screen.getByText("Photo")).toHaveClass("[@media(max-height:340px)]:hidden");
+  });
 });
