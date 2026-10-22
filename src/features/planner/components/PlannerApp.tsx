@@ -1,5 +1,6 @@
 import { useMemo, useRef } from "react";
 import { useShell } from "../hooks/useShell";
+import { useShortcuts } from "../hooks/useShortcuts";
 import { useWallScale } from "../hooks/useWallScale";
 import { STAGE_PADDING_PX } from "../lib/wallScale";
 import { usePlannerStore } from "../state/store";
@@ -13,6 +14,7 @@ import { WallStage } from "./wall/WallStage";
 /** The editor. Client-only (see PlannerAppLoader), so storage never causes hydration mismatches. */
 export function PlannerApp() {
   const shell = useShell();
+  useShortcuts();
   const wall = usePlannerStore((s) => s.wall);
   const { stageRef, pxPerCm, wallPx } = useWallScale(wall, shell === "desktop" ? STAGE_PADDING_PX.desktop : STAGE_PADDING_PX.phone);
   const wallRef = useRef<HTMLDivElement>(null);

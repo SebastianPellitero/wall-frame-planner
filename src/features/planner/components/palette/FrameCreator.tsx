@@ -20,10 +20,11 @@ type Size = { w: number; h: number };
  * put the preview where the layout draws it.
  */
 const LAYOUT: Record<Shell, { form: string; preview: string; fields: string; width: (single: boolean) => string; height: string; generate: string }> = {
-  // Row A (56): picker | preview. Row B (64): fields | Generate. Fills the 128px dock exactly.
+  // Row A (56): picker | preview | (Undo/Redo, from the shell: 2 × 44 + 8). Row B (64): fields | Generate.
+  // Fills the 128px dock exactly; the margin keeps row A full, so the fields wrap to row B.
   stacked: {
     form: "flex flex-wrap gap-2",
-    preview: "order-2 h-tile flex-1 basis-[calc(100%-140px)]",
+    preview: "order-2 mr-24 h-tile flex-1 basis-[calc(100%-236px)]",
     fields: "order-3 flex min-w-0 flex-1 gap-2",
     width: () => "flex-1",
     height: "flex-1",

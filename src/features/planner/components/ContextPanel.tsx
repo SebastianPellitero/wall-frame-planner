@@ -4,7 +4,7 @@ import { usePlannerStore } from "../state/store";
 import type { Mode } from "../types";
 import { OriginTools } from "./panel/OriginTools";
 import { PhotoTools } from "./panel/PhotoTools";
-import { SelectionPanel } from "./panel/SelectionPanel";
+import { SelectionBar } from "./panel/SelectionBar";
 import { FrameCreator } from "./palette/FrameCreator";
 import { MatrixControl } from "./palette/MatrixControl";
 import { cx } from "./ui/cx";
@@ -20,7 +20,7 @@ function pickContent(mode: Mode, hasSelection: boolean, shell: Shell): Content {
 
 const CONTENT: Record<Content, ComponentType<{ shell: Shell }>> = {
   arrange: ArrangeTools,
-  selection: SelectionPanel,
+  selection: SelectionBar,
   photo: PhotoTools,
   origin: OriginTools,
 };

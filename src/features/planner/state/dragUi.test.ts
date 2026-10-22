@@ -3,6 +3,7 @@ import { useDragUi } from "./dragUi";
 
 beforeEach(() => {
   useDragUi.getState().endDrag();
+  useDragUi.setState({ spawnFrom: null });
 });
 
 describe("dragUi", () => {
@@ -37,5 +38,14 @@ describe("dragUi", () => {
     useDragUi.getState().endDrag();
     expect(listener).not.toHaveBeenCalled();
     unsubscribe();
+  });
+
+  it("holds a duplicate's spawn point until that frame takes it, once", () => {
+    expect(useDragUi.getState().spawnFrom).toBeNull();
+    useDragUi.getState().setSpawnFrom("copy", { x: 10, y: 20 });
+    expect(useDragUi.getState().takeSpawnFrom("other")).toBeNull();
+    expect(useDragUi.getState().takeSpawnFrom("copy")).toEqual({ x: 10, y: 20 });
+    expect(useDragUi.getState().spawnFrom).toBeNull();
+    expect(useDragUi.getState().takeSpawnFrom("copy")).toBeNull();
   });
 });

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ContextPanel } from "../ContextPanel";
+import { HistoryButtons } from "../HistoryButtons";
 import { ModeSwitch } from "../ModeSwitch";
 import { Wordmark } from "./Wordmark";
 
@@ -16,9 +17,11 @@ export function StackedShell({ stage }: { stage: ReactNode }) {
       </header>
       {stage}
       <div className="relative z-chrome shrink-0 border-t border-line bg-surface px-gutter pt-2 pb-[calc(8px+var(--spacing-safe-bottom))]">
-        <div className="mx-auto w-full sm:max-w-[560px]">
+        <div className="relative mx-auto w-full sm:max-w-[560px]">
           <ContextPanel shell="stacked" />
-          {/* T7: Undo/Redo at the right end of dock row A (shrink the Frame creator preview basis in LAYOUT.stacked), Arrange only */}
+          {/* The right end of dock row A (56px), outside the cross-fading content so it never flickers;
+              the creator and selection leave it 96px. Hidden outside Arrange, where Done takes the slot (§4.2, §4.6). */}
+          <HistoryButtons shell="stacked" className="absolute top-1.5 right-0" />
         </div>
       </div>
     </div>

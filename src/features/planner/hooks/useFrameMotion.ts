@@ -1,6 +1,7 @@
 import { animate, useMotionValue, useMotionValueEvent, useReducedMotion, useVelocity } from "motion/react";
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import {
+  duplicate,
   lift as liftSpring,
   liftScale,
   push,
@@ -12,21 +13,28 @@ import {
   tiltFromVelocity,
   tween,
 } from "../lib/physics";
+import { useDragUi } from "../state/dragUi";
 import { usePlannerStore } from "../state/store";
 import type { Point, Shape } from "../types";
 
 /**
  * A frame's motion values (px, deg, opacity) and the springs that drive them (§6.3):
  * lift, velocity tilt, settle on drop, push for every other position change, and a plain
- * jump when `pxPerCm` changes (resize, rotation), so frames never fly around.
+ * jump when `pxPerCm` changes (resize, rotation), so frames never fly around. A duplicate
+ * mounts over its original, lifted, and springs out to its own spot.
  */
 export function useFrameMotion(shape: Pick<Shape, "id" | "x" | "y">, pxPerCm: number) {
   const reduced = useReducedMotion() === true;
-  const x = useMotionValue(shape.x * pxPerCm);
-  const y = useMotionValue(shape.y * pxPerCm);
-  const scale = useMotionValue(1);
+  // Read during render, taken (cleared) in the mount effect, so a double render keeps it.
+  const [spawn] = useState(() => {
+    const s = useDragUi.getState().spawnFrom;
+    return s?.id === shape.id ? s.from : null;
+  });
+  const x = useMotionValue((spawn ?? shape).x * pxPerCm);
+  const y = useMotionValue((spawn ?? shape).y * pxPerCm);
+  const scale = useMotionValue(spawn && !reduced ? liftScale : 1);
   const rotate = useMotionValue(0);
-  const liftOpacity = useMotionValue(0);
+  const liftOpacity = useMotionValue(spawn ? 1 : 0);
   const nudgeOpacity = useMotionValue(0);
   const vx = useVelocity(x);
 
@@ -41,6 +49,20 @@ export function useFrameMotion(shape: Pick<Shape, "id" | "x" | "y">, pxPerCm: nu
   useMotionValueEvent(vx, "change", (v) => {
     if (dragging.current && !reduced) animate(rotate, tiltFromVelocity(v), tilt);
   });
+
+  // Duplicate (§6.3): from the original, at liftScale with the lift layer, out to its own spot.
+  useLayoutEffect(() => {
+    if (!spawn) return;
+    useDragUi.getState().takeSpawnFrom(shape.id);
+    const { pxPerCm: ppc, reduced: r } = latest.current;
+    const to = shown.current;
+    const travel = r ? tween(reducedMotion.tweenMs) : duplicate;
+    const fade = r ? tween(reducedMotion.tweenShortMs) : duplicate;
+    animate(x, to.x * ppc, travel);
+    animate(y, to.y * ppc, travel);
+    animate(scale, 1, fade);
+    animate(liftOpacity, 0, fade);
+  }, [spawn, shape.id, x, y, scale, liftOpacity]);
 
   // Position changes from outside the drag: push-apart, undo/redo, numeric edits, rescale.
   useLayoutEffect(() => {
@@ -86,5 +108,5 @@ export function useFrameMotion(shape: Pick<Shape, "id" | "x" | "y">, pxPerCm: nu
     else animate(rotate, 0, settleRotate);
   }
 
-  return { x, y, scale, rotate, liftOpacity, nudgeOpacity, lift, drop };
+  return { x, y, scale, rotate, liftOpacity, nudgeOpacity, lift, drop, spawned: spawn !== null };
 }

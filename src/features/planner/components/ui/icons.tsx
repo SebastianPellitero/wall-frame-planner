@@ -90,3 +90,34 @@ export const ShapeCircleIcon = (p: IconProps) => (
     <circle cx="12" cy="12" r="4" />
   </Icon>
 );
+
+/** Two overlapping frames: the copy in front. */
+export const DuplicateIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="8.5" y="8.5" width="11.5" height="11.5" rx="1.5" />
+    <path d="M15.5 5.5V5A1.5 1.5 0 0 0 14 3.5H5A1.5 1.5 0 0 0 3.5 5v9A1.5 1.5 0 0 0 5 15.5h.5" />
+  </Icon>
+);
+
+export const TrashIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 6.5h16" />
+    <path d="M9.5 6.5V4.5h5v2" />
+    <path d="M6 6.5l1 13.5h10l1-13.5" />
+    <path d="M10 10.5v6M14 10.5v6" />
+  </Icon>
+);
+
+export const UndoIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M9 4.5 4.5 9 9 13.5" />
+    <path d="M4.5 9H15a5 5 0 0 1 0 10h-4" />
+  </Icon>
+);
+
+export const RedoIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M15 4.5 19.5 9 15 13.5" />
+    <path d="M19.5 9H9a5 5 0 0 0 0 10h4" />
+  </Icon>
+);

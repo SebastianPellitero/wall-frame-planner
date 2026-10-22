@@ -24,6 +24,7 @@ const windowPointer = (type: string, init: Record<string, number>) => {
 beforeEach(() => {
   usePlannerStore.setState({ ...initialProject(), ...initialUi });
   useDragUi.getState().endDrag();
+  useDragUi.setState({ spawnFrom: null });
 });
 
 describe("FrameNode", () => {
@@ -124,6 +125,21 @@ describe("FrameNode", () => {
     windowPointer("pointerup", { clientX: 10, clientY: 10 });
     fireEvent.keyDown(frame, { key: "Enter" });
     expect(usePlannerStore.getState().selectedId).toBeNull();
+  });
+
+  it("a duplicate starts over the original and takes its spawn point (§6.3)", () => {
+    useDragUi.getState().setSpawnFrom("r1", { x: 5, y: 10 });
+    const { frame } = renderFrame();
+    // At 2 px/cm the original's (5, 10) cm is (10, 20) px; the copy's own spot is (24.6, 80).
+    expect(frame.style.transform).toMatch(/translateX\(10px\) translateY\(20px\)/);
+    expect(useDragUi.getState().spawnFrom).toBeNull();
+  });
+
+  it("a frame without a spawn point starts at its own spot", () => {
+    useDragUi.getState().setSpawnFrom("someone-else", { x: 5, y: 10 });
+    const { frame } = renderFrame();
+    expect(frame.style.transform).toMatch(/translateX\(24\.6px\) translateY\(80px\)/);
+    expect(useDragUi.getState().spawnFrom).not.toBeNull();
   });
 
   it("hides the brackets in Photo mode even when selected", () => {

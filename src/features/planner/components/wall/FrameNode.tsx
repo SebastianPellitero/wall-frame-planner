@@ -50,7 +50,7 @@ export function FrameNode({ shape, pxPerCm }: { shape: Shape; pxPerCm: number })
   });
 
   const onKeyDown = (e: KeyboardEvent) => {
-    // T7: arrow-key nudges, Delete and Esc join this switch.
+    // Nudges, Delete and Esc act on the selection from anywhere: useShortcuts.
     switch (e.key) {
       case "Enter":
       case " ":
@@ -82,7 +82,8 @@ export function FrameNode({ shape, pxPerCm }: { shape: Shape; pxPerCm: number })
       aria-pressed={selected}
       onPointerDown={onPointerDown}
       onKeyDown={arrange ? onKeyDown : undefined}
-      initial={reduced ? { opacity: 0 } : { opacity: 0, scale: popInFromScale }}
+      // A duplicate springs out of its original instead of popping in (useFrameMotion).
+      initial={motionValues.spawned ? false : reduced ? { opacity: 0 } : { opacity: 0, scale: popInFromScale }}
       animate={{ opacity: 1, scale: 1, transition: { opacity: fadeIn, scale: reduced ? fadeIn : popIn } }}
       exit={{
         opacity: 0,
