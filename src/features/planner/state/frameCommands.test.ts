@@ -11,7 +11,7 @@ const A: Shape = { id: "a", kind: "rect", x: 20, y: 30, w: 40, h: 50, color: 4 }
 beforeEach(() => {
   usePlannerStore.setState({ ...initialProject(), ...initialUi, shapes: [A], selectedId: "a" });
   usePlannerStore.temporal.getState().clear();
-  useDragUi.setState({ spawnFrom: null });
+  useDragUi.setState({ spawnFrom: null, draggingId: null });
   useAnnouncer.setState({ text: "", id: 0 });
 });
 
@@ -84,6 +84,43 @@ describe("frameCommands", () => {
     nudgeFrame("a", 10, 0);
     undo();
     expect(usePlannerStore.getState().shapes[0].x).toBe(20);
+    redo();
+    expect(usePlannerStore.getState().shapes[0].x).toBe(30);
+  });
+});
+
+describe("undo / redo after a wall shrink", () => {
+  it("keeps every frame inside the current wall, with no extra history step", () => {
+    usePlannerStore.getState().commitShape("a", { x: 250, y: 190 });
+    usePlannerStore.getState().commitShape("a", { x: 200, y: 150 });
+    usePlannerStore.getState().setWall({ width: 100, height: 80 });
+    expect(usePlannerStore.temporal.getState().pastStates).toHaveLength(2);
+    undo();
+    expect(usePlannerStore.getState().shapes[0]).toMatchObject({ x: 60, y: 30 });
+    undo();
+    expect(usePlannerStore.getState().shapes[0]).toMatchObject({ x: 20, y: 30 });
+    redo();
+    redo();
+    expect(usePlannerStore.getState().shapes[0]).toMatchObject({ x: 60, y: 30 });
+    expect(usePlannerStore.temporal.getState().pastStates).toHaveLength(2);
+    expect(usePlannerStore.temporal.getState().futureStates).toHaveLength(0);
+  });
+});
+
+describe("while a drag is live", () => {
+  it("undo, redo, duplicate, delete and nudge do nothing", () => {
+    nudgeFrame("a", 10, 0);
+    undo();
+    useDragUi.getState().startDrag("a");
+    const before = usePlannerStore.getState().shapes;
+    undo();
+    redo();
+    expect(duplicateFrame("a")).toBeNull();
+    deleteFrame("a");
+    nudgeFrame("a", 5, 0);
+    expect(usePlannerStore.getState().shapes).toBe(before);
+    expect(useAnnouncer.getState().text).toBe("");
+    useDragUi.getState().endDrag();
     redo();
     expect(usePlannerStore.getState().shapes[0].x).toBe(30);
   });

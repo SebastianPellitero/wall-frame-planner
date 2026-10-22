@@ -72,7 +72,7 @@ export function ContextPanel({ shell, narrow = false }: { shell: Shell; narrow?:
           "absolute inset-0 transition-opacity duration-base ease-in-out-soft starting:opacity-0 motion-reduce:transition-none",
           stacked
             ? "overflow-hidden"
-            : "overflow-y-auto overscroll-contain data-more:[mask-image:linear-gradient(to_bottom,#000_calc(100%-16px),transparent)]",
+            : "touch-pan-y overflow-y-auto overscroll-contain data-more:[mask-image:linear-gradient(to_bottom,#000_calc(100%-16px),transparent)]",
         )}
       >
         <Content shell={shell} />

@@ -5,6 +5,7 @@ import type { Point } from "../types";
 
 /** Transient drag UI. Not persisted, not in history; written only when a value really changes. */
 export interface DragUiState {
+  /** The frame being dragged, or `PALETTE_DRAG_ID` for a palette ghost; null when no drag is live. */
   draggingId: string | null;
   guides: SnapGuide[];
   /**
@@ -21,6 +22,9 @@ export interface DragUiState {
 }
 
 const NO_GUIDES: SnapGuide[] = [];
+
+/** `draggingId` while a palette ghost (a frame not on the wall yet) is being dragged. */
+export const PALETTE_DRAG_ID = "palette-ghost";
 
 export const useDragUi = create<DragUiState>()((set, get) => ({
   draggingId: null,

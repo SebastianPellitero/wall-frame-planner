@@ -5,11 +5,14 @@ import { ModeSwitch } from "../ModeSwitch";
 import { SettingsSheet } from "../panel/SettingsSheet";
 import { Wordmark } from "./Wordmark";
 
-/** Phone portrait, tablets in portrait and narrow windows (design-system.md §4.2). */
+/**
+ * Phone portrait, tablets in portrait and narrow windows (design-system.md §4.2). The bar and
+ * dock never scroll, so they are touch-none: no pinch zooms the page.
+ */
 export function StackedShell({ stage }: { stage: ReactNode }) {
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <header className="relative z-chrome shrink-0 border-b border-line bg-surface pt-safe-top pr-[max(var(--spacing-gutter),var(--spacing-safe-right))] pl-[max(var(--spacing-gutter),var(--spacing-safe-left))]">
+      <header className="relative z-chrome shrink-0 touch-none border-b border-line bg-surface pt-safe-top pr-[max(var(--spacing-gutter),var(--spacing-safe-right))] pl-[max(var(--spacing-gutter),var(--spacing-safe-left))]">
         <div className="flex h-bar items-center gap-4">
           <Wordmark className="hidden sm:block" />
           <ModeSwitch orientation="horizontal" />
@@ -18,7 +21,7 @@ export function StackedShell({ stage }: { stage: ReactNode }) {
         </div>
       </header>
       {stage}
-      <div className="relative z-chrome shrink-0 border-t border-line bg-surface px-gutter pt-2 pb-[calc(8px+var(--spacing-safe-bottom))]">
+      <div className="relative z-chrome shrink-0 touch-none border-t border-line bg-surface px-gutter pt-2 pb-[calc(8px+var(--spacing-safe-bottom))]">
         <div className="relative mx-auto w-full sm:max-w-[560px]">
           <ContextPanel shell="stacked" />
           {/* The right end of dock row A (56px), outside the cross-fading content so it never flickers;

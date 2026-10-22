@@ -551,7 +551,7 @@ All buttons are `h-touch px-3.5 rounded-control text-ui font-medium`, 6px icon g
 
 ### 5.11 Confirm dialog (Reset wall, Remove photo)
 
-- `role="alertdialog"`, centered, `w-[min(360px,calc(100vw-32px))] bg-surface rounded-tile shadow-sheet p-5 z-dialog`, over `scrim`. Title "Reset the wall?" (serif `text-title`); body `text-ui ink-muted`: "Every frame and the photo are removed, and all settings go back to their defaults. This can't be undone." (two lines at 360px; the undo history being cleared is what "can't be undone" means, so it needs no second sentence) Buttons right-aligned: Cancel (secondary, initial focus) and Reset wall (danger).
+- `role="alertdialog"`, centered, `w-[min(360px,calc(100vw-32px))] bg-surface rounded-tile shadow-sheet p-5 z-dialog`, over `scrim`. Title "Reset the wall?" (serif `text-title`); body `text-ui ink-muted`: "Every frame and the photo are removed, and all settings go back to their defaults. This can't be undone." (three lines at 360px; the undo history being cleared is what "can't be undone" means, so it needs no second sentence) Buttons right-aligned: Cancel (secondary, initial focus) and Reset wall (danger).
 
 ### 5.12 Snap guide
 

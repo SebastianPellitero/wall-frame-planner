@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { safeStorage } from "./safeStorage";
+import { createSafeStorage } from "./safeStorage";
 import { sanitizeProject } from "./sanitize";
 import { storageEvents, type StorageEvent } from "./storageEvents";
 
@@ -7,8 +7,11 @@ const sample = sanitizeProject({});
 
 let events: StorageEvent[];
 let unsubscribe: () => void;
+let safeStorage: ReturnType<typeof createSafeStorage>;
 
 beforeEach(() => {
+  localStorage.clear();
+  safeStorage = createSafeStorage();
   events = [];
   unsubscribe = storageEvents.subscribe((e) => events.push(e));
 });
@@ -50,6 +53,19 @@ describe("safeStorage.getItem", () => {
     expect(localStorage.getItem(backupKey)).toBe("{not json");
   });
 
+  it("keeps only the latest corrupt backup", () => {
+    localStorage.setItem("wallplanner:corrupt-1", "old one");
+    localStorage.setItem("wallplanner:corrupt-2", "old two");
+    localStorage.setItem("other", "kept");
+    vi.spyOn(Date, "now").mockReturnValue(3);
+    localStorage.setItem("k", "{newest");
+    safeStorage.getItem("k");
+    const backups = Object.keys(localStorage).filter((k) => k.startsWith("wallplanner:corrupt-"));
+    expect(backups).toEqual(["wallplanner:corrupt-3"]);
+    expect(localStorage.getItem("wallplanner:corrupt-3")).toBe("{newest");
+    expect(localStorage.getItem("other")).toBe("kept");
+  });
+
   it("emits unavailable and returns null when localStorage throws", () => {
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new DOMException("denied", "SecurityError");
@@ -72,6 +88,28 @@ describe("safeStorage.setItem / removeItem", () => {
     });
     expect(() => safeStorage.setItem("k", { state: sample, version: 1 })).not.toThrow();
     expect(events).toEqual([{ type: "write-failed", error }]);
+  });
+
+  it("maps a SecurityError on write to unavailable, reported once", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("denied", "SecurityError");
+    });
+    safeStorage.setItem("k", { state: sample, version: 1 });
+    safeStorage.setItem("k", { state: sample, version: 1 });
+    expect(events).toEqual([{ type: "unavailable" }]);
+  });
+
+  it("once storage is unavailable, failed writes do not also report write-failed", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("denied", "SecurityError");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("full", "QuotaExceededError");
+    });
+    safeStorage.getItem("k");
+    safeStorage.getItem("k");
+    safeStorage.setItem("k", { state: sample, version: 1 });
+    expect(events).toEqual([{ type: "unavailable" }]);
   });
 
   it("removes a key and never throws", () => {

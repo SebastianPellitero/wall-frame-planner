@@ -239,7 +239,7 @@ describe("deleteShape", () => {
 });
 
 describe("settings actions", () => {
-  it("setWall enforces minimums and pushGap range, and clamps shapes inside (sizes kept)", () => {
+  it("setWall enforces minimums and pushGap range, and clamps shapes inside (sizes kept when they fit)", () => {
     const id = store.getState().addShape("rect", { x: 280, y: 230 });
     store.getState().setWall({ width: 100, height: 80 });
     expect(shapeOf(store, id)).toMatchObject({ x: 60, y: 30, w: 40, h: 50 });
@@ -247,6 +247,42 @@ describe("settings actions", () => {
     expect(store.getState().wall).toEqual({ width: 10, height: 10, pushGap: 50 });
     store.getState().setWall({ pushGap: -4 });
     expect(store.getState().wall.pushGap).toBe(0);
+  });
+
+  it("setWall shrinks oversized frames and palette sizes, as a reload would", () => {
+    store.getState().generate("rect", { w: 200, h: 200 });
+    const id = store.getState().addShape("rect", { x: 150, y: 125 });
+    store.getState().setWall({ width: 120, height: 90 });
+    expect(shapeOf(store, id)).toMatchObject({ x: 0, y: 0, w: 120, h: 90 });
+    expect(store.getState().paletteSizes.rect).toEqual({ w: 120, h: 90 });
+    expect(store.getState().paletteSizes.square).toEqual({ w: 30, h: 30 });
+  });
+
+  it("setWall records no history step, even when it moves frames", () => {
+    const id = store.getState().addShape("rect", { x: 280, y: 230 });
+    const past = history(store);
+    store.getState().setWall({ width: 100, height: 80 });
+    expect(shapeOf(store, id)).toMatchObject({ x: 60, y: 30 });
+    expect(history(store)).toBe(past);
+    // Normal undo still works afterwards: the add is the last step.
+    store.getState().commitShape(id, { x: 0 });
+    expect(history(store)).toBe(past + 1);
+    undo(store);
+    expect(shapeOf(store, id)).toMatchObject({ x: 60, y: 30 });
+  });
+
+  it("fitToWall pulls frames restored from history back inside the current wall, without a history step", () => {
+    const id = store.getState().addShape("rect", { x: 280, y: 230 });
+    store.getState().commitShape(id, { x: 250 });
+    store.getState().setWall({ width: 100, height: 80 });
+    undo(store);
+    expect(shapeOf(store, id).x).toBe(260);
+    const past = history(store);
+    const future = store.temporal.getState().futureStates.length;
+    store.getState().fitToWall();
+    expect(shapeOf(store, id)).toMatchObject({ x: 60, y: 30 });
+    expect(history(store)).toBe(past);
+    expect(store.temporal.getState().futureStates.length).toBe(future);
   });
 
   it("setGrid enforces the spacing minimum", () => {

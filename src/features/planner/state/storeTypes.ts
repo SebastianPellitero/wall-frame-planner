@@ -27,7 +27,10 @@ export interface PlannerActions {
   setPaletteKind(kind: ShapeKind): void;
   /** Frame creator Generate (§5.1): the kind's size (clamped to the wall) becomes current and the creator color is re-rolled. */
   generate(kind: ShapeKind, size: { w: number; h: number }): void;
+  /** Resizes the wall; frames and creator sizes shrink and move to fit. Not an undo step. */
   setWall(patch: Partial<Wall>): void;
+  /** Shrinks and moves frames to fit the current wall (after undo/redo). Not an undo step. */
+  fitToWall(): void;
   setGrid(patch: Partial<Grid>): void;
   setGridOrigin(point: Point): void;
   setBackground(patch: Partial<Background>): void;

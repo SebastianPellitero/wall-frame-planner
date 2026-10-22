@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { MIN_SIZE_CM } from "../defaults";
+import type { Shape } from "../types";
 import {
   clamp,
   clampSize,
   clampToWall,
   clientToWallCm,
   cmToPx,
+  fitShapesToWall,
   pxToCm,
   round1,
   rubberBand,
@@ -189,5 +191,23 @@ describe("clientToWallCm", () => {
 
   it("returns the origin before the wall has a scale", () => {
     expect(clientToWallCm({ x: 160, y: 130 }, { left: 100, top: 50 }, 0)).toEqual({ x: 0, y: 0 });
+  });
+});
+
+describe("fitShapesToWall", () => {
+  const wall = { width: 100, height: 80 };
+  const shape = (o: Partial<Shape>): Shape => ({ id: "a", kind: "rect", x: 0, y: 0, w: 40, h: 50, color: 1, ...o });
+
+  it("returns the same array when every shape already fits", () => {
+    const shapes = [shape({ x: 10, y: 10 }), shape({ id: "b", x: 60, y: 30 })];
+    expect(fitShapesToWall(shapes, wall)).toBe(shapes);
+  });
+
+  it("shrinks oversized frames and moves them inside, keeping the shapes that fit as they are", () => {
+    const inside = shape({ id: "in", x: 0, y: 0 });
+    const out = fitShapesToWall([inside, shape({ x: 280, y: 230 }), shape({ id: "c", kind: "circle", x: 5, y: 5, w: 120, h: 120 })], wall);
+    expect(out[0]).toBe(inside);
+    expect(out[1]).toMatchObject({ x: 60, y: 30, w: 40, h: 50 });
+    expect(out[2]).toMatchObject({ x: 5, y: 0, w: 80, h: 80 });
   });
 });

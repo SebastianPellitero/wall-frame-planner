@@ -86,10 +86,10 @@ export function WallStage({ stageRef, shell, children }: { stageRef: Ref<HTMLEle
       data-testid="stage"
       onPointerDown={photo.onPointerDown}
       className={cx(
-        "relative isolate grid min-h-0 min-w-0 flex-1 place-items-center overflow-hidden bg-stage",
+        // touch-none in every mode: a pinch beside the wall never zooms the page, and in Photo
+        // mode (the photo extends past the wall) a pan or pinch may start anywhere (§4.6).
+        "relative isolate grid min-h-0 min-w-0 flex-1 touch-none place-items-center overflow-hidden bg-stage",
         SAFE_PADDING[shell],
-        // The photo extends past the wall, so a pan or pinch may start anywhere (§4.6).
-        mode === "photo" && "touch-none",
       )}
     >
       {pxPerCm > 0 && (

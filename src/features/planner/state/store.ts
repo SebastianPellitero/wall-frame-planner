@@ -28,7 +28,18 @@ export function createPlannerStore(opts: { storage?: PersistStorage<PersistedSli
         (set, get) => ({
           ...initialProject(),
           ...initialUi,
-          ...createActions(set, get, () => store.temporal.getState().clear()),
+          ...createActions(set, get, {
+            clear: () => store.temporal.getState().clear(),
+            untracked(fn) {
+              const history = store.temporal.getState();
+              history.pause();
+              try {
+                fn();
+              } finally {
+                history.resume();
+              }
+            },
+          }),
         }),
         {
           partialize: (s) => ({ shapes: s.shapes }),

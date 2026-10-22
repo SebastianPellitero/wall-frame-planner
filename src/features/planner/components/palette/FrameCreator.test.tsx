@@ -4,7 +4,7 @@ import { createRef } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Shell } from "../../hooks/useShell";
 import { initialProject, initialUi } from "../../state/actions";
-import { useDragUi } from "../../state/dragUi";
+import { PALETTE_DRAG_ID, useDragUi } from "../../state/dragUi";
 import { usePlannerStore } from "../../state/store";
 import { Announcer } from "../ui/Announcer";
 import { WallContext } from "../wall/WallContext";
@@ -202,7 +202,25 @@ describe("FrameCreator", () => {
     expect(color()).toBe(4);
   });
 
-  it("stacked: no caption, and an invalid value keeps its label with the limits on the same row", async () => {
+  it("a ghost drag counts as a live drag (shortcuts and history wait), until release or cancel", () => {
+    renderCreator();
+    fireEvent.pointerDown(preview(), { ...pointer, clientX: 10, clientY: 10 });
+    windowPointer("pointermove", { clientX: 12, clientY: 10 });
+    // Still inside the slop: a tap so far.
+    expect(useDragUi.getState().draggingId).toBeNull();
+    windowPointer("pointermove", { clientX: 30, clientY: 10 });
+    expect(useDragUi.getState().draggingId).toBe(PALETTE_DRAG_ID);
+    windowPointer("pointerup", { clientX: 40, clientY: 10 });
+    expect(useDragUi.getState().draggingId).toBeNull();
+
+    fireEvent.pointerDown(preview(), { ...pointer, clientX: 10, clientY: 10 });
+    windowPointer("pointermove", { clientX: 30, clientY: 10 });
+    expect(useDragUi.getState().draggingId).toBe(PALETTE_DRAG_ID);
+    windowPointer("pointercancel", {});
+    expect(useDragUi.getState().draggingId).toBeNull();
+  });
+
+  it("stacked: no caption,and an invalid value keeps its label with the limits on the same row", async () => {
     renderCreator("stacked");
     expect(screen.queryByText("40 × 50 cm")).not.toBeInTheDocument();
     await userEvent.clear(field("Width (cm)"));

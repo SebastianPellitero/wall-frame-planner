@@ -20,7 +20,7 @@ import {
 } from "../lib/physics";
 import type { SnapGuide } from "../lib/snap";
 import { announce } from "../state/announcer";
-import { useDragUi } from "../state/dragUi";
+import { PALETTE_DRAG_ID, useDragUi } from "../state/dragUi";
 import { usePlannerStore } from "../state/store";
 import type { FrameColor, Point, ShapeKind } from "../types";
 import { startPointerSession } from "./pointerSession";
@@ -138,6 +138,8 @@ export function usePaletteDrag() {
         overWall.current = false;
         key = ++ghostKey.current;
         setGhost({ kind, size, color, key });
+        // Shortcuts and the history and selection commands wait for the drop.
+        useDragUi.getState().startDrag(PALETTE_DRAG_ID);
         if (latest.current.reduced) mv.scale.jump(1);
         else animate(mv.scale, 1, ghostFollow);
       };

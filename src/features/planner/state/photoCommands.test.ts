@@ -112,17 +112,26 @@ describe("restorePhoto", () => {
     expect(mocked.loadBackgroundImage).not.toHaveBeenCalled();
   });
 
-  it.each([
-    ["the image is gone", () => mocked.loadBackgroundImage.mockResolvedValue(undefined)],
-    ["IndexedDB is unavailable", () => mocked.loadBackgroundImage.mockRejectedValue(new ImageStoreUnavailableError())],
-  ])("drops the photo and reports image-missing when %s", async (_, arrange) => {
-    arrange();
+  it("drops the photo and reports image-missing when the stored image is gone", async () => {
+    mocked.loadBackgroundImage.mockResolvedValue(undefined);
     usePlannerStore.setState({ background: { ...DEFAULT_BACKGROUND, hasImage: true, x: 7 } });
     const { events, off } = listen();
     await restorePhoto();
     off();
     expect(usePlannerStore.getState().background.hasImage).toBe(false);
     expect(events).toEqual([{ type: "image-missing" }]);
+  });
+
+  it("keeps the photo and its placement, and reports image-unavailable, when IndexedDB fails to load it", async () => {
+    mocked.loadBackgroundImage.mockRejectedValue(new ImageStoreUnavailableError());
+    const background = { ...DEFAULT_BACKGROUND, hasImage: true, x: 7, y: -3, width: 420, aspect: 0.75, opacity: 0.6 };
+    usePlannerStore.setState({ background });
+    const { events, off } = listen();
+    await restorePhoto();
+    off();
+    expect(usePlannerStore.getState().background).toEqual(background);
+    expect(usePhotoImage.getState().blob).toBeNull();
+    expect(events).toEqual([{ type: "image-unavailable" }]);
   });
 
   it("keeps a photo uploaded while the load was in flight", async () => {

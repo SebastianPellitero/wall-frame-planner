@@ -56,11 +56,13 @@ describe("WallStage", () => {
     expect(screen.queryByText(EMPTY_COPY)).not.toBeInTheDocument();
   });
 
-  it("makes the whole stage touch-none in Photo mode only", () => {
+  it("makes the whole stage touch-none in every mode, so a pinch beside the wall never zooms the page", () => {
     renderStage();
     const stage = screen.getByTestId("stage");
-    expect(stage).not.toHaveClass("touch-none");
+    expect(stage).toHaveClass("touch-none");
     act(() => usePlannerStore.getState().setMode("photo"));
+    expect(stage).toHaveClass("touch-none");
+    act(() => usePlannerStore.getState().setMode("gridOrigin"));
     expect(stage).toHaveClass("touch-none");
   });
 

@@ -50,8 +50,9 @@ export async function removePhoto(): Promise<void> {
 
 /**
  * Reads the saved image into memory after a reload. If the project has a photo but its image is
- * gone (storage cleared, or IndexedDB unavailable now), the photo is dropped and an
- * `image-missing` event is emitted. A photo uploaded meanwhile wins.
+ * gone (storage cleared), the photo is dropped and an `image-missing` event is emitted. If
+ * IndexedDB fails right now, nothing is dropped: the photo and its placement stay for the next
+ * reload and an `image-unavailable` event says so. A photo uploaded meanwhile wins.
  */
 export async function restorePhoto(): Promise<void> {
   if (!usePlannerStore.getState().background.hasImage || usePhotoImage.getState().blob) return;
@@ -60,6 +61,8 @@ export async function restorePhoto(): Promise<void> {
     blob = await loadBackgroundImage();
   } catch (error) {
     if (!(error instanceof ImageStoreUnavailableError)) throw error;
+    storageEvents.emit({ type: "image-unavailable" });
+    return;
   }
   if (usePhotoImage.getState().blob || !usePlannerStore.getState().background.hasImage) return;
   if (blob) {

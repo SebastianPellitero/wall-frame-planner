@@ -2,14 +2,21 @@ import { DEFAULT_BACKGROUND, DEFAULT_GRID, DEFAULT_PALETTE_SIZES, DEFAULT_WALL }
 import { resolveOverlaps } from "../lib/collision";
 import { pickFrameColor } from "../lib/frameColors";
 import { findFreeSpot } from "../lib/freeSpot";
-import { clamp, clampSize, clampToWall, round1 } from "../lib/geometry";
+import { clamp, clampSize, clampToWall, fitShapesToWall, round1 } from "../lib/geometry";
 import { newId } from "../lib/id";
 import { pushOrder } from "../lib/pushOrder";
-import type { FrameColor, PersistedSlice, Point, Shape, Wall } from "../types";
+import type { FrameColor, PersistedSlice, Point, Shape, ShapeKind, Wall } from "../types";
 import type { PlannerActions, PlannerState, PlannerUiSlice } from "./storeTypes";
 
 type Set = (partial: Partial<PlannerState> | ((s: PlannerState) => Partial<PlannerState>)) => void;
 type Get = () => PlannerState;
+
+/** The undo history, as the actions see it. */
+export interface History {
+  clear(): void;
+  /** Runs `fn` without recording its changes as a history step. */
+  untracked(fn: () => void): void;
+}
 
 /**
  * Defaults. The creator color is rolled here, which only runs in the browser: the editor is
@@ -57,7 +64,7 @@ function placeNear(shape: Shape, near: Point, shapes: Shape[], wall: Wall): Shap
   return { ...shape, x: round1(spot.x), y: round1(spot.y) };
 }
 
-export function createActions(set: Set, get: Get, clearHistory: () => void): PlannerActions {
+export function createActions(set: Set, get: Get, history: History): PlannerActions {
   const insert = (shape: Shape, select: boolean, creatorColor?: FrameColor): string => {
     const { shapes, wall, selectedId } = get();
     set({
@@ -128,20 +135,29 @@ export function createActions(set: Set, get: Get, clearHistory: () => void): Pla
     },
 
     setWall(patch) {
-      const { wall: old, shapes } = get();
+      const { wall: old, shapes, paletteSizes } = get();
       const wall: Wall = {
         width: Math.max(10, patch.width ?? old.width),
         height: Math.max(10, patch.height ?? old.height),
         pushGap: clamp(patch.pushGap ?? old.pushGap, 0, 50),
       };
-      let changed = false;
-      const clamped = shapes.map((s) => {
-        const pos = clampToWall(s, wall);
-        if (pos.x === s.x && pos.y === s.y) return s;
-        changed = true;
-        return { ...s, x: round1(pos.x), y: round1(pos.y) };
-      });
-      set({ wall, ...(changed ? { shapes: clamped } : {}) });
+      // Frames and creator sizes shrink and move to fit, as sanitize does on reload. The wall is
+      // not in history, so neither is this: undo re-fits what it restores instead (fitToWall).
+      const fitted = fitShapesToWall(shapes, wall);
+      const palette = (kind: ShapeKind) => clampSize(kind, paletteSizes[kind].w, paletteSizes[kind].h, wall);
+      history.untracked(() =>
+        set({
+          wall,
+          paletteSizes: { rect: palette("rect"), square: palette("square"), circle: palette("circle") },
+          ...(fitted === shapes ? {} : { shapes: fitted }),
+        }),
+      );
+    },
+
+    fitToWall() {
+      const { shapes, wall } = get();
+      const fitted = fitShapesToWall(shapes, wall);
+      if (fitted !== shapes) history.untracked(() => set({ shapes: fitted }));
     },
 
     setGrid(patch) {
@@ -179,7 +195,7 @@ export function createActions(set: Set, get: Get, clearHistory: () => void): Pla
 
     resetProject() {
       set({ ...initialProject(), selectedId: null, mode: "arrange" });
-      clearHistory();
+      history.clear();
     },
   };
 }

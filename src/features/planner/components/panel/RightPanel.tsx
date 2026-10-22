@@ -14,7 +14,7 @@ export function RightPanel() {
   const photoMode = usePlannerStore((s) => s.mode === "photo");
 
   return (
-    <div className="relative z-chrome flex w-panel shrink-0 flex-col gap-6 overflow-y-auto overscroll-contain border-l border-line bg-surface p-4 pb-[calc(16px+var(--spacing-safe-bottom))]">
+    <div className="relative z-chrome flex w-panel shrink-0 touch-pan-y flex-col gap-6 overflow-y-auto overscroll-contain border-l border-line bg-surface p-4 pb-[calc(16px+var(--spacing-safe-bottom))]">
       {showSelection && <SelectionBar shell="desktop" />}
       <SettingsSections shell="desktop" photo={!photoMode} />
     </div>

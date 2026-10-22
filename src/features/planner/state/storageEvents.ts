@@ -5,7 +5,9 @@ export type StorageEvent =
   /** The photo could not be saved to IndexedDB; it is kept in memory for this tab only. */
   | { type: "image-session-only" }
   /** The project says there is a photo, but its image is gone (storage cleared); the photo was reset. */
-  | { type: "image-missing" };
+  | { type: "image-missing" }
+  /** IndexedDB failed while loading the photo; the photo and its placement are kept for a later reload. */
+  | { type: "image-unavailable" };
 
 type Listener = (e: StorageEvent) => void;
 

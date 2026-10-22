@@ -33,6 +33,12 @@ beforeEach(() => {
 });
 
 describe("ContextPanel", () => {
+  it.each(["landscape", "desktop"] as const)("its scrolling body pans vertically only, so a pinch never zooms the page (%s)", (shell) => {
+    renderPanel(shell);
+    expect(screen.getByTestId("context-scroller")).toHaveClass("overflow-y-auto", "touch-pan-y");
+  });
+
+
   it.each(["stacked", "landscape", "desktop"] as const)("shows the palette in Arrange with nothing selected (%s)", (shell) => {
     renderPanel(shell);
     expectOnly("Frame creator");

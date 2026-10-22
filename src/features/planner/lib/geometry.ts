@@ -1,5 +1,5 @@
 import { MIN_SIZE_CM } from "../defaults";
-import type { Point, Rect, ShapeKind, Wall } from "../types";
+import type { Point, Rect, Shape, ShapeKind, Wall } from "../types";
 
 export function cmToPx(cm: number, pxPerCm: number): number {
   return cm * pxPerCm;
@@ -89,4 +89,22 @@ export function clampSize(
   }
   const side = round1(clamp(w, MIN_SIZE_CM, Math.min(wall.width, wall.height)));
   return { w: side, h: side };
+}
+
+/**
+ * `shapes` with every frame shrunk to fit the wall (`clampSize`) and moved inside it
+ * (`clampToWall`). Frames that already fit keep their identity; the same array comes back
+ * when nothing changes.
+ */
+export function fitShapesToWall(shapes: Shape[], wall: Pick<Wall, "width" | "height">): Shape[] {
+  let changed = false;
+  const fitted = shapes.map((s) => {
+    const size = clampSize(s.kind, s.w, s.h, wall);
+    const pos = clampToWall({ x: s.x, y: s.y, ...size }, wall);
+    const next = { ...s, ...size, x: round1(pos.x), y: round1(pos.y) };
+    if (next.x === s.x && next.y === s.y && next.w === s.w && next.h === s.h) return s;
+    changed = true;
+    return next;
+  });
+  return changed ? fitted : shapes;
 }
