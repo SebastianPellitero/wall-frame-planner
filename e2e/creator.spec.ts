@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { createPointer, drag, type Pointer, type Point } from "./helpers/pointer";
+import { settle } from "./helpers/settle";
+import { committed } from "./helpers/seed";
 
 const SHOTS = ".superpowers/sdd/2026-10-21-wall-planner-design/shots";
 const WALL = { width: 300, height: 250 };
@@ -22,10 +24,6 @@ const frames = (page: Page) => page.getByTestId("frame");
 const preview = (page: Page) => page.getByRole("button", { name: /^Add (rectangle|square|circle), / });
 const creator = (page: Page) => page.getByRole("region", { name: "Frame creator" });
 
-async function committed(f: Locator) {
-  const [x, y, w, h] = await Promise.all(["data-x", "data-y", "data-w", "data-h"].map(async (a) => Number(await f.getAttribute(a))));
-  return { x, y, w, h };
-}
 
 /** Where the finger (or cursor) goes so the ghost's center lands on `target`. */
 function pointerFor(target: Point, ghostHeightPx: number, testInfo: TestInfo): Point {
@@ -67,7 +65,7 @@ test.describe("frame creator", () => {
     const target = { x: box.x + targetCm.x * ppc, y: box.y + targetCm.y * ppc };
     await drag(pointer, await center(preview(page)), pointerFor(target, 60 * ppc, testInfo), async () => {
       await expect(page.getByTestId("drag-ghost")).toHaveAttribute("data-frame-color", color!);
-      await page.waitForTimeout(300);
+      await settle(page.getByTestId("drag-ghost"));
       await page.screenshot({ path: `${SHOTS}/t6c-${testInfo.project.name}-ghost.png` });
     });
 
@@ -174,7 +172,7 @@ test.describe("frame creator", () => {
       [...new Set(els.map((el) => getComputedStyle(el).borderRadius))],
     );
     expect(radii).toEqual(["0px"]);
-    await page.waitForTimeout(400);
+    await settle(frames(page).last());
     await page.screenshot({ path: `${SHOTS}/t6c-${testInfo.project.name}.png` });
   });
 });

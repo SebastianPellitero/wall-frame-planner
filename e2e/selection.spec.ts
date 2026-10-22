@@ -1,28 +1,11 @@
-import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { createPointer, type Point } from "./helpers/pointer";
+import { WALL, committed, seedProject, type Seed } from "./helpers/seed";
+
+const seed = (page: Page, shapes: Seed[]) => seedProject(page, shapes);
 
 const SHOTS = ".superpowers/sdd/2026-10-21-wall-planner-design/shots";
-const WALL = { width: 300, height: 250, pushGap: 3 };
 
-type Seed = { id: string; x: number; y: number; w?: number; h?: number };
-
-/** Writes the persisted project once per tab (sessionStorage guard), so a reload keeps edits. */
-async function seed(page: Page, shapes: Seed[]) {
-  const state = {
-    wall: WALL,
-    grid: { enabled: false, snap: true, spacingX: 10, spacingY: 10, originX: 0, originY: 0 },
-    background: { hasImage: false, x: 0, y: 0, width: 300, aspect: 1, opacity: 1, visible: true },
-    shapes: shapes.map((s, i) => ({ kind: "rect", w: 40, h: 50, color: i + 1, ...s })),
-    paletteSizes: { rect: { w: 40, h: 50 }, square: { w: 30, h: 30 }, circle: { w: 30, h: 30 } },
-  };
-  await page.addInitScript((value) => {
-    if (sessionStorage.getItem("e2e:seeded")) return;
-    localStorage.setItem("wallplanner:project", value);
-    sessionStorage.setItem("e2e:seeded", "1");
-  }, JSON.stringify({ state, version: 1 }));
-  await page.goto("/");
-  await expect(page.getByTestId("wall")).toBeVisible();
-}
 
 const frame = (page: Page, id: string) => page.locator(`[data-testid="frame"][data-shape-id="${id}"]`);
 const frames = (page: Page) => page.getByTestId("frame");
@@ -30,10 +13,6 @@ const selection = (page: Page) => page.getByRole("region", { name: "Selected fra
 const creator = (page: Page) => page.getByRole("region", { name: "Frame creator" });
 const selField = (page: Page, name: string) => selection(page).getByRole("textbox", { name, exact: true });
 
-async function committed(f: Locator) {
-  const [x, y, w, h] = await Promise.all(["data-x", "data-y", "data-w", "data-h"].map(async (a) => Number(await f.getAttribute(a))));
-  return { x, y, w, h };
-}
 
 type Box = Awaited<ReturnType<typeof committed>>;
 const apart = (a: Box, b: Box, gap = WALL.pushGap - 0.01) =>

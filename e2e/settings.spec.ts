@@ -1,27 +1,11 @@
 import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { createPointer, createTouchPointer } from "./helpers/pointer";
+import { seedProject, type Seed } from "./helpers/seed";
+
+const seed = (page: Page, shapes: Seed[]) => seedProject(page, shapes);
 
 const SHOTS = ".superpowers/sdd/2026-10-21-wall-planner-design/shots";
 
-type Seed = { id: string; x: number; y: number; w?: number; h?: number };
-
-/** Writes the persisted project once per tab (sessionStorage guard), then opens the app. */
-async function seed(page: Page, shapes: Seed[]) {
-  const state = {
-    wall: { width: 300, height: 250, pushGap: 3 },
-    grid: { enabled: false, snap: true, spacingX: 10, spacingY: 10, originX: 0, originY: 0 },
-    background: { hasImage: false, x: 0, y: 0, width: 300, aspect: 1, opacity: 1, visible: true },
-    shapes: shapes.map((s, i) => ({ kind: "rect", w: 40, h: 50, color: i + 1, ...s })),
-    paletteSizes: { rect: { w: 40, h: 50 }, square: { w: 30, h: 30 }, circle: { w: 30, h: 30 } },
-  };
-  await page.addInitScript((value) => {
-    if (sessionStorage.getItem("e2e:seeded")) return;
-    localStorage.setItem("wallplanner:project", value);
-    sessionStorage.setItem("e2e:seeded", "1");
-  }, JSON.stringify({ state, version: 1 }));
-  await page.goto("/");
-  await expect(page.getByTestId("wall")).toBeVisible();
-}
 
 const isDesktop = (testInfo: TestInfo) => testInfo.project.name === "desktop";
 const settingsDialog = (page: Page) => page.getByRole("dialog", { name: "Settings" });

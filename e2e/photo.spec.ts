@@ -1,30 +1,11 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { makeJpeg, storedImage } from "./helpers/photo";
 import { createPointer, drag } from "./helpers/pointer";
 
 const SHOTS = ".superpowers/sdd/2026-10-21-wall-planner-design/shots";
 
 type StoredBackground = { hasImage: boolean; x: number; y: number; width: number; aspect: number; opacity: number; visible: boolean };
 
-/** A 1200×800 JPEG drawn in the page: wider than the 300×250 wall, so it overflows left and right. */
-async function makeJpeg(page: Page): Promise<Buffer> {
-  const b64 = await page.evaluate(() => {
-    const c = document.createElement("canvas");
-    c.width = 1200;
-    c.height = 800;
-    const ctx = c.getContext("2d")!;
-    const g = ctx.createLinearGradient(0, 0, 1200, 800);
-    g.addColorStop(0, "#c9b79c");
-    g.addColorStop(1, "#8a7a66");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, 1200, 800);
-    ctx.fillStyle = "#5b4636";
-    ctx.fillRect(0, 640, 1200, 160);
-    ctx.fillStyle = "#e9e2d4";
-    ctx.fillRect(520, 140, 160, 220);
-    return c.toDataURL("image/jpeg", 0.85).split(",")[1];
-  });
-  return Buffer.from(b64, "base64");
-}
 
 const photoTools = (page: Page) => page.getByRole("region", { name: "Photo tools" });
 const photo = (page: Page) => page.getByTestId("background-photo");
@@ -152,21 +133,15 @@ test.describe("background photo", () => {
     await expect(photo(page)).toHaveCount(0);
     await expect(photoTools(page).getByRole("button", { name: "Upload photo" })).toBeFocused();
 
+    // Both writes are async; reloading before they land would test nothing.
+    await expect.poll(async () => (await storedBackground(page)).hasImage).toBe(false);
+    await expect.poll(() => storedImage(page)).toBe(false);
+
     await page.reload();
     await expect(page.getByTestId("wall")).toBeVisible();
     await expect(photo(page)).toHaveCount(0);
     expect((await storedBackground(page)).hasImage).toBe(false);
-    const stored = await page.evaluate(
-      () =>
-        new Promise((resolve) => {
-          const req = indexedDB.open("keyval-store");
-          req.onsuccess = () => {
-            const get = req.result.transaction("keyval").objectStore("keyval").get("wallplanner:background");
-            get.onsuccess = () => resolve(get.result ?? null);
-          };
-        }),
-    );
-    expect(stored).toBeNull();
+    expect(await storedImage(page)).toBe(false);
   });
 
   test("frames can't be dragged in Photo mode; the drag pans the photo instead", async ({ page }, testInfo: TestInfo) => {

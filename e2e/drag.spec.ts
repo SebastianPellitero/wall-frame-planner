@@ -1,30 +1,11 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { createPointer, drag, type Point } from "./helpers/pointer";
+import { GRID_OFF, GRID_ON, WALL, committed, seedProject, type Seed } from "./helpers/seed";
+
+const seed = (page: Page, shapes: Seed[], grid = GRID_OFF) => seedProject(page, shapes, { grid, colors: false });
 
 const SHOTS = ".superpowers/sdd/2026-10-21-wall-planner-design/shots";
-const WALL = { width: 300, height: 250, pushGap: 3 };
-const GRID_OFF = { enabled: false, snap: true, spacingX: 10, spacingY: 10, originX: 0, originY: 0 };
-const GRID_ON = { ...GRID_OFF, enabled: true };
 
-type Seed = { id: string; x: number; y: number; w?: number; h?: number };
-
-/** Writes the persisted project once per tab (sessionStorage guard), so a reload keeps edits. */
-async function seed(page: Page, shapes: Seed[], grid = GRID_OFF) {
-  const state = {
-    wall: WALL,
-    grid,
-    background: { hasImage: false, x: 0, y: 0, width: 300, aspect: 1, opacity: 1, visible: true },
-    shapes: shapes.map((s) => ({ kind: "rect", w: 40, h: 50, ...s })),
-    paletteSizes: { rect: { w: 40, h: 50 }, square: { w: 30, h: 30 }, circle: { w: 30, h: 30 } },
-  };
-  await page.addInitScript((value) => {
-    if (sessionStorage.getItem("e2e:seeded")) return;
-    localStorage.setItem("wallplanner:project", value);
-    sessionStorage.setItem("e2e:seeded", "1");
-  }, JSON.stringify({ state, version: 1 }));
-  await page.goto("/");
-  await expect(page.getByTestId("wall")).toBeVisible();
-}
 
 async function wallScale(page: Page) {
   const box = (await page.getByTestId("wall").boundingBox())!;
@@ -33,10 +14,6 @@ async function wallScale(page: Page) {
 
 const frame = (page: Page, id: string) => page.locator(`[data-testid="frame"][data-shape-id="${id}"]`);
 
-async function committed(f: Locator) {
-  const [x, y, w, h] = await Promise.all(["data-x", "data-y", "data-w", "data-h"].map(async (a) => Number(await f.getAttribute(a))));
-  return { x, y, w, h };
-}
 
 /** Screen point at the committed center of a frame. */
 async function centerOf(page: Page, id: string): Promise<Point> {

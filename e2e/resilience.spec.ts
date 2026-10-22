@@ -1,4 +1,6 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { makeJpeg, storedImage } from "./helpers/photo";
+import { settle } from "./helpers/settle";
 
 const SHOTS = ".superpowers/sdd/2026-10-21-wall-planner-design/shots";
 const KEY = "wallplanner:project";
@@ -25,37 +27,6 @@ async function wallAspect(page: Page) {
   return box.width / box.height;
 }
 
-/** A small JPEG drawn in the page, to upload as the wall photo. */
-async function makeJpeg(page: Page): Promise<Buffer> {
-  const b64 = await page.evaluate(() => {
-    const c = document.createElement("canvas");
-    c.width = 600;
-    c.height = 400;
-    const ctx = c.getContext("2d")!;
-    ctx.fillStyle = "#b9a58a";
-    ctx.fillRect(0, 0, 600, 400);
-    return c.toDataURL("image/jpeg", 0.8).split(",")[1];
-  });
-  return Buffer.from(b64, "base64");
-}
-
-/** Whether idb-keyval's store still holds the photo. */
-function storedImage(page: Page): Promise<boolean> {
-  return page.evaluate(
-    () =>
-      new Promise<boolean>((resolve, reject) => {
-        const open = indexedDB.open("keyval-store");
-        open.onerror = () => reject(open.error);
-        open.onsuccess = () => {
-          const db = open.result;
-          if (!db.objectStoreNames.contains("keyval")) return resolve(false);
-          const req = db.transaction("keyval").objectStore("keyval").get("wallplanner:background");
-          req.onsuccess = () => resolve(req.result !== undefined);
-          req.onerror = () => reject(req.error);
-        };
-      }),
-  );
-}
 
 async function openSettings(page: Page, testInfo: TestInfo) {
   if (isDesktop(testInfo)) return page;
@@ -86,7 +57,7 @@ test.describe("resilience", () => {
     const box = (await toast.boundingBox())!;
     expect(box.y + box.height).toBeLessThanOrEqual(stage.y + stage.height - 8);
     expect(box.width).toBeLessThanOrEqual(360);
-    await page.waitForTimeout(400); // the entrance settles
+    await settle(toast);
     await page.screenshot({ path: `${SHOTS}/t10-${testInfo.project.name}-toast.png` });
 
     await toast.getByRole("button", { name: "Dismiss" }).click();
@@ -135,7 +106,7 @@ test.describe("resilience", () => {
     let settings = await openSettings(page, testInfo);
     const chooser = page.waitForEvent("filechooser");
     await settings.getByRole("button", { name: "Upload photo" }).click();
-    await (await chooser).setFiles({ name: "wall.jpg", mimeType: "image/jpeg", buffer: await makeJpeg(page) });
+    await (await chooser).setFiles({ name: "wall.jpg", mimeType: "image/jpeg", buffer: await makeJpeg(page, { width: 600, height: 400 }) });
     await expect(page.getByTestId("background-photo")).toBeVisible();
     await expect.poll(() => storedImage(page)).toBe(true);
 
