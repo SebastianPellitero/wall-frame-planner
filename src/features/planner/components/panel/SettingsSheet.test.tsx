@@ -68,7 +68,8 @@ describe("SettingsSheet", () => {
   it("traps focus: Tab wraps from the last control to the first and Shift+Tab back", async () => {
     const d = await open();
     const close = within(d).getByRole("button", { name: "Close settings" });
-    const last = within(d).getByRole("button", { name: "Set origin on the wall" });
+    // Settings > Photo is last; with no photo its last control is Upload photo.
+    const last = within(d).getByRole("button", { name: "Upload photo" });
     await userEvent.tab({ shift: true });
     expect(last).toHaveFocus();
     await userEvent.tab();
@@ -88,6 +89,26 @@ describe("SettingsSheet", () => {
     expect(d).toHaveClass("rounded-l-sheet");
     expect(within(d).queryByRole("region", { name: "Matrix control" })).not.toBeInTheDocument();
     expect(within(d).queryByTestId("sheet-handle")).not.toBeInTheDocument();
+  });
+
+  it("Remove photo opens the confirm dialog above the sheet, which owns Esc and Tab until it closes", async () => {
+    usePlannerStore.setState({ background: { ...initialProject().background, hasImage: true } });
+    const d = await open();
+    const remove = within(d).getByRole("button", { name: "Remove photo" });
+    await userEvent.click(remove);
+    const confirm = screen.getByRole("alertdialog", { name: "Remove the photo?" });
+    const cancel = within(confirm).getByRole("button", { name: "Cancel" });
+    expect(cancel).toHaveFocus();
+    await userEvent.tab();
+    expect(within(confirm).getByRole("button", { name: "Remove photo" })).toHaveFocus();
+    await userEvent.tab();
+    expect(cancel).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(dialog()).toBeInTheDocument();
+    expect(remove).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    await expectClosed();
   });
 
   it("'Set origin on the wall' closes the sheet and enters Grid origin mode", async () => {
@@ -130,7 +151,7 @@ describe("SettingsSheet, with focus fallen to <body> (a tap on a caption or labe
     expect(within(d).getByRole("button", { name: "Close settings" })).toHaveFocus();
     (document.activeElement as HTMLElement).blur();
     await userEvent.tab({ shift: true });
-    expect(within(d).getByRole("button", { name: "Set origin on the wall" })).toHaveFocus();
+    expect(within(d).getByRole("button", { name: "Upload photo" })).toHaveFocus();
   });
 
   it("Esc still closes it", async () => {

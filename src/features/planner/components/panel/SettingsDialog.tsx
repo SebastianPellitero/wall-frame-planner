@@ -77,10 +77,11 @@ export function SettingsDialog({ shell, closing, onRequestClose, onExited }: Set
   // has already prevented the default and keeps the sheet open.
   useEffect(() => {
     if (closing) return;
-    const release = registerModal();
+    const modal = registerModal();
     const onKeyDown = (e: globalThis.KeyboardEvent) => {
       const el = sheetRef.current;
-      if (!el) return;
+      // A confirm dialog opened from the sheet owns the keyboard until it closes.
+      if (!el || !modal.isTop()) return;
       if (e.key === "Escape") {
         if (e.defaultPrevented) return;
         e.preventDefault();
@@ -91,14 +92,14 @@ export function SettingsDialog({ shell, closing, onRequestClose, onExited }: Set
     };
     const onFocusIn = (e: FocusEvent) => {
       const el = sheetRef.current;
-      if (el && !leaving.current && e.target instanceof Node && !el.contains(e.target)) el.focus();
+      if (el && modal.isTop() && !leaving.current && e.target instanceof Node && !el.contains(e.target)) el.focus();
     };
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("focusin", onFocusIn);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("focusin", onFocusIn);
-      release();
+      modal();
     };
   }, [closing]);
 
@@ -184,7 +185,7 @@ export function SettingsDialog({ shell, closing, onRequestClose, onExited }: Set
           data-testid="settings-body"
           className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-4 pt-3 pb-[calc(24px+var(--spacing-safe-bottom))]"
         >
-          <SettingsSections shell={shell} onSetOrigin={requestClose} />
+          <SettingsSections shell={shell} onLeave={requestClose} />
         </div>
       </motion.div>
     </>

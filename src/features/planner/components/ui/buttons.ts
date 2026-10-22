@@ -14,3 +14,17 @@ export const ICON_BUTTON =
 /** Primary: the accent fill, for the main action of a group (Generate, Done). */
 export const PRIMARY_BUTTON =
   "inline-flex h-touch shrink-0 items-center justify-center gap-1.5 rounded-control bg-accent px-3.5 text-ui font-medium text-on-accent transition-colors duration-quick can-hover:hover:bg-accent-hover active:bg-accent-pressed";
+
+/** Danger: the destructive confirm in a confirm dialog only (Reset wall, Remove photo). */
+export const DANGER_BUTTON =
+  "inline-flex h-touch shrink-0 items-center justify-center gap-1.5 rounded-control bg-danger px-3.5 text-ui font-medium text-on-danger transition-colors duration-quick";
+
+/** Quiet danger: borderless red text, e.g. Remove photo in the panels. */
+export const QUIET_DANGER_BUTTON =
+  "inline-flex h-touch shrink-0 items-center justify-center gap-1.5 rounded-control px-3.5 text-ui font-medium text-danger transition-colors duration-quick can-hover:hover:bg-surface-pressed active:bg-surface-pressed";
+
+/**
+ * Icon button in `text-danger` (Remove photo). Its own constant: adding `text-danger` on top of
+ * ICON_BUTTON would lose to `text-ink`, which Tailwind emits later.
+ */
+export const DANGER_ICON_BUTTON = ICON_BUTTON.replace("text-ink ", "text-danger ");

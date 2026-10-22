@@ -37,7 +37,7 @@ test.describe("shell", () => {
     await radio("Photo").click();
     await expect(radio("Photo")).toBeChecked();
     await expect(radio("Arrange")).not.toBeChecked();
-    await expect(page.getByRole("region", { name: "Photo" })).toBeAttached();
+    await expect(page.getByRole("region", { name: "Photo tools" })).toBeAttached();
 
     await radio("Grid origin").click();
     await expect(radio("Grid origin")).toBeChecked();

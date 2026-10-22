@@ -1,8 +1,10 @@
-import type { PointerEvent, ReactNode, Ref } from "react";
+import { useCallback, type PointerEvent, type ReactNode, type Ref } from "react";
+import { usePinchPan } from "../../hooks/usePinchPan";
 import type { Shell } from "../../hooks/useShell";
 import { clientToWallCm } from "../../lib/geometry";
 import { usePlannerStore } from "../../state/store";
 import { cx } from "../ui/cx";
+import { BackgroundLayer } from "./BackgroundLayer";
 import { FramesLayer } from "./FramesLayer";
 import { GridLayer } from "./GridLayer";
 import { SnapGuides } from "./SnapGuides";
@@ -23,9 +25,24 @@ const SAFE_PADDING: Record<Shell, string> = {
   desktop: "",
 };
 
+/** Sets a ref of either kind and returns how to undo it. */
+function assignRef<T>(ref: Ref<T> | undefined, value: T): (() => void) | undefined {
+  if (typeof ref === "function") {
+    const cleanup = ref(value);
+    return typeof cleanup === "function" ? cleanup : () => ref(null);
+  }
+  if (ref) {
+    ref.current = value;
+    return () => {
+      ref.current = null;
+    };
+  }
+}
+
 /**
  * The stage (the room) with the to-scale wall centered in it. Wall layers, bottom to top:
  * background photo, grid, frames, live snap guides. `children` are stage overlays (rotate hint, toasts).
+ * In Photo mode the whole stage takes pan, pinch and wheel gestures for the photo (§4.6).
  */
 export function WallStage({ stageRef, shell, children }: { stageRef: Ref<HTMLElement>; shell: Shell; children?: ReactNode }) {
   const { pxPerCm, wallRef, wallPx } = useWallContext();
@@ -33,6 +50,20 @@ export function WallStage({ stageRef, shell, children }: { stageRef: Ref<HTMLEle
   const empty = usePlannerStore((s) => s.shapes.length === 0);
   const width = usePlannerStore((s) => s.wall.width);
   const height = usePlannerStore((s) => s.wall.height);
+  const photo = usePinchPan({ enabled: mode === "photo", wallRef, pxPerCm });
+  const photoStageRef = photo.stageRef;
+  const setStage = useCallback(
+    (el: HTMLElement | null) => {
+      if (!el) return;
+      const undoStage = assignRef(stageRef, el);
+      const undoPhoto = photoStageRef(el);
+      return () => {
+        undoStage?.();
+        undoPhoto?.();
+      };
+    },
+    [stageRef, photoStageRef],
+  );
 
   const onWallPointerDown = (e: PointerEvent<HTMLDivElement>) => {
     // Grid origin mode: a tap anywhere on the wall (frames are inert here) moves the origin.
@@ -48,8 +79,9 @@ export function WallStage({ stageRef, shell, children }: { stageRef: Ref<HTMLEle
 
   return (
     <main
-      ref={stageRef}
+      ref={setStage}
       data-testid="stage"
+      onPointerDown={photo.onPointerDown}
       className={cx(
         "relative isolate grid min-h-0 min-w-0 flex-1 place-items-center overflow-hidden bg-stage",
         SAFE_PADDING[shell],
@@ -69,7 +101,7 @@ export function WallStage({ stageRef, shell, children }: { stageRef: Ref<HTMLEle
             mode === "photo" && "cursor-move",
           )}
         >
-          {/* T9: background photo layer (z-photo) */}
+          <BackgroundLayer live={photo.live} />
           <GridLayer />
           <FramesLayer />
           <SnapGuides />

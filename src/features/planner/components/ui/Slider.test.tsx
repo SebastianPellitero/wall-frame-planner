@@ -53,3 +53,14 @@ describe("Slider", () => {
     expect(screen.getByRole("slider", { name: "Opacity" }).style.getPropertyValue("--slider-pos")).toBe("0.6");
   });
 });
+
+describe("Slider, stacked layout", () => {
+  it("puts the label and readout over a full-width track, for narrow rails", () => {
+    render(<Slider label="Scale" value={0} min={-2} max={2} step={0.01} readout="100%" onChange={() => {}} layout="stacked" />);
+    const slider = screen.getByRole("slider", { name: "Scale" });
+    const row = slider.parentElement!;
+    expect(row).toHaveClass("grid", "grid-cols-[1fr_auto]");
+    expect(slider).toHaveClass("col-span-2");
+    expect(screen.getByText("100%")).toBeInTheDocument();
+  });
+});

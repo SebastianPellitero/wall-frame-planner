@@ -17,7 +17,7 @@ function renderPanel(shell: Shell) {
   );
 }
 
-const PANELS = ["Frame creator", "Selected frame", "Photo", "Grid origin"];
+const PANELS = ["Frame creator", "Selected frame", "Photo tools", "Grid origin"];
 
 function expectOnly(name: string) {
   expect(screen.getByRole("region", { name })).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe("ContextPanel", () => {
     renderPanel(shell);
     selectNewShape();
     act(() => usePlannerStore.getState().setMode("photo"));
-    expectOnly("Photo");
+    expectOnly("Photo tools");
     act(() => usePlannerStore.getState().setMode("gridOrigin"));
     expectOnly("Grid origin");
     act(() => usePlannerStore.getState().setMode("arrange"));

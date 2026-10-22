@@ -12,6 +12,8 @@ interface SliderProps {
   /** Shown right-aligned and announced as the value, e.g. "60%". */
   readout: string;
   onChange(value: number): void;
+  /** "row" (default): label, track, readout in one 44px row. "stacked": label and readout over a full-width track, for the 132px landscape rail. */
+  layout?: "row" | "stacked";
   className?: string;
 }
 
@@ -20,12 +22,13 @@ interface SliderProps {
  * globals.css, `.slider`, so keyboard and screen readers get the platform control) and a
  * readout. The 44px row is the hit area; the track fills with the accent up to the thumb.
  */
-export function Slider({ label, value, min, max, step, readout, onChange, className }: SliderProps) {
+export function Slider({ label, value, min, max, step, readout, onChange, layout = "row", className }: SliderProps) {
   const id = useId();
   const pos = max > min ? clamp((value - min) / (max - min), 0, 1) : 0;
+  const stacked = layout === "stacked";
 
   return (
-    <div className={cx("flex h-touch items-center gap-3", className)}>
+    <div className={cx(stacked ? "grid grid-cols-[1fr_auto] items-center gap-x-2" : "flex h-touch items-center gap-3", className)}>
       <label htmlFor={id} className="shrink-0 text-ui font-medium text-ink">
         {label}
       </label>
@@ -39,9 +42,12 @@ export function Slider({ label, value, min, max, step, readout, onChange, classN
         aria-valuetext={readout}
         onChange={(e) => onChange(Number(e.target.value))}
         style={{ "--slider-pos": String(pos) } as CSSProperties}
-        className="slider h-touch min-w-0 flex-1"
+        className={cx("slider h-touch min-w-0", stacked ? "col-span-2 row-start-2" : "flex-1")}
       />
-      <span aria-hidden="true" className="min-w-[4ch] shrink-0 text-right text-ui text-ink-muted tabular-nums">
+      <span
+        aria-hidden="true"
+        className={cx("min-w-[4ch] shrink-0 text-right text-ui text-ink-muted tabular-nums", stacked && "col-start-2 row-start-1")}
+      >
         {readout}
       </span>
     </div>

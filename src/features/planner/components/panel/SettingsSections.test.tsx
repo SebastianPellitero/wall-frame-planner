@@ -95,11 +95,12 @@ describe("GridSettings", () => {
 });
 
 describe("SettingsSections", () => {
-  it("orders Wall, then Grid", () => {
+  it("orders Wall, Grid, then Photo", () => {
     render(<SettingsSections shell="desktop" />);
-    expect(screen.getAllByRole("heading").map((h) => h.textContent)).toEqual(["Wall", "Grid"]);
+    expect(screen.getAllByRole("heading").map((h) => h.textContent)).toEqual(["Wall", "Grid", "Photo"]);
     expect(screen.getByRole("region", { name: "Wall" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Grid" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Photo settings" })).toBeInTheDocument();
   });
 
   it.each(["stacked", "landscape", "desktop"] as const)("names every control once (%s)", (shell) => {
