@@ -71,6 +71,12 @@ describe("framePhotoUrls", () => {
     expect(urls.rememberedIds()).toEqual(["a"]);
   });
 
+  it("forget drops a remembered image", () => {
+    urls.remember("a", blob());
+    urls.forget("a");
+    expect(urls.rememberedIds()).toEqual([]);
+  });
+
   it("reports a missing image and marks it failed", async () => {
     deps.load.mockResolvedValue(undefined);
     urls.acquire("a");

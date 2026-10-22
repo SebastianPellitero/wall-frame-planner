@@ -9,6 +9,7 @@ vi.mock("../lib/imageStore", async (importOriginal) => {
     loadFramePhoto: vi.fn(),
     listFramePhotoIds: vi.fn(),
     deleteFramePhotos: vi.fn(),
+    deleteAllFramePhotos: vi.fn(),
   };
 });
 
@@ -17,6 +18,8 @@ import { ImageStoreUnavailableError } from "../lib/imageStore";
 import { initialProject, initialUi } from "./actions";
 import { FRAME_PHOTO_MAX_EDGE, gcFramePhotos, uploadFramePhoto } from "./framePhotoCommands";
 import { framePhotoUrls } from "./framePhotoUrls";
+import { resetWall } from "./projectCommands";
+import { safeStorage } from "./safeStorage";
 import { storageEvents, type StorageEvent } from "./storageEvents";
 import { usePlannerStore } from "./store";
 
@@ -36,6 +39,10 @@ let id: string;
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mocked.deleteFramePhotos.mockResolvedValue();
+  mocked.deleteAllFramePhotos.mockResolvedValue();
+  localStorage.clear();
+  safeStorage.getItem("wallplanner:test-good-read");
   framePhotoUrls.clear();
   usePlannerStore.setState({ ...initialProject(), ...initialUi });
   usePlannerStore.temporal.getState().clear();
@@ -51,7 +58,7 @@ describe("uploadFramePhoto", () => {
     });
     mocked.saveFramePhoto.mockImplementation(async () => void calls.push("save"));
 
-    await uploadFramePhoto(id, file);
+    await expect(uploadFramePhoto(id, file)).resolves.toBe("added");
 
     expect(calls).toEqual(["downscale", "save"]);
     expect(mocked.downscaleImage).toHaveBeenCalledWith(file, FRAME_PHOTO_MAX_EDGE, 0.85);
@@ -67,7 +74,7 @@ describe("uploadFramePhoto", () => {
     mocked.downscaleImage.mockResolvedValue({ blob: small, width: 100, height: 100 });
     await uploadFramePhoto(id, file);
     const first = frame(id)?.photo?.imageId;
-    await uploadFramePhoto(id, file);
+    await expect(uploadFramePhoto(id, file)).resolves.toBe("replaced");
     expect(frame(id)?.photo?.imageId).not.toBe(first);
     usePlannerStore.temporal.getState().undo();
     expect(frame(id)?.photo?.imageId).toBe(first);
@@ -86,6 +93,41 @@ describe("uploadFramePhoto", () => {
     expect(framePhotoUrls.snapshot(imageId).status).toBe("ready");
     expect(mocked.loadFramePhoto).not.toHaveBeenCalled();
     framePhotoUrls.release(imageId);
+  });
+
+  it("does nothing for a frame that is already gone", async () => {
+    await expect(uploadFramePhoto("nope", file)).resolves.toBe("frame-gone");
+    expect(mocked.downscaleImage).not.toHaveBeenCalled();
+    expect(mocked.saveFramePhoto).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["deleted", () => usePlannerStore.getState().deleteShape(id)],
+    ["reset", () => void resetWall()],
+  ])("keeps no orphan when the frame is %s while the photo is processed", async (_, remove) => {
+    mocked.downscaleImage.mockResolvedValue({ blob: small, width: 100, height: 100 });
+    let saved!: () => void;
+    mocked.saveFramePhoto.mockReturnValue(new Promise<void>((r) => (saved = r)));
+    const pending = uploadFramePhoto(id, file);
+    await flush();
+    remove();
+    saved();
+    await expect(pending).resolves.toBe("frame-gone");
+    expect(framePhotoUrls.rememberedIds()).toEqual([]);
+    const imageId = mocked.saveFramePhoto.mock.calls[0][0];
+    expect(mocked.deleteFramePhotos).toHaveBeenCalledWith([imageId]);
+    expect(usePlannerStore.getState().shapes.some((s) => s.photo)).toBe(false);
+  });
+
+  it("does not save when the frame goes while the file is decoded", async () => {
+    let decoded!: (v: { blob: Blob; width: number; height: number }) => void;
+    mocked.downscaleImage.mockReturnValue(new Promise((r) => (decoded = r)));
+    const pending = uploadFramePhoto(id, file);
+    usePlannerStore.getState().deleteShape(id);
+    decoded({ blob: small, width: 100, height: 100 });
+    await expect(pending).resolves.toBe("frame-gone");
+    expect(mocked.saveFramePhoto).not.toHaveBeenCalled();
+    expect(framePhotoUrls.rememberedIds()).toEqual([]);
   });
 
   it("rejects and changes nothing when the file can't be decoded", async () => {
@@ -118,6 +160,34 @@ describe("gcFramePhotos", () => {
     mocked.listFramePhotoIds.mockResolvedValue(["on-wall"]);
     await gcFramePhotos();
     expect(mocked.deleteFramePhotos).not.toHaveBeenCalled();
+  });
+
+  it("deletes nothing when this session's read hit a corrupt save (the backup still needs its photos)", async () => {
+    localStorage.setItem("wallplanner:test-corrupt", "{not json");
+    safeStorage.getItem("wallplanner:test-corrupt");
+    mocked.listFramePhotoIds.mockResolvedValue(["from-the-backup"]);
+    await gcFramePhotos();
+    expect(mocked.listFramePhotoIds).not.toHaveBeenCalled();
+    expect(mocked.deleteFramePhotos).not.toHaveBeenCalled();
+  });
+
+  it("deletes nothing when this session's read found storage unavailable", async () => {
+    const spy = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("denied", "SecurityError");
+    });
+    safeStorage.getItem("wallplanner:test-unavailable");
+    spy.mockRestore();
+    mocked.listFramePhotoIds.mockResolvedValue(["unknown"]);
+    await gcFramePhotos();
+    expect(mocked.deleteFramePhotos).not.toHaveBeenCalled();
+  });
+
+  it("runs normally after a good read", async () => {
+    localStorage.setItem("wallplanner:test-ok", JSON.stringify({ state: {}, version: 1 }));
+    safeStorage.getItem("wallplanner:test-ok");
+    mocked.listFramePhotoIds.mockResolvedValue(["orphan"]);
+    await gcFramePhotos();
+    expect(mocked.deleteFramePhotos).toHaveBeenCalledWith(["orphan"]);
   });
 
   it("is silent when IndexedDB is unavailable", async () => {

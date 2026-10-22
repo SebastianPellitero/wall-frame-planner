@@ -22,8 +22,18 @@ function dropOldBackups() {
  * an event, so the app keeps working in memory. Once storage is known to be unavailable that
  * is reported once, and later failed writes add nothing ("storage full" would contradict it).
  */
-export function createSafeStorage(): PersistStorage<PersistedSlice> {
+export interface SafeStorage extends PersistStorage<PersistedSlice> {
+  /**
+   * Whether the last read failed (storage unavailable, or a corrupt save that was backed up).
+   * The state then started from defaults, so it says nothing about what the real save uses:
+   * frame photo garbage collection must not run.
+   */
+  lastReadFailed(): boolean;
+}
+
+export function createSafeStorage(): SafeStorage {
   let unavailable = false;
+  let readFailed = false;
   const reportUnavailable = () => {
     if (unavailable) return;
     unavailable = true;
@@ -31,12 +41,15 @@ export function createSafeStorage(): PersistStorage<PersistedSlice> {
   };
 
   return {
+    lastReadFailed: () => readFailed,
     getItem(name) {
       if (typeof window === "undefined") return null;
+      readFailed = false;
       let raw: string | null;
       try {
         raw = window.localStorage.getItem(name);
       } catch {
+        readFailed = true;
         reportUnavailable();
         return null;
       }
@@ -44,6 +57,7 @@ export function createSafeStorage(): PersistStorage<PersistedSlice> {
       try {
         return JSON.parse(raw) as StorageValue<PersistedSlice>;
       } catch {
+        readFailed = true;
         const backupKey = `${BACKUP_PREFIX}${Date.now()}`;
         try {
           dropOldBackups();
@@ -76,4 +90,4 @@ export function createSafeStorage(): PersistStorage<PersistedSlice> {
   };
 }
 
-export const safeStorage: PersistStorage<PersistedSlice> = createSafeStorage();
+export const safeStorage: SafeStorage = createSafeStorage();

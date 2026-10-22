@@ -18,8 +18,8 @@ import { WallStage } from "./wall/WallStage";
 export function PlannerApp() {
   const shell = useShell();
   useShortcuts();
-  // Once per load, after hydration: stored frame photos nothing uses are deleted.
-  useEffect(() => void gcFramePhotos(), []);
+  // Once per load, after hydration: stored frame photos nothing uses are deleted. Best effort.
+  useEffect(() => void gcFramePhotos().catch(() => {}), []);
   const wall = usePlannerStore((s) => s.wall);
   const { stageRef, pxPerCm, wallPx } = useWallScale(wall, shell === "desktop" ? STAGE_PADDING_PX.desktop : STAGE_PADDING_PX.phone);
   const wallRef = useRef<HTMLDivElement>(null);

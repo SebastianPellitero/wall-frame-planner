@@ -33,6 +33,16 @@ describe("photoLayout", () => {
     expect(photoLayout(100, 100, { ...wide, focusX: 1, focusY: 1 })).toMatchObject({ left: -100, top: 0 });
   });
 
+  it("still covers with an out-of-range zoom or a bad aspect", () => {
+    // zoom below 1 is treated as 1 (cover), above 4 as 4.
+    expect(photoLayout(100, 100, { ...wide, zoom: 0.5 })).toEqual(photoLayout(100, 100, wide));
+    expect(photoLayout(100, 100, { ...wide, zoom: 9 }).width).toBe(800);
+    // A non-positive or non-finite aspect is treated as square.
+    for (const aspect of [0, -2, NaN, Infinity]) {
+      expect(photoLayout(100, 100, { ...wide, aspect })).toEqual({ width: 100, height: 100, left: 0, top: 0 });
+    }
+  });
+
   it("stays finite for an empty opening", () => {
     expect(photoLayout(0, 0, wide)).toEqual({ width: 0, height: 0, left: 0, top: 0 });
   });

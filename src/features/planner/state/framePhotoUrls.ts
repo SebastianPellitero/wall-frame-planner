@@ -68,6 +68,11 @@ export function createFramePhotoUrls(deps: FramePhotoUrlDeps) {
       remembered.set(imageId, blob);
     },
 
+    /** Drops a remembered image nothing will use (its frame went away during the upload). */
+    forget(imageId: string): void {
+      remembered.delete(imageId);
+    },
+
     /** The ids of the images kept in memory (garbage collection keeps them). */
     rememberedIds: (): string[] => [...remembered.keys()],
 

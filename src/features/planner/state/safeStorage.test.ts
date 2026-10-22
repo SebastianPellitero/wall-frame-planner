@@ -75,6 +75,33 @@ describe("safeStorage.getItem", () => {
   });
 });
 
+describe("safeStorage.lastReadFailed", () => {
+  it("is false before any read, and after a good or missing read", () => {
+    expect(safeStorage.lastReadFailed()).toBe(false);
+    localStorage.setItem("k", JSON.stringify({ state: sample, version: 1 }));
+    safeStorage.getItem("k");
+    expect(safeStorage.lastReadFailed()).toBe(false);
+    safeStorage.getItem("nope");
+    expect(safeStorage.lastReadFailed()).toBe(false);
+  });
+
+  it("is true after a corrupt save, until the next read succeeds", () => {
+    localStorage.setItem("k", "{not json");
+    safeStorage.getItem("k");
+    expect(safeStorage.lastReadFailed()).toBe(true);
+    safeStorage.getItem("nope");
+    expect(safeStorage.lastReadFailed()).toBe(false);
+  });
+
+  it("is true when localStorage throws on read", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("denied", "SecurityError");
+    });
+    safeStorage.getItem("k");
+    expect(safeStorage.lastReadFailed()).toBe(true);
+  });
+});
+
 describe("safeStorage.setItem / removeItem", () => {
   it("writes JSON", () => {
     safeStorage.setItem("k", { state: sample, version: 1 });

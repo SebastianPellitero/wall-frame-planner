@@ -23,10 +23,16 @@ export const FOCUS_STEP_LARGE = 0.1;
 
 const round2 = (v: number) => Math.round(v * 100) / 100;
 
-/** The image's drawn size: `zoom` × the size that just covers the opening. */
+/**
+ * The image's drawn size: `zoom` × the size that just covers the opening. Defensive, so the
+ * no-empty-band guarantee holds here whatever the caller passes: zoom is clamped to 1–4 and a
+ * non-positive or non-finite aspect is treated as square.
+ */
 function drawnSize(openingW: number, openingH: number, photo: PhotoCrop): { width: number; height: number } {
-  const coverW = Math.max(openingW, openingH / photo.aspect);
-  return { width: coverW * photo.zoom, height: coverW * photo.aspect * photo.zoom };
+  const aspect = Number.isFinite(photo.aspect) && photo.aspect > 0 ? photo.aspect : 1;
+  const zoom = Number.isFinite(photo.zoom) ? clamp(photo.zoom, ZOOM_MIN, ZOOM_MAX) : ZOOM_MIN;
+  const coverW = Math.max(openingW, openingH / aspect);
+  return { width: coverW * zoom, height: coverW * aspect * zoom };
 }
 
 /** The focus range that keeps the opening covered (no empty band). */
