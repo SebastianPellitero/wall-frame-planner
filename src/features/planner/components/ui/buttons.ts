@@ -24,7 +24,13 @@ export const QUIET_DANGER_BUTTON =
   "inline-flex h-touch shrink-0 items-center justify-center gap-1.5 rounded-control px-3.5 text-ui font-medium text-danger transition-colors duration-quick can-hover:hover:bg-surface-pressed active:bg-surface-pressed";
 
 /**
- * Icon button in `text-danger` (Remove photo). Its own constant: adding `text-danger` on top of
- * ICON_BUTTON would lose to `text-ink`, which Tailwind emits later.
+ * The danger-red variants of a base style. Never add `text-danger` next to a base's `text-ink`:
+ * both would apply and `text-ink`, which Tailwind emits later, wins. Swap the color instead.
  */
-export const DANGER_ICON_BUTTON = ICON_BUTTON.replace("text-ink ", "text-danger ");
+const inDanger = (base: string) => base.replace(/(^|\s)text-ink(?=\s|$)/, "$1text-danger");
+
+/** Secondary in `text-danger`: Delete in the selection bar, Reset wall in Settings. */
+export const SECONDARY_DANGER_BUTTON = inDanger(SECONDARY_BUTTON);
+
+/** Icon button in `text-danger` (Remove photo). */
+export const DANGER_ICON_BUTTON = inDanger(ICON_BUTTON);

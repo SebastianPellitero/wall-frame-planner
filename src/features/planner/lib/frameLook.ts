@@ -47,6 +47,11 @@ export function previewName(kind: ShapeKind, wCm: number, hCm: number): string {
   return `Add ${KIND_NAME[kind].toLowerCase()}, ${previewCaption(kind, wCm, hCm)}`;
 }
 
+/** The live-region line after Generate (§5.1, §8), e.g. "Ready: rectangle, 40 × 50 cm". */
+export function readyAnnouncement(kind: ShapeKind, wCm: number, hCm: number): string {
+  return `Ready: ${KIND_NAME[kind].toLowerCase()}, ${previewCaption(kind, wCm, hCm)}`;
+}
+
 /** Room for the label inside the moulding: `w − 2t`, or `0.8 × (d − 2t)` for circles. */
 function available(kind: ShapeKind, sidePx: number, t: number): number {
   const inner = sidePx - 2 * t;

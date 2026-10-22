@@ -6,6 +6,7 @@ import type { Shell } from "../../hooks/useShell";
 import { initialProject, initialUi } from "../../state/actions";
 import { useDragUi } from "../../state/dragUi";
 import { usePlannerStore } from "../../state/store";
+import { Announcer } from "../ui/Announcer";
 import { WallContext } from "../wall/WallContext";
 import { FrameCreator } from "./FrameCreator";
 
@@ -21,6 +22,7 @@ function renderCreator(shell: Shell = "landscape") {
   return render(
     <WallContext value={{ pxPerCm: 2, wallRef, wallPx: { w: 600, h: 500 } }}>
       <FrameCreator shell={shell} />
+      <Announcer />
     </WallContext>,
   );
 }
@@ -127,6 +129,18 @@ describe("FrameCreator", () => {
     const next = color();
     tap(preview());
     expect(usePlannerStore.getState().shapes.map((s) => s.color)).toEqual([4, next]);
+  });
+
+  it("announces 'Frame added' on a tap and 'Ready: …' after Generate in the live region", async () => {
+    renderCreator();
+    const live = screen.getByTestId("announcer");
+    tap(preview());
+    expect(live).toHaveTextContent("Frame added");
+    await userEvent.clear(field("Width (cm)"));
+    await userEvent.type(field("Width (cm)"), "60{Enter}");
+    expect(live).toHaveTextContent("Ready: rectangle, 60 × 50 cm");
+    fireEvent.keyDown(preview(), { key: "Enter" });
+    expect(live).toHaveTextContent("Frame added");
   });
 
   it("the click that follows a pointer tap does not add a second frame", () => {

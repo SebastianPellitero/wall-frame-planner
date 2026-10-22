@@ -15,6 +15,7 @@ import { deleteBackgroundImage, downscaleImage, saveBackgroundImage } from "../.
 import { initialProject, initialUi } from "../../state/actions";
 import { usePhotoImage } from "../../state/photoImage";
 import { usePlannerStore } from "../../state/store";
+import { emptyToastQueue, useToasts } from "../../state/toasts";
 import type { Background } from "../../types";
 import { PhotoSettings } from "./PhotoSettings";
 import { PhotoTools } from "./PhotoTools";
@@ -144,6 +145,22 @@ describe("PhotoTools", () => {
     await waitFor(() => expect(usePlannerStore.getState().mode).toBe("photo"));
     expect(order).toEqual(["downscale", "save"]);
     expect(bg()).toEqual({ hasImage: true, x: 0, y: -175, width: 300, aspect: 2, opacity: 1, visible: true });
+  });
+
+  it("a file that can't be decoded leaves the wall alone and says so in a toast", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    useToasts.setState(emptyToastQueue());
+    usePlannerStore.setState({ mode: "arrange", background: DEFAULT_BACKGROUND });
+    vi.mocked(downscaleImage).mockRejectedValue(new Error("decode failed"));
+    render(<PhotoTools shell="desktop" />);
+    const button = screen.getByRole("button", { name: "Upload photo" });
+    await userEvent.upload(tools().querySelector<HTMLInputElement>('input[type="file"]')!, new File(["junk"], "x.jpg", { type: "image/jpeg" }));
+
+    await waitFor(() => expect(button).toHaveAttribute("aria-busy", "false"));
+    expect(useToasts.getState().toasts).toMatchObject([{ tone: "error", message: "That file couldn't be opened as an image." }]);
+    expect(bg()).toEqual(DEFAULT_BACKGROUND);
+    expect(usePlannerStore.getState().mode).toBe("arrange");
+    expect(saveBackgroundImage).not.toHaveBeenCalled();
   });
 });
 

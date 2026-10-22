@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Shape } from "../types";
 import { initialProject, initialUi } from "./actions";
+import { useAnnouncer } from "./announcer";
 import { useDragUi } from "./dragUi";
-import { duplicateFrame, nudgeFrame, redo, undo } from "./frameCommands";
+import { deleteFrame, duplicateFrame, nudgeFrame, redo, undo } from "./frameCommands";
 import { usePlannerStore } from "./store";
 
 const A: Shape = { id: "a", kind: "rect", x: 20, y: 30, w: 40, h: 50, color: 4 };
@@ -11,9 +12,23 @@ beforeEach(() => {
   usePlannerStore.setState({ ...initialProject(), ...initialUi, shapes: [A], selectedId: "a" });
   usePlannerStore.temporal.getState().clear();
   useDragUi.setState({ spawnFrom: null });
+  useAnnouncer.setState({ text: "", id: 0 });
 });
 
 describe("frameCommands", () => {
+  it("duplicate announces 'Frame duplicated'", () => {
+    duplicateFrame("a");
+    expect(useAnnouncer.getState().text).toBe("Frame duplicated");
+  });
+
+  it("delete removes the frame and announces 'Frame deleted'; an unknown id does nothing", () => {
+    deleteFrame("nope");
+    expect(useAnnouncer.getState().text).toBe("");
+    deleteFrame("a");
+    expect(usePlannerStore.getState().shapes).toEqual([]);
+    expect(useAnnouncer.getState().text).toBe("Frame deleted");
+  });
+
   it("duplicate selects a same-colored copy and leaves its spawn point at the original", () => {
     const id = duplicateFrame("a");
     expect(id).not.toBeNull();

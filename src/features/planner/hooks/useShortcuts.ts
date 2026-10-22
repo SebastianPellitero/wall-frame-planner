@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { resolveShortcut } from "../lib/shortcuts";
 import { useDragUi } from "../state/dragUi";
 import { isModalOpen } from "../state/modalUi";
-import { duplicateFrame, nudgeFrame, redo, undo } from "../state/frameCommands";
+import { deleteFrame, duplicateFrame, nudgeFrame, redo, undo } from "../state/frameCommands";
 import { usePlannerStore } from "../state/store";
 import { rescueFocus } from "./rescueFocus";
 
@@ -51,7 +51,7 @@ export function useShortcuts() {
           break;
         case "delete":
           rescueFocus(selectedId);
-          usePlannerStore.getState().deleteShape(selectedId);
+          deleteFrame(selectedId);
           break;
         case "deselect":
           rescueFocus();

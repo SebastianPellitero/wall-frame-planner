@@ -22,7 +22,7 @@ function writeDismissed(): void {
 /**
  * "Rotate for a bigger wall" pill (design-system.md §5.10). Only phone portrait shows it
  * (`phone-portrait:`), so it hides by itself in landscape. Fades in 600ms after load,
- * instantly under reduced motion. Place it inside the stage, which is `relative`.
+ * instantly under reduced motion. ToastRegion places it at the stage's bottom-center, under the toasts.
  */
 export function RotateHint() {
   const [dismissed, setDismissed] = useState(readDismissed);
@@ -30,7 +30,7 @@ export function RotateHint() {
 
   return (
     <div
-      className="absolute bottom-3 left-1/2 z-float hidden h-touch -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-pill bg-surface pr-1 pl-3.5 text-ui text-ink shadow-float transition-opacity delay-[600ms] duration-slow ease-out-soft starting:opacity-0 motion-reduce:transition-none phone-portrait:flex"
+      className="pointer-events-auto hidden h-touch items-center gap-1.5 whitespace-nowrap rounded-pill bg-surface pr-1 pl-3.5 text-ui text-ink shadow-float transition-opacity delay-[600ms] duration-slow ease-out-soft starting:opacity-0 motion-reduce:transition-none phone-portrait:flex"
     >
       <RotateIcon size={18} />
       <span>Rotate for a bigger wall</span>

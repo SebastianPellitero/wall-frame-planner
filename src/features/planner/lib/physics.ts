@@ -68,7 +68,12 @@ export const removeToScale = 0.85;
 export const guideFadeInMs = 60;
 export const guideFadeOutMs = 120;
 export const photoModeFrameOpacity = 0.35;
+/** Info toasts auto-dismiss after this, paused on hover or focus; errors stay (§5.9). */
 export const toastMs = 5000;
+/** A toast enters from this many px below, on `sheet` (§5.9). */
+export const toastEnterY = 12;
+/** A toast exits with a fade over `duration-quick` (§5.9). */
+export const toastExitMs = 140;
 
 /** Tween values that replace the springs under reduced motion. `ease` is a cubic-bezier. */
 export const reducedMotion: {

@@ -7,6 +7,7 @@ import { useDragUi } from "../../state/dragUi";
 import { usePlannerStore } from "../../state/store";
 import type { Shape } from "../../types";
 import { ContextPanel } from "../ContextPanel";
+import { textColors } from "../ui/textColors.testUtil";
 import { WallContext } from "../wall/WallContext";
 import { SelectionBar } from "./SelectionBar";
 
@@ -126,6 +127,13 @@ describe("SelectionBar", () => {
     expect(usePlannerStore.getState().selectedId).toBeNull();
     expect(screen.getByRole("region", { name: "Frame creator" })).toBeInTheDocument();
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("radio", { name: "Rectangle" })));
+  });
+
+  it.each(["stacked", "landscape", "desktop"] as const)("Delete is danger red: text-danger is its only text color (%s)", (shell) => {
+    select([A], "a");
+    render(<SelectionBar shell={shell} />);
+    expect(textColors(bar().getByRole("button", { name: "Delete" }).className)).toEqual(["text-danger"]);
+    expect(textColors(bar().getByRole("button", { name: "Duplicate" }).className)).toEqual(["text-ink"]);
   });
 
   it("landscape: a header with the size readout and Deselect", async () => {

@@ -9,16 +9,36 @@ export type StorageEvent =
 
 type Listener = (e: StorageEvent) => void;
 
-const listeners = new Set<Listener>();
+export interface StorageEvents {
+  emit(e: StorageEvent): void;
+  subscribe(fn: Listener): () => void;
+}
 
-export const storageEvents: { emit(e: StorageEvent): void; subscribe(fn: Listener): () => void } = {
-  emit(e) {
-    for (const fn of [...listeners]) fn(e);
-  },
-  subscribe(fn) {
-    listeners.add(fn);
-    return () => {
-      listeners.delete(fn);
-    };
-  },
-};
+/**
+ * A tiny event bus. `corrupt` and `unavailable` fire while the store hydrates, before any UI
+ * subscribes, so events are buffered until the first subscriber and replayed to it in order;
+ * after that they are delivered live (and dropped while nobody listens).
+ */
+export function createStorageEvents(): StorageEvents {
+  const listeners = new Set<Listener>();
+  let buffer: StorageEvent[] | null = [];
+  return {
+    emit(e) {
+      if (buffer) buffer.push(e);
+      else for (const fn of [...listeners]) fn(e);
+    },
+    subscribe(fn) {
+      listeners.add(fn);
+      if (buffer) {
+        const early = buffer;
+        buffer = null;
+        for (const e of early) fn(e);
+      }
+      return () => {
+        listeners.delete(fn);
+      };
+    },
+  };
+}
+
+export const storageEvents: StorageEvents = createStorageEvents();

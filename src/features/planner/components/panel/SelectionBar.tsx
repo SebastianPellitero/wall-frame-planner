@@ -1,10 +1,10 @@
 import type { Shell } from "../../hooks/useShell";
 import { previewCaption } from "../../lib/frameLook";
 import { sizeLimits } from "../../lib/paletteMath";
-import { duplicateFrame } from "../../state/frameCommands";
+import { deleteFrame, duplicateFrame } from "../../state/frameCommands";
 import { usePlannerStore } from "../../state/store";
 import type { Shape, ShapeKind, Wall } from "../../types";
-import { ICON_BUTTON, SECONDARY_BUTTON } from "../ui/buttons";
+import { ICON_BUTTON, SECONDARY_BUTTON, SECONDARY_DANGER_BUTTON } from "../ui/buttons";
 import { CmField } from "../ui/CmField";
 import { cx } from "../ui/cx";
 import { CloseIcon, DuplicateIcon, TrashIcon } from "../ui/icons";
@@ -40,9 +40,9 @@ function fieldSpecs(shape: Shape, wall: Wall): { size: FieldSpec[]; position: Fi
   return { size, position };
 }
 
-const deleteFrame = (id: string) => {
+const deleteSelected = (id: string) => {
   rescueFocus(id);
-  usePlannerStore.getState().deleteShape(id);
+  deleteFrame(id);
 };
 
 const deselect = () => {
@@ -96,8 +96,8 @@ export function SelectionBar({ shell }: { shell: Shell }) {
         type="button"
         aria-label={landscape ? "Delete" : undefined}
         title={landscape ? "Delete" : undefined}
-        onClick={() => deleteFrame(shape.id)}
-        className={cx(SECONDARY_BUTTON, "text-danger", landscape && "px-0")}
+        onClick={() => deleteSelected(shape.id)}
+        className={cx(SECONDARY_DANGER_BUTTON, landscape && "px-0")}
       >
         <TrashIcon size={landscape ? 20 : 18} />
         {!landscape && "Delete"}

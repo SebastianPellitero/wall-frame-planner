@@ -19,6 +19,7 @@ import {
   tween,
 } from "../lib/physics";
 import type { SnapGuide } from "../lib/snap";
+import { announce } from "../state/announcer";
 import { useDragUi } from "../state/dragUi";
 import { usePlannerStore } from "../state/store";
 import type { FrameColor, Point, ShapeKind } from "../types";
@@ -42,11 +43,14 @@ export interface GhostMotion {
   rotate: MotionValue<number>;
 }
 
+const FRAME_ADDED = "Frame added";
+
 /** Tap-to-add (§5.1): the kind becomes current and a frame goes to the nearest free spot, unselected. */
 export function addFromPalette(kind: ShapeKind) {
   const store = usePlannerStore.getState();
   store.setPaletteKind(kind);
   store.addShape(kind, undefined, { select: false });
+  announce(FRAME_ADDED);
 }
 
 /**
@@ -199,6 +203,7 @@ export function usePaletteDrag() {
           if (!cancelled && placement.overWall) {
             setGhost(null);
             usePlannerStore.getState().addShape(kind, placement.centerCm);
+            announce(FRAME_ADDED);
           } else {
             flyHome();
           }

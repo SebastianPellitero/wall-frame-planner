@@ -1,9 +1,10 @@
+import { announce } from "./announcer";
 import { useDragUi } from "./dragUi";
 import { usePlannerStore } from "./store";
 
 /**
  * Frame commands shared by the selection bar, the history buttons and the keyboard shortcuts,
- * so each action has one implementation.
+ * so each action has one implementation. Duplicates and deletes are announced (§7).
  */
 
 /** Duplicates `id` (selected, same color) and has the copy spring out from the original (§6.3). */
@@ -12,8 +13,18 @@ export function duplicateFrame(id: string): string | null {
   if (!original) return null;
   const copyId = usePlannerStore.getState().duplicateShape(id);
   // Set before React renders the copy (it renders after this handler returns).
-  if (copyId) useDragUi.getState().setSpawnFrom(copyId, { x: original.x, y: original.y });
+  if (copyId) {
+    useDragUi.getState().setSpawnFrom(copyId, { x: original.x, y: original.y });
+    announce("Frame duplicated");
+  }
   return copyId;
+}
+
+/** Deletes `id`. Callers that hold focus on the frame call `rescueFocus` first. */
+export function deleteFrame(id: string): void {
+  if (!usePlannerStore.getState().shapes.some((s) => s.id === id)) return;
+  usePlannerStore.getState().deleteShape(id);
+  announce("Frame deleted");
 }
 
 /**

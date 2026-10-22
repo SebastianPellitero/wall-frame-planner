@@ -68,8 +68,8 @@ describe("SettingsSheet", () => {
   it("traps focus: Tab wraps from the last control to the first and Shift+Tab back", async () => {
     const d = await open();
     const close = within(d).getByRole("button", { name: "Close settings" });
-    // Settings > Photo is last; with no photo its last control is Upload photo.
-    const last = within(d).getByRole("button", { name: "Upload photo" });
+    // Reset wall is the last control in the content (§5.6).
+    const last = within(d).getByRole("button", { name: "Reset wall" });
     await userEvent.tab({ shift: true });
     expect(last).toHaveFocus();
     await userEvent.tab();
@@ -121,6 +121,16 @@ describe("SettingsSheet", () => {
     expect(usePlannerStore.getState().background.hasImage).toBe(false);
   });
 
+  it("Reset wall, once confirmed, resets the project, closes the sheet and returns focus to Settings", async () => {
+    usePlannerStore.getState().addShape("rect");
+    const d = await open();
+    await userEvent.click(within(d).getByRole("button", { name: "Reset wall" }));
+    await userEvent.click(within(screen.getByRole("alertdialog", { name: "Reset the wall?" })).getByRole("button", { name: "Reset wall" }));
+    await expectClosed();
+    expect(settingsButton()).toHaveFocus();
+    expect(usePlannerStore.getState().shapes).toEqual([]);
+  });
+
   it("'Set origin on the wall' closes the sheet and enters Grid origin mode", async () => {
     const d = await open();
     await userEvent.click(within(d).getByRole("button", { name: "Set origin on the wall" }));
@@ -161,7 +171,7 @@ describe("SettingsSheet, with focus fallen to <body> (a tap on a caption or labe
     expect(within(d).getByRole("button", { name: "Close settings" })).toHaveFocus();
     (document.activeElement as HTMLElement).blur();
     await userEvent.tab({ shift: true });
-    expect(within(d).getByRole("button", { name: "Upload photo" })).toHaveFocus();
+    expect(within(d).getByRole("button", { name: "Reset wall" })).toHaveFocus();
   });
 
   it("Esc still closes it", async () => {

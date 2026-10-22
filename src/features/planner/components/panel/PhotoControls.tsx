@@ -3,6 +3,7 @@ import { flushSync } from "react-dom";
 import { sliderToWidth, widthToSlider, zoomAround, SCALE_T_MAX, SCALE_T_MIN } from "../../lib/photoTransform";
 import { removePhoto, uploadPhoto } from "../../state/photoCommands";
 import { usePlannerStore } from "../../state/store";
+import { showToast } from "../../state/toasts";
 import { DANGER_ICON_BUTTON, ICON_BUTTON, PRIMARY_BUTTON, QUIET_DANGER_BUTTON, SECONDARY_BUTTON } from "../ui/buttons";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { cx } from "../ui/cx";
@@ -16,6 +17,7 @@ import { Toggle } from "../ui/Toggle";
  */
 
 export const NO_PHOTO_COPY = "Add a photo of your wall to line frames up with it.";
+export const UNREADABLE_PHOTO_COPY = "That file couldn't be opened as an image.";
 
 const setBackground: ReturnType<typeof usePlannerStore.getState>["setBackground"] = (patch) =>
   usePlannerStore.getState().setBackground(patch);
@@ -23,7 +25,8 @@ const setBackground: ReturnType<typeof usePlannerStore.getState>["setBackground"
 /**
  * Upload photo (primary, no photo yet) or Replace photo (secondary, `upload` icon): a button in
  * front of a hidden file input. Busy (`aria-busy`, ignores presses) while the photo is processed;
- * `onUploaded` runs once it is on the wall and Photo mode is on.
+ * `onUploaded` runs once it is on the wall and Photo mode is on. A file that can't be opened shows
+ * an error toast.
  */
 export function UploadPhotoButton({ iconOnly, onUploaded, className }: { iconOnly?: boolean; onUploaded?: () => void; className?: string }) {
   const hasImage = usePlannerStore((s) => s.background.hasImage);
@@ -40,6 +43,7 @@ export function UploadPhotoButton({ iconOnly, onUploaded, className }: { iconOnl
     } catch (error) {
       // Not a decodable image; the wall is unchanged.
       console.error("Photo upload failed", error);
+      showToast({ key: "photo-unreadable", tone: "error", message: UNREADABLE_PHOTO_COPY });
     } finally {
       setBusy(false);
     }

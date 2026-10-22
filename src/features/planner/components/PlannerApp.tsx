@@ -7,7 +7,9 @@ import { usePlannerStore } from "../state/store";
 import { DesktopShell } from "./shell/DesktopShell";
 import { LandscapeShell } from "./shell/LandscapeShell";
 import { StackedShell } from "./shell/StackedShell";
+import { Announcer } from "./ui/Announcer";
 import { RotateHint } from "./ui/RotateHint";
+import { ToastRegion } from "./ui/ToastRegion";
 import { WallContext } from "./wall/WallContext";
 import { WallStage } from "./wall/WallStage";
 
@@ -24,8 +26,7 @@ export function PlannerApp() {
 
   const stage = (
     <WallStage stageRef={stageRef} shell={shell}>
-      {shell === "stacked" && <RotateHint />}
-      {/* T10: toast region, bottom-center of the stage */}
+      <ToastRegion shell={shell}>{shell === "stacked" && <RotateHint />}</ToastRegion>
     </WallStage>
   );
 
@@ -38,6 +39,7 @@ export function PlannerApp() {
       ) : (
         <StackedShell stage={stage} />
       )}
+      <Announcer />
     </WallContext>
   );
 }

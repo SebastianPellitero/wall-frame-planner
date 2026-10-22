@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bracketArmPx, frameLabel, frameName, labelTier, matPx, mouldingPx, previewCaption, previewName } from "./frameLook";
+import { bracketArmPx, frameLabel, frameName, labelTier, matPx, mouldingPx, previewCaption, previewName, readyAnnouncement } from "./frameLook";
 
 describe("mouldingPx", () => {
   it("is 6% of the short side, clamped to 2..10 px", () => {
@@ -85,5 +85,13 @@ describe("previewName and previewCaption (§5.1, §8)", () => {
   it("caption the preview with the size and unit", () => {
     expect(previewCaption("rect", 40, 50)).toBe("40 × 50 cm");
     expect(previewCaption("circle", 30.5, 30.5)).toBe("Ø 30.5 cm");
+  });
+});
+
+describe("readyAnnouncement (§5.1, §8)", () => {
+  it("says what Generate made ready", () => {
+    expect(readyAnnouncement("rect", 40, 50)).toBe("Ready: rectangle, 40 × 50 cm");
+    expect(readyAnnouncement("square", 35, 35)).toBe("Ready: square, 35 × 35 cm");
+    expect(readyAnnouncement("circle", 30, 30)).toBe("Ready: circle, Ø 30 cm");
   });
 });

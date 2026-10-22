@@ -154,3 +154,19 @@ export const EyeOffIcon = (p: IconProps) => (
     <path d="M3.5 3.5l17 17" />
   </Icon>
 );
+
+/** A warning triangle: error toasts. */
+export const AlertIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M10.3 4.2 2.8 17.5A2 2 0 0 0 4.5 20.5h15a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0Z" />
+    <path d="M12 9.5v4.5M12 17.2v.1" />
+  </Icon>
+);
+
+/** An i in a circle: info toasts. */
+export const InfoIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v5.5M12 7.8v.1" />
+  </Icon>
+);

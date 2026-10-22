@@ -1,7 +1,9 @@
 import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { addFromPalette, usePaletteDrag } from "../../hooks/usePaletteDrag";
 import type { Shell } from "../../hooks/useShell";
+import { readyAnnouncement } from "../../lib/frameLook";
 import { sizeLimits } from "../../lib/paletteMath";
+import { announce } from "../../state/announcer";
 import { usePlannerStore } from "../../state/store";
 import type { ShapeKind } from "../../types";
 import { PanelSection } from "../panel/PanelSection";
@@ -96,6 +98,9 @@ export function FrameCreator({ shell }: { shell: Shell }) {
     }
     const { w, h } = draftRef.current;
     usePlannerStore.getState().generate(kind, single ? { w, h: w } : { w, h });
+    // The store clamps to the wall, so announce what it kept.
+    const ready = usePlannerStore.getState().paletteSizes[kind];
+    announce(readyAnnouncement(kind, ready.w, ready.h));
     setGeneration((g) => g + 1);
   };
 

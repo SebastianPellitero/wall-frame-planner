@@ -103,6 +103,11 @@ describe("SettingsSections", () => {
     expect(screen.getByRole("region", { name: "Photo settings" })).toBeInTheDocument();
   });
 
+  it("ends with Reset wall, the last button in the content", () => {
+    render(<SettingsSections shell="desktop" />);
+    expect(screen.getAllByRole("button").at(-1)).toHaveAccessibleName("Reset wall");
+  });
+
   it.each(["stacked", "landscape", "desktop"] as const)("names every control once (%s)", (shell) => {
     render(<SettingsSections shell={shell} />);
     for (const name of ["Wall width (cm)", "Wall height (cm)", "Push gap (cm)"]) {
