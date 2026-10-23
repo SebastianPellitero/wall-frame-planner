@@ -4,15 +4,15 @@ import { adjustPhotoStep } from "../../state/frameCommands";
 import type { FramePhoto } from "../../types";
 
 const ARROWS: Record<string, [number, number]> = {
-  ArrowRight: [1, 0],
-  ArrowLeft: [-1, 0],
-  ArrowUp: [0, -1],
-  ArrowDown: [0, 1],
+  ArrowRight: [-1, 0],
+  ArrowLeft: [1, 0],
+  ArrowUp: [0, 1],
+  ArrowDown: [0, -1],
 };
 
 /**
- * Adjust mode's keys on the focused frame (design-system.md §5.17): an arrow pans the focus by
- * 0.02 of the image (Shift: 0.1) in that direction, `+` / `=` and `-` zoom by 0.1 about the
+ * Adjust mode's keys on the focused frame (design-system.md §5.17): an arrow moves the photo by
+ * 0.02 of the image (Shift: 0.1) in that direction (the focus moves the opposite way), `+` / `=` and `-` zoom by 0.1 about the
  * opening's center, each clamped and one undo step per press. Returns whether the key was used.
  */
 export function adjustKey(e: KeyboardEvent, id: string, photo: FramePhoto, opening: Opening): boolean {

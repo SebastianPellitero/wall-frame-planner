@@ -9,7 +9,7 @@ import { showToast } from "../../state/toasts";
 import type { Shape } from "../../types";
 import { DANGER_ICON_BUTTON, ICON_BUTTON, QUIET_DANGER_BUTTON, SECONDARY_BUTTON, SECONDARY_DANGER_BUTTON } from "../ui/buttons";
 import { cx } from "../ui/cx";
-import { CropIcon, ImageAddIcon, MatIcon, MatOffIcon, TrashIcon, UploadIcon } from "../ui/icons";
+import { CropIcon, ImageAddIcon, ImageRemoveIcon, MatIcon, MatOffIcon, UploadIcon } from "../ui/icons";
 import { Toggle } from "../ui/Toggle";
 import { UNREADABLE_PHOTO_COPY } from "./PhotoControls";
 
@@ -138,7 +138,7 @@ export function RemoveFramePhotoButton({ shape, look, className }: { shape: Shap
       onClick={onClick}
       className={cx(style, className)}
     >
-      <TrashIcon size={look === "icon" ? 20 : 18} />
+      <ImageRemoveIcon size={look === "icon" ? 20 : 18} />
       {dockText(look, "Remove")}
     </button>
   );

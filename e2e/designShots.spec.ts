@@ -80,7 +80,7 @@ test.describe("design shots", { tag: "@shots" }, () => {
         await expect(wall(page)).toBeVisible();
         const settings = await openSettings(page, testInfo);
         const group = settings.getByRole("radiogroup", { name: "Wall color" });
-        await group.scrollIntoViewIfNeeded();
+        await group.evaluate((el) => el.scrollIntoView({ block: "center" }));
         await group.getByRole("radio", { name: "Pale sage" }).click();
         await expect(group.getByRole("radio", { name: "Pale sage" })).toHaveAttribute("aria-checked", "true");
         await expect.poll(() => paint(page)).toBe("rgb(211, 219, 203)");

@@ -64,7 +64,7 @@ export function FrameVisual({ kind, wCm, hCm, wPx, hPx, selected, hoverable, sho
         text={frameLabel(kind, wCm, hCm, tier)}
         tierClass={LABEL_CLASS[tier]}
         placement={platePlacement(kind, openingBox(wPx, hPx, mat).h)}
-        offset={t + m}
+        offset={circle ? t + m : m}
         shown={photo.plate === "shown"}
         hoverable={hoverable}
       />

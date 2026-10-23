@@ -1,5 +1,6 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { matPx, mouldingPx } from "../../lib/frameLook";
 import { initialProject, initialUi } from "../../state/actions";
 import { useDragUi } from "../../state/dragUi";
 import { framePhotoUrls } from "../../state/framePhotoUrls";
@@ -88,6 +89,19 @@ describe("FrameNode with a photo (§3.8)", () => {
     renderFrame();
     expect(screen.getByTestId("label-plate")).toHaveClass("opacity-0", "bg-label-plate", "text-on-inverse", "bottom-1");
     expect(screen.getAllByText("40 × 50")).toHaveLength(1);
+  });
+
+  it("insets the plate by the mat inside the moulding box, and by moulding + mat on a circle", () => {
+    const inset = () => screen.getByTestId("label-plate").parentElement!.style.inset;
+    renderFrame();
+    expect(inset()).toBe("8px");
+    cleanup();
+    renderFrame({ ...RECT, mat: false });
+    expect(inset()).toBe("0px");
+    cleanup();
+    // 100 × 100 px circle: moulding + mat.
+    renderFrame({ ...RECT, kind: "circle", w: 50, h: 50 });
+    expect(inset()).toBe(`${mouldingPx(100) + matPx(100)}px`);
   });
 
   it("shows the plate when selected", () => {
@@ -196,12 +210,12 @@ describe("FrameNode in adjust mode (§5.17)", () => {
     expect(useSelectionUi.getState().adjustingId).toBe("r1");
   });
 
-  it("arrow keys pan the focus by 0.02 (Shift 0.1) and +/- zoom by 0.1, one step each", () => {
+  it("arrow keys move the photo by 0.02 (Shift 0.1), the focus the other way, and +/- zoom by 0.1, one step each", () => {
     const { frame, rerender } = adjust();
-    fireEvent.keyDown(frame, { key: "ArrowLeft" });
+    fireEvent.keyDown(frame, { key: "ArrowRight" });
     expect(photo().focusX).toBeCloseTo(0.48, 5);
     rerender();
-    fireEvent.keyDown(frame, { key: "ArrowLeft", shiftKey: true });
+    fireEvent.keyDown(frame, { key: "ArrowRight", shiftKey: true });
     expect(photo().focusX).toBeCloseTo(0.38, 5);
     rerender();
     fireEvent.keyDown(frame, { key: "+" });

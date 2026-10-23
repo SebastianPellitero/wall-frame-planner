@@ -505,7 +505,7 @@ Everything here belongs to the **selected frame** and lives inside the existing 
 | Add photo | Secondary button, `image-add` icon; hidden `<input type="file" accept="image/*">` | "Add photo" | **"Add photo to frame"** | Frame has no photo |
 | Replace | Secondary button, `upload` icon; same hidden input | "Replace" (icon-only where noted) | **"Replace frame photo"** | Frame has a photo |
 | Adjust | Secondary button, `crop` icon | "Adjust" (icon-only in the landscape rail) | **"Adjust frame photo"** | Frame has a photo |
-| Remove | Secondary danger (stacked), danger icon (landscape) or quiet danger (desktop), `trash` icon | "Remove" (icon-only where noted) | **"Remove frame photo"** | Frame has a photo |
+| Remove | Secondary danger (stacked), danger icon (landscape) or quiet danger (desktop), `image-remove` icon (the `image-add` glyph with a minus badge instead of the plus; never `trash`, which means Delete frame one row above) | "Remove" (icon-only where noted) | **"Remove frame photo"** | Frame has a photo |
 | Mat | `role="switch"` with `aria-checked`: a Toggle row (§5.8), or an icon switch in the landscape rail (`mat` / `mat-off`, the icon is the non-color cue, like Show photo) | "Mat" | **"Mat"** | Always, photo or not |
 | Size / Photo tabs | `role="tablist"` / `role="tab"` (stacked only) | "Size", "Photo" | tablist **"Frame details"**, tabs **"Size"**, **"Photo"** | Stacked selection |
 
@@ -544,7 +544,7 @@ Everything here belongs to the **selected frame** and lives inside the existing 
  │ [⊞   Add photo     ]  │ │ [⇪]   [⌗]   [🗑]      │   │ [         Done        ]  │ ◄ pinned, primary
 ```
 - **Action row:** `grid grid-cols-3`, no gap, three borderless 44px icon buttons (`ICON_BUTTON`): Duplicate, Delete (`DANGER_ICON_BUTTON`), Mat (icon switch, `mat` when on, `mat-off` plus `text-ink-muted` when off). This replaces v1's two bordered 62px buttons, matching the Photo tools icon row.
-- **Photo row:** no photo: [Add photo] `SECONDARY_BUTTON w-full` with icon and label (114px). With photo: `grid grid-cols-3` icon buttons Replace (`upload`), Adjust (`crop`), Remove (`DANGER_ICON_BUTTON`, `trash`), each `aria-label` plus `title`.
+- **Photo row:** no photo: [Add photo] `SECONDARY_BUTTON w-full` with icon and label (114px). With photo: `grid grid-cols-3` icon buttons Replace (`upload`), Adjust (`crop`), Remove (`DANGER_ICON_BUTTON`, `image-remove`), each `aria-label` plus `title`.
 - **Adjust tools:** the rail body becomes hint (≤ 3 lines, 48px) + 8 + Zoom label row (20) + slider (44), and Done is pinned at the bottom (`w-full`, primary) exactly like Photo tools. ≈ 172px.
 
 **Desktop: right panel, and the narrow-desktop sidebar (content 288 / 248px):**
@@ -782,7 +782,7 @@ A sub-state of Arrange for the selected frame, held as UI state `adjustingId` (n
 | Tap (no drag) on the veil | Exits adjust mode (does **not** deselect) | — |
 | Pinch (two touches anywhere on the stage) | Zooms about the pinch midpoint: the image point under the midpoint stays put, so focus shifts with it. Hard clamp to zoom 1–4, no rubber band | One step on release |
 | Zoom slider | Zooms about the opening's center (focus unchanged, then re-clamped). 100–400%, step 1% (`zoom` 1–4, step 0.01), readout `round(zoom × 100)%` | One step on release (`pointerup` / `change`; keyboard: each key) |
-| Arrow keys (focus on the frame) | Pan focus by 0.02 (Shift: 0.1) of the image in that direction, clamped | One step per key press, like the v1 nudge |
+| Arrow keys (focus on the frame) | Move the **photo** by 0.02 (Shift: 0.1) of the image in the arrow's direction, like a drag and like the v1 nudge moves the frame: ArrowRight slides the picture right, so more of its **left** side shows (`focusX` decreases; ArrowDown: `focusY` decreases). Clamped | One step per key press, like the v1 nudge |
 | `+` / `=` and `-` (focus on the frame) | Zoom by ±0.1, clamped 1–4 | One step per key press |
 | Esc, or Done | Exits adjust mode | — |
 
@@ -903,7 +903,7 @@ All springs use motion's `{ type: "spring", stiffness, damping, mass }`; during 
 | `guideFadeInMs` / `guideFadeOutMs` / `photoModeFrameOpacity` / `toastMs` | 60 / 120 / 0.35 / 5000 | |
 | `adjustOverflowOpacity` | 0.45 | Overflow image in adjust mode (§5.17) |
 | `photoZoomMin` / `photoZoomMax` / `photoZoomStep` | 1 / 4 / 0.01 | Zoom slider; keyboard `+`/`-` use 0.1 |
-| `photoPanKeyStep` / `photoPanKeyStepLarge` | 0.02 / 0.1 | Focus change per arrow key / with Shift |
+| `photoPanKeyStep` / `photoPanKeyStepLarge` | 0.02 / 0.1 | Photo move per arrow key / with Shift (focus changes the opposite way, §5.17) |
 
 ### 6.3 Choreography
 

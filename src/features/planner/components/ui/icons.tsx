@@ -190,6 +190,16 @@ export const ImageAddIcon = (p: IconProps) => (
   </Icon>
 );
 
+/** The picture with a minus at its lower right: Remove frame photo (never `trash`, which is Delete frame). */
+export const ImageRemoveIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M14 18.5H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5h14A1.5 1.5 0 0 1 20.5 7v6" />
+    <path d="M3.5 16 9 10.5l4 4" />
+    <circle cx="15.5" cy="9.5" r="1.5" />
+    <path d="M16 18.5h6" />
+  </Icon>
+);
+
 /** Two interlocking L-brackets, square ends: Adjust frame photo. */
 export const CropIcon = (p: IconProps) => (
   <Icon {...p} square>
