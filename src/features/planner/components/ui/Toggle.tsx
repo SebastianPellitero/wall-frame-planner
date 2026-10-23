@@ -7,6 +7,8 @@ interface ToggleProps {
   onChange(checked: boolean): void;
   /** Greyed out and inert, e.g. Snap to grid while the grid is off (§5.16). */
   disabled?: boolean;
+  /** Hugs its content (label, 8px, switch) instead of filling the row: the stacked dock's Mat (§4.7). */
+  compact?: boolean;
   className?: string;
 }
 
@@ -14,7 +16,7 @@ interface ToggleProps {
  * A switch row (design-system.md §5.8): label left, 44×26 track right, and the whole `h-touch`
  * row is the button. The knob's position is the non-color cue; the accent fill reinforces it.
  */
-export function Toggle({ label, checked, onChange, disabled, className }: ToggleProps) {
+export function Toggle({ label, checked, onChange, disabled, compact, className }: ToggleProps) {
   return (
     <button
       type="button"
@@ -22,7 +24,7 @@ export function Toggle({ label, checked, onChange, disabled, className }: Toggle
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={cx("flex h-touch w-full items-center justify-between gap-3 rounded-control text-left text-ui font-medium", disabled ? "text-ink-disabled" : "text-ink", className)}
+      className={cx("flex h-touch items-center rounded-control text-left text-ui font-medium", compact ? "w-auto shrink-0 gap-2" : "w-full justify-between gap-3", disabled ? "text-ink-disabled" : "text-ink", className)}
     >
       <span className="min-w-0">{label}</span>
       <span

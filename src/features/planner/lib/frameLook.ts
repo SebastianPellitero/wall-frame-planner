@@ -32,9 +32,25 @@ export function frameLabel(kind: ShapeKind, wCm: number, hCm: number, tier: Excl
 
 export const KIND_NAME: Record<ShapeKind, string> = { rect: "Rectangle", square: "Square", circle: "Circle" };
 
-/** Accessible name (§7), e.g. "Rectangle 40 × 50 cm". */
-export function frameName(kind: ShapeKind, wCm: number, hCm: number): string {
-  return `${KIND_NAME[kind]} ${frameLabel(kind, wCm, hCm, "full")} cm`;
+/** Accessible name (§7, §8), e.g. "Rectangle 40 × 50 cm", or "… cm with photo" for a frame holding one. */
+export function frameName(kind: ShapeKind, wCm: number, hCm: number, withPhoto = false): string {
+  return `${KIND_NAME[kind]} ${frameLabel(kind, wCm, hCm, "full")} cm${withPhoto ? " with photo" : ""}`;
+}
+
+/**
+ * The picture opening (§3.8): its inset from the frame's outer edge and its size, in px. Mat on:
+ * inside the moulding and the mat (`t + m`); mat off: everything inside the moulding (`t`).
+ * Circles use the same box (the mat sits at `inset: t` with padding `m`).
+ */
+export function openingBox(wPx: number, hPx: number, mat: boolean): { offset: number; w: number; h: number } {
+  const s = Math.min(wPx, hPx);
+  const offset = mouldingPx(s) + (mat ? matPx(s) : 0);
+  return { offset, w: Math.max(0, wPx - 2 * offset), h: Math.max(0, hPx - 2 * offset) };
+}
+
+/** Where the size plate sits on a photo (§3.8): 4px above the opening's bottom, or centered on short openings and circles. */
+export function platePlacement(kind: ShapeKind, openingHPx: number): "bottom" | "center" {
+  return kind === "circle" || openingHPx < 40 ? "center" : "bottom";
 }
 
 /** The Frame creator preview's caption (§5.1), e.g. "40 × 50 cm" or "Ø 40 cm". */

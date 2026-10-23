@@ -78,3 +78,27 @@ describe("Slider, cells layout", () => {
     expect(screen.getByText("60%")).toHaveClass("w-[5ch]", "text-right", "tabular-nums");
   });
 });
+
+describe("Slider onCommit", () => {
+  it("commits on the native change event (release or a key press), after the live onChange", async () => {
+    const calls: string[] = [];
+    render(
+      <Slider
+        label="Zoom"
+        value={100}
+        min={100}
+        max={400}
+        step={1}
+        readout="100%"
+        onChange={(v) => calls.push(`change ${v}`)}
+        onCommit={(v) => calls.push(`commit ${v}`)}
+      />,
+    );
+    const slider = screen.getByRole("slider", { name: "Zoom" });
+    fireEvent.input(slider, { target: { value: "150" } });
+    expect(calls).toEqual(["change 150"]);
+    fireEvent.change(slider, { target: { value: "160" } });
+    await Promise.resolve();
+    expect(calls.slice(1)).toEqual(["change 160", "commit 160"]);
+  });
+});

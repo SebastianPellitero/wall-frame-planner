@@ -21,7 +21,9 @@ export type ShortcutAction =
   | { type: "undo" }
   | { type: "redo" }
   | { type: "nudge"; dx: number; dy: number }
-  | { type: "deselect" };
+  | { type: "deselect" }
+  /** `+` / `=` and `-`: zoom the photo; acted on in adjust mode only (§5.17). */
+  | { type: "zoom"; dir: 1 | -1 };
 
 /** Arrow-key nudge in cm, and with Shift. */
 export const NUDGE_CM = 1;
@@ -65,6 +67,9 @@ export function resolveShortcut(e: KeyLike, { mac }: { mac: boolean }): Shortcut
     const step = e.shiftKey ? NUDGE_SHIFT_CM : NUDGE_CM;
     return { type: "nudge", dx: arrow.dx * step, dy: arrow.dy * step };
   }
+  // Before the Shift check: "+" needs Shift on many layouts.
+  if (e.key === "+" || e.key === "=") return { type: "zoom", dir: 1 };
+  if (e.key === "-") return { type: "zoom", dir: -1 };
   if (e.shiftKey || e.repeat) return null;
   if (e.key === "Delete" || e.key === "Backspace") return { type: "delete" };
   if (e.key === "Escape") return { type: "deselect" };

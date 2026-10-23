@@ -1,5 +1,6 @@
 import { announce } from "./announcer";
 import { useDragUi } from "./dragUi";
+import type { FramePhoto } from "../types";
 import { usePlannerStore } from "./store";
 
 /**
@@ -40,7 +41,11 @@ export function nudgeFrame(id: string, dx: number, dy: number, { repeat = false 
   if (dragLive()) return;
   const shape = usePlannerStore.getState().shapes.find((s) => s.id === id);
   if (!shape) return;
-  const commit = () => usePlannerStore.getState().commitShape(id, { x: shape.x + dx, y: shape.y + dy });
+  stepOrRepeat(() => usePlannerStore.getState().commitShape(id, { x: shape.x + dx, y: shape.y + dy }), repeat);
+}
+
+/** A key press is one history step; its auto-repeats change and save without adding steps. */
+function stepOrRepeat(commit: () => void, repeat: boolean): void {
   if (!repeat) return commit();
   const temporal = usePlannerStore.temporal.getState();
   temporal.pause();
@@ -49,6 +54,19 @@ export function nudgeFrame(id: string, dx: number, dy: number, { repeat = false 
   } finally {
     temporal.resume();
   }
+}
+
+/** Adjust mode's arrow and +/- keys (§5.17): one step per press, a hold is one step, as with the nudge. */
+export function adjustPhotoStep(id: string, patch: Partial<Pick<FramePhoto, "zoom" | "focusX" | "focusY">>, { repeat = false }: { repeat?: boolean } = {}): void {
+  if (dragLive()) return;
+  stepOrRepeat(() => usePlannerStore.getState().adjustFramePhoto(id, patch), repeat);
+}
+
+/** Remove frame photo (§4.7): no confirm, one undo step; the image stays stored for undo. */
+export function removeFramePhoto(id: string): void {
+  if (dragLive() || !usePlannerStore.getState().shapes.find((s) => s.id === id)?.photo) return;
+  usePlannerStore.getState().clearFramePhoto(id);
+  announce("Photo removed");
 }
 
 /**

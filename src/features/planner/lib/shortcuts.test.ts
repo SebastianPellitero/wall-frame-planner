@@ -89,3 +89,17 @@ describe("resolveShortcut", () => {
     expect(win(key("x", { ctrlKey: true }))).toBeNull();
   });
 });
+
+describe("resolveShortcut: adjust-mode zoom keys", () => {
+  it("maps + and = to zoom in and - to zoom out, Shift included (+ needs it on many layouts)", () => {
+    expect(win(key("+", { shiftKey: true }))).toEqual({ type: "zoom", dir: 1 });
+    expect(win(key("="))).toEqual({ type: "zoom", dir: 1 });
+    expect(win(key("-"))).toEqual({ type: "zoom", dir: -1 });
+    expect(mac(key("-"))).toEqual({ type: "zoom", dir: -1 });
+  });
+
+  it("leaves Ctrl/Cmd + and - to the browser (page zoom)", () => {
+    expect(win(key("+", { ctrlKey: true }))).toBeNull();
+    expect(mac(key("-", { metaKey: true }))).toBeNull();
+  });
+});

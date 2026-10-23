@@ -170,3 +170,54 @@ export const InfoIcon = (p: IconProps) => (
     <path d="M12 11v5.5M12 7.8v.1" />
   </Icon>
 );
+
+/** A landscape picture: a rectangle with a small peak and a sun. */
+export const ImageIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
+    <path d="M3.5 16.5 9 11l4.5 4.5 2-2 5 5" />
+    <circle cx="15.5" cy="9.5" r="1.5" />
+  </Icon>
+);
+
+/** The picture with a plus at its lower right: Add photo to frame. */
+export const ImageAddIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M14 18.5H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5h14A1.5 1.5 0 0 1 20.5 7v6" />
+    <path d="M3.5 16 9 10.5l4 4" />
+    <circle cx="15.5" cy="9.5" r="1.5" />
+    <path d="M19 15.5v6M16 18.5h6" />
+  </Icon>
+);
+
+/** Two interlocking L-brackets, square ends: Adjust frame photo. */
+export const CropIcon = (p: IconProps) => (
+  <Icon {...p} square>
+    <path d="M7 3v14h14" />
+    <path d="M3 7h14v14" />
+  </Icon>
+);
+
+/** A square outline with a second square inset 4 units: frame plus mat (Mat on). */
+export const MatIcon = (p: IconProps) => (
+  <Icon {...p} square>
+    <rect x="4" y="4" width="16" height="16" />
+    <rect x="8" y="8" width="8" height="8" />
+  </Icon>
+);
+
+/** A square outline with a square inset 1.5 units: the photo to the edge (Mat off). */
+export const MatOffIcon = (p: IconProps) => (
+  <Icon {...p} square>
+    <rect x="4" y="4" width="16" height="16" />
+    <rect x="5.5" y="5.5" width="13" height="13" />
+  </Icon>
+);
+
+/** A horizontal bar with four ticks: the Size tab. */
+export const RulerIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="2.5" y="8" width="19" height="8" rx="1" />
+    <path d="M6.5 8v3M10.5 8v4M14.5 8v3M18.5 8v4" />
+  </Icon>
+);

@@ -3,7 +3,7 @@ import type { Shape } from "../types";
 import { initialProject, initialUi } from "./actions";
 import { useAnnouncer } from "./announcer";
 import { useDragUi } from "./dragUi";
-import { deleteFrame, duplicateFrame, nudgeFrame, redo, undo } from "./frameCommands";
+import { adjustPhotoStep, deleteFrame, duplicateFrame, nudgeFrame, redo, removeFramePhoto, undo } from "./frameCommands";
 import { usePlannerStore } from "./store";
 
 const A: Shape = { id: "a", kind: "rect", x: 20, y: 30, w: 40, h: 50, color: 4, mat: true };
@@ -123,5 +123,46 @@ describe("while a drag is live", () => {
     useDragUi.getState().endDrag();
     redo();
     expect(usePlannerStore.getState().shapes[0].x).toBe(30);
+  });
+});
+
+describe("frame photo commands", () => {
+  const PHOTO = { imageId: "img", aspect: 1, zoom: 1, focusX: 0.5, focusY: 0.5 };
+  beforeEach(() => {
+    usePlannerStore.setState({ shapes: [{ ...A, photo: PHOTO }] });
+    usePlannerStore.temporal.getState().clear();
+  });
+  const photo = () => usePlannerStore.getState().shapes[0].photo;
+  const steps = () => usePlannerStore.temporal.getState().pastStates.length;
+
+  it("removeFramePhoto clears the photo in one undo step and announces 'Photo removed'", () => {
+    removeFramePhoto("a");
+    expect(photo()).toBeUndefined();
+    expect(useAnnouncer.getState().text).toBe("Photo removed");
+    undo();
+    expect(photo()).toEqual(PHOTO);
+  });
+
+  it("removeFramePhoto on a frame without a photo says nothing", () => {
+    removeFramePhoto("a");
+    useAnnouncer.setState({ text: "", id: 0 });
+    removeFramePhoto("a");
+    expect(useAnnouncer.getState().text).toBe("");
+  });
+
+  it("adjustPhotoStep is one step per key press; a held key's repeats add none (like the nudge)", () => {
+    adjustPhotoStep("a", { zoom: 1.1 });
+    for (let i = 0; i < 5; i++) adjustPhotoStep("a", { zoom: 1.2 + i / 10 }, { repeat: true });
+    expect(photo()!.zoom).toBeCloseTo(1.6);
+    expect(steps()).toBe(1);
+    undo();
+    expect(photo()!.zoom).toBe(1);
+  });
+
+  it("does nothing while a drag is live", () => {
+    useDragUi.setState({ draggingId: "a" });
+    adjustPhotoStep("a", { zoom: 2 });
+    removeFramePhoto("a");
+    expect(photo()).toEqual(PHOTO);
   });
 });

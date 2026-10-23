@@ -5,6 +5,7 @@ import {
   focusBounds,
   panFocus,
   photoLayout,
+  rubberPanLayout,
   stepFocus,
   stepZoom,
   zoomPhotoAt,
@@ -115,5 +116,26 @@ describe("keyboard steps (§5.17)", () => {
     expect(stepZoom(1.2, 1)).toBe(1.3);
     expect(stepZoom(3.95, 1)).toBe(4);
     expect(stepZoom(1, -1)).toBe(1);
+  });
+});
+
+describe("rubberPanLayout", () => {
+  it("follows the pointer 1:1 inside the clamp", () => {
+    // 200 × 100 in a 100 × 100 opening: left may run from −100 to 0.
+    expect(rubberPanLayout(wide, 30, 0, square)).toEqual({ width: 200, height: 100, left: -20, top: 0 });
+  });
+
+  it("rubber-bands past the no-empty-band clamp, per axis, short of the max", () => {
+    const l = rubberPanLayout(wide, 80, 40, square);
+    // 30 px past the left clamp (left 0) and 40 px past the top one (top 0).
+    expect(l.left).toBeGreaterThan(0);
+    expect(l.left).toBeLessThan(30 * 0.35);
+    expect(l.top).toBeGreaterThan(0);
+    expect(l.top).toBeLessThan(40 * 0.35);
+    expect(rubberPanLayout(wide, -10_000, 0, square).left).toBeGreaterThan(-100 - 30);
+  });
+
+  it("starts from the visible (clamped) crop", () => {
+    expect(rubberPanLayout({ ...wide, focusX: 0 }, 0, 0, square)).toEqual(photoLayout(100, 100, { ...wide, focusX: 0 }));
   });
 });

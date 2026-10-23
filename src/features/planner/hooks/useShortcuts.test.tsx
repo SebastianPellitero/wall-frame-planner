@@ -3,6 +3,7 @@ import { act } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { initialProject, initialUi } from "../state/actions";
 import { useDragUi } from "../state/dragUi";
+import { enterAdjust, useSelectionUi } from "../state/selectionUi";
 import { usePlannerStore } from "../state/store";
 import type { Shape } from "../types";
 import { useShortcuts } from "./useShortcuts";
@@ -24,6 +25,12 @@ function Harness() {
         </button>
       </div>
       <button type="button">Other</button>
+      <input type="range" aria-label="Zoom" />
+      <div role="tablist" aria-label="Frame details">
+        <button type="button" role="tab" aria-selected="true">
+          Size
+        </button>
+      </div>
       <div role="dialog" aria-modal="true" aria-label="Settings">
         <button type="button">In dialog</button>
       </div>
@@ -45,6 +52,7 @@ beforeEach(() => {
   usePlannerStore.setState({ ...initialProject(), ...initialUi, shapes: [A], selectedId: "a" });
   usePlannerStore.temporal.getState().clear();
   useDragUi.setState({ spawnFrom: null, draggingId: null });
+  useSelectionUi.setState({ adjustingId: null, previewZoom: null });
   render(<Harness />);
 });
 
@@ -166,5 +174,41 @@ describe("useShortcuts", () => {
     input.addEventListener("keydown", (e) => e.preventDefault(), { once: true });
     press("Escape", {}, input);
     expect(usePlannerStore.getState().selectedId).toBe("a");
+  });
+});
+
+describe("useShortcuts in adjust mode (§5.17)", () => {
+  const PHOTO = { imageId: "img", aspect: 1, zoom: 1, focusX: 0.5, focusY: 0.5 };
+  beforeEach(() => {
+    act(() => {
+      usePlannerStore.setState({ shapes: [{ ...A, photo: PHOTO }], selectedId: "a" });
+      enterAdjust("a");
+    });
+  });
+
+  it("never nudges or deletes the frame", () => {
+    press("ArrowRight");
+    press("Delete");
+    press("Backspace");
+    expect(a()).toMatchObject({ x: 20, y: 30 });
+  });
+
+  it("Escape exits adjust mode and keeps the selection, from the Zoom slider too", () => {
+    expect(press("Escape", {}, screen.getByRole("slider", { name: "Zoom" }))).toBe(true);
+    expect(useSelectionUi.getState().adjustingId).toBeNull();
+    expect(usePlannerStore.getState().selectedId).toBe("a");
+  });
+
+  it("still undoes and redoes", () => {
+    act(() => usePlannerStore.getState().adjustFramePhoto("a", { zoom: 2 }));
+    press("z", { ctrlKey: true });
+    expect(a()!.photo!.zoom).toBe(1);
+  });
+});
+
+describe("useShortcuts and the Frame details tabs", () => {
+  it("leaves the arrows to a tablist", () => {
+    press("ArrowRight", {}, screen.getByRole("tab", { name: "Size" }));
+    expect(a()!.x).toBe(20);
   });
 });

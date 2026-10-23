@@ -1,5 +1,50 @@
 import { describe, expect, it } from "vitest";
-import { bracketArmPx, frameLabel, frameName, labelTier, matPx, mouldingPx, previewCaption, previewName, readyAnnouncement } from "./frameLook";
+import {
+  bracketArmPx,
+  frameLabel,
+  frameName,
+  labelTier,
+  matPx,
+  mouldingPx,
+  openingBox,
+  platePlacement,
+  previewCaption,
+  previewName,
+  readyAnnouncement,
+} from "./frameLook";
+
+describe("frameName with a photo", () => {
+  it('adds " with photo" (one space, no comma)', () => {
+    expect(frameName("rect", 40, 50, true)).toBe("Rectangle 40 × 50 cm with photo");
+    expect(frameName("circle", 40, 40, true)).toBe("Circle Ø 40 cm with photo");
+    expect(frameName("square", 40, 40, false)).toBe("Square 40 × 40 cm");
+  });
+});
+
+describe("openingBox", () => {
+  it("mat on: inside the moulding and the mat (§3.8)", () => {
+    // s = 100: t = 6, m = 10.
+    expect(openingBox(100, 150, true)).toEqual({ offset: 16, w: 68, h: 118 });
+  });
+
+  it("mat off: everything inside the moulding", () => {
+    expect(openingBox(100, 150, false)).toEqual({ offset: 6, w: 88, h: 138 });
+  });
+
+  it("small frames have no mat either way, and never a negative opening", () => {
+    // s = 40: t = 2, m = 0.
+    expect(openingBox(40, 40, true)).toEqual({ offset: 2, w: 36, h: 36 });
+    expect(openingBox(2, 2, true)).toEqual({ offset: 2, w: 0, h: 0 });
+  });
+});
+
+describe("platePlacement", () => {
+  it("sits at the bottom of the opening, or centered on short openings and circles", () => {
+    expect(platePlacement("rect", 40)).toBe("bottom");
+    expect(platePlacement("square", 39.9)).toBe("center");
+    expect(platePlacement("circle", 200)).toBe("center");
+  });
+});
 
 describe("mouldingPx", () => {
   it("is 6% of the short side, clamped to 2..10 px", () => {

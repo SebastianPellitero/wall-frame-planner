@@ -4,7 +4,8 @@
  * at any wall scale.
  */
 import type { FramePhoto, Point } from "../types";
-import { clamp } from "./geometry";
+import { clamp, rubberBandPosition } from "./geometry";
+import { rubberBandFactor, rubberBandMaxPx } from "./physics";
 
 export type PhotoCrop = Pick<FramePhoto, "aspect" | "zoom" | "focusX" | "focusY">;
 export type Focus = Pick<FramePhoto, "focusX" | "focusY">;
@@ -72,6 +73,18 @@ export function panFocus(photo: PhotoCrop, dxPx: number, dyPx: number, opening: 
     },
     opening,
   );
+}
+
+/**
+ * The live layout while dragging by (dx, dy) px (§5.17, §6.3): the image follows the pointer 1:1
+ * from the visible crop, and past the no-empty-band clamp it rubber-bands per axis (§6.2 curve,
+ * in image px). The commit is `panFocus`, which clamps; the band springs back on release.
+ */
+export function rubberPanLayout(photo: PhotoCrop, dxPx: number, dyPx: number, opening: Opening): ReturnType<typeof photoLayout> {
+  const base = photoLayout(opening.w, opening.h, photo);
+  const band = (pos: number, size: number, room: number) =>
+    rubberBandPosition(pos, Math.min(0, room - size), 0, rubberBandFactor, rubberBandMaxPx);
+  return { ...base, left: band(base.left + dxPx, base.width, opening.w), top: band(base.top + dyPx, base.height, opening.h) };
 }
 
 /** Tap to center (WCAG 2.5.7): the image point under `point` (px from the opening's top-left) moves to the center, clamped. */

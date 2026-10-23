@@ -75,6 +75,13 @@ export const toastEnterY = 12;
 /** A toast exits with a fade over `duration-quick` (§5.9). */
 export const toastExitMs = 140;
 
+/** Adjust mode (§5.17): the overflow image's opacity, and the veil and overflow fades (`duration-base` in, `duration-quick` out). */
+export const adjustOverflowOpacity = 0.45;
+export const adjustEnterMs = 220;
+export const adjustExitMs = 140;
+/** The `ease-in-soft` token, for exits. */
+export const easeInSoft: [number, number, number, number] = [0.4, 0, 1, 1];
+
 /** Tween values that replace the springs under reduced motion. `ease` is a cubic-bezier. */
 export const reducedMotion: {
   tweenShortMs: number;
