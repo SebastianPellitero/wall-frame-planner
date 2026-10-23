@@ -13,6 +13,8 @@ const selection = (page: Page) => page.getByRole("region", { name: "Selected fra
 const preview = (page: Page) => page.getByRole("button", { name: /^Add (rectangle|square|circle), / });
 const photoTools = (page: Page) => page.getByRole("region", { name: "Photo tools" });
 const photo = (page: Page) => page.getByTestId("background-photo");
+const framePhoto = (l: Locator) => l.getByTestId("frame-photo");
+const paint = (page: Page) => page.getByTestId("wall").evaluate((el) => getComputedStyle(el).backgroundColor);
 const mode = (page: Page, name: string) => page.getByRole("radiogroup", { name: "Mode" }).getByRole("radio", { name, exact: true });
 
 type Grid = { enabled: boolean; snap: boolean; spacingX: number; spacingY: number; originX: number; originY: number };
@@ -75,7 +77,23 @@ const onLine = (v: number, origin: number) => {
   return Math.min(r, 10 - r) < 0.06;
 };
 
-test("journey: photo, grid, frames, snap, push, history, reload", async ({ page }, testInfo) => {
+/** Whether the frame's photo has decoded (a broken blob URL would leave it at 0 × 0). */
+const photoLoaded = (l: Locator) => framePhoto(l).evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0);
+
+/** Picks a wall swatch: in the right panel on desktop, in the Settings sheet (opened, then closed) on the phone. */
+async function pickWallColor(page: Page, testInfo: TestInfo, name: string) {
+  const desktop = testInfo.project.name === "desktop";
+  if (!desktop) await page.getByRole("button", { name: "Settings" }).click();
+  const sheet = page.getByRole("dialog", { name: "Settings" });
+  const swatch = (desktop ? page : sheet).getByRole("radiogroup", { name: "Wall color" }).getByRole("radio", { name });
+  await swatch.click();
+  await expect(swatch).toHaveAttribute("aria-checked", "true");
+  if (desktop) return;
+  await sheet.getByRole("button", { name: "Close settings" }).click();
+  await expect(sheet).toHaveCount(0);
+}
+
+test("journey: photo, grid, frames, snap, push, history, frame photo, wall color, reload", async ({ page }, testInfo) => {
   const problems: string[] = [];
   page.on("console", (m) => {
     if (m.type() === "error") problems.push(`console: ${m.text()}`);
@@ -210,7 +228,20 @@ test("journey: photo, grid, frames, snap, push, history, reload", async ({ page 
   await expect(frames(page)).toHaveCount(3);
   await expect(page.locator(`[data-shape-id="${copyId}"]`)).toHaveCount(0);
 
-  // 8. Reload: frames, grid, origin and photo all come back.
+  // 8. A photo in the rectangle, then a Stone wall (light: the wall photo is shown, and Stone is light anyway).
+  await tap(pointer, rect);
+  await expect(rect).toHaveAttribute("aria-pressed", "true");
+  const frameChooser = page.waitForEvent("filechooser");
+  await selection(page).getByRole("button", { name: "Add photo to frame", exact: true }).click();
+  await (await frameChooser).setFiles({ name: "frame.jpg", mimeType: "image/jpeg", buffer: await makeJpeg(page) });
+  await expect(rect).toHaveAttribute("data-has-photo", "true");
+  await expect.poll(() => photoLoaded(rect)).toBe(true);
+  await deselect(page, testInfo);
+  await pickWallColor(page, testInfo, "Stone");
+  await expect.poll(() => paint(page)).toBe("rgb(169, 167, 159)");
+  await expect(page.getByTestId("wall")).toHaveAttribute("data-wall-tone", "light");
+
+  // 9. Reload: frames, grid, origin, photo, frame photo and wall color all come back.
   await expect(async () => {
     const ids = (await stored(page)).shapes.map((s) => s.id).sort();
     expect(ids).toEqual((await snapshot(page)).map((f) => f.id));
@@ -230,6 +261,12 @@ test("journey: photo, grid, frames, snap, push, history, reload", async ({ page 
   await expect(page.getByRole("textbox", { name: "Grid width (cm)", exact: true })).toHaveValue("10");
   await expect(page.getByRole("textbox", { name: "Grid height (cm)", exact: true })).toHaveValue("10");
   await expect(page.getByTestId("grid").locator("line[data-line]").first()).toBeAttached();
+  const rectAgain = page.locator(`[data-testid="frame"][data-shape-id="${rectId}"]`);
+  await expect(rectAgain).toHaveAttribute("data-has-photo", "true");
+  await expect(framePhoto(rectAgain)).toHaveAttribute("src", /^blob:/);
+  await expect.poll(() => photoLoaded(rectAgain)).toBe(true);
+  await expect.poll(() => paint(page)).toBe("rgb(169, 167, 159)");
+  await expect(page.getByTestId("wall")).toHaveAttribute("data-wall-tone", "light");
   await expect
     .poll(async () => {
       const b = (await photo(page).boundingBox())!;
