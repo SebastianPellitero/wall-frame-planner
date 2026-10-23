@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { flushSync } from "react-dom";
 import { resolveShortcut } from "../lib/shortcuts";
 import { useDragUi } from "../state/dragUi";
 import { isModalOpen } from "../state/modalUi";
@@ -51,7 +52,9 @@ export function useShortcuts() {
         // the frame itself (FrameNode); Delete waits for Escape, which ends adjust mode (§5.17).
         if (action.type === "deselect") {
           e.preventDefault();
-          exitAdjust();
+          // The tools unmount with the focused control (Zoom, Done): focus stays on the frame (§5.17).
+          flushSync(exitAdjust);
+          document.querySelector<HTMLElement>(`[data-shape-id="${CSS.escape(selectedId)}"]`)?.focus();
         }
         if (action.type !== "duplicate") return;
       }

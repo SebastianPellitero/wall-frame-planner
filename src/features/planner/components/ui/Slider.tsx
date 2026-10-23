@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type CSSProperties } from "react";
+import { useEffect, useId, useRef, type CSSProperties, type KeyboardEventHandler } from "react";
 import { clamp } from "../../lib/geometry";
 import { cx } from "./cx";
 
@@ -18,6 +18,8 @@ interface SliderProps {
    * commit (the adjust-mode Zoom, §5.17).
    */
   onCommit?(value: number): void;
+  /** The range input's keydown, before its value changes (a held key's `repeat`). */
+  onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
   /**
    * "row" (default): label, track, readout in one 44px row. "stacked": label and readout over a
    * full-width track, for the 132px landscape rail. "cells": the three parts become cells of the
@@ -32,7 +34,7 @@ interface SliderProps {
  * globals.css, `.slider`, so keyboard and screen readers get the platform control) and a
  * readout. The 44px row is the hit area; the track fills with the accent up to the thumb.
  */
-export function Slider({ label, value, min, max, step, readout, onChange, onCommit, layout = "row", className }: SliderProps) {
+export function Slider({ label, value, min, max, step, readout, onChange, onCommit, onKeyDown, layout = "row", className }: SliderProps) {
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const commitRef = useRef(onCommit);
@@ -75,6 +77,7 @@ export function Slider({ label, value, min, max, step, readout, onChange, onComm
         value={value}
         aria-valuetext={readout}
         onChange={(e) => onChange(Number(e.target.value))}
+        onKeyDown={onKeyDown}
         style={{ "--slider-pos": String(pos) } as CSSProperties}
         className={cx("slider h-touch min-w-0", stacked ? "col-span-2 row-start-2" : !cells && "flex-1")}
       />

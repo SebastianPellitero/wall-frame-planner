@@ -3,6 +3,7 @@ import { flushSync } from "react-dom";
 import type { Shell } from "../../hooks/useShell";
 import { openingBox } from "../../lib/frameLook";
 import { zoomPhotoAt, ZOOM_MAX, ZOOM_MIN } from "../../lib/framePhoto";
+import { adjustPhotoStep } from "../../state/frameCommands";
 import { exitAdjust, useSelectionUi } from "../../state/selectionUi";
 import { usePlannerStore } from "../../state/store";
 import type { Shape } from "../../types";
@@ -24,19 +25,23 @@ function AdjustHint({ className }: { className?: string }) {
 
 /**
  * Zoom, 100–400% in 1% steps, about the opening's center. While it moves only the frame's
- * preview changes; letting go (or a key press) is the one commit, focus re-clamped.
+ * preview changes; letting go (or a key press) is the one commit, focus re-clamped. A held
+ * key is one history step, as with the frame's own adjust keys.
  */
 function ZoomSlider({ shape, layout }: { shape: Shape; layout: "row" | "stacked" }) {
   const { pxPerCm } = useWallContext();
   const preview = useSelectionUi((s) => s.previewZoom);
   const zoom = preview ?? shape.photo?.zoom ?? ZOOM_MIN;
   const percent = Math.round(zoom * 100);
+  // The last keydown's auto-repeat flag; a pointer release has none, so it is cleared per commit.
+  const repeat = useRef(false);
   const commit = (v: number) => {
     const current = usePlannerStore.getState().shapes.find((s) => s.id === shape.id);
     if (current?.photo) {
       const opening = openingBox(current.w * pxPerCm, current.h * pxPerCm, current.mat);
-      usePlannerStore.getState().adjustFramePhoto(shape.id, zoomPhotoAt(current.photo, v / 100, opening));
+      adjustPhotoStep(shape.id, zoomPhotoAt(current.photo, v / 100, opening), { repeat: repeat.current });
     }
+    repeat.current = false;
     useSelectionUi.getState().setPreviewZoom(null);
   };
   return (
@@ -49,6 +54,7 @@ function ZoomSlider({ shape, layout }: { shape: Shape; layout: "row" | "stacked"
       readout={`${percent}%`}
       onChange={(v) => useSelectionUi.getState().setPreviewZoom(v / 100)}
       onCommit={commit}
+      onKeyDown={(e) => (repeat.current = e.repeat)}
       layout={layout}
       className={layout === "row" ? "w-full" : undefined}
     />

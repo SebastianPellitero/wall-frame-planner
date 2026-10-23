@@ -75,6 +75,18 @@ describe("WallColorRow", () => {
     expect(useWallPaintPreview.getState().color).toBeNull();
   });
 
+  it("drops a Custom preview left by a picker closed without a change, on blur or on a swatch pick", () => {
+    render(<WallColorRow />);
+    fireEvent.input(custom(), { target: { value: "#8a6f5c" } });
+    fireEvent.blur(custom());
+    expect(useWallPaintPreview.getState().color).toBeNull();
+    expect(color()).toBe("#f4f5f1");
+    fireEvent.input(custom(), { target: { value: "#8a6f5c" } });
+    fireEvent.click(radio("Charcoal"));
+    expect(useWallPaintPreview.getState().color).toBeNull();
+    expect(color()).toBe("#34383b");
+  });
+
   it("with a color off the swatches: no radio checked, the first takes Tab, Custom is active", () => {
     usePlannerStore.getState().setWall({ color: "#8A6F5C" });
     render(<WallColorRow />);

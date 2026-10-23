@@ -155,6 +155,23 @@ describe("gcFramePhotos", () => {
     expect(mocked.deleteFramePhotos).toHaveBeenCalledWith(["orphan-1", "orphan-2"]);
   });
 
+  it("keeps a photo whose upload is still saving when GC runs, so the frame gets it after", async () => {
+    mocked.downscaleImage.mockResolvedValue({ blob: small, width: 1600, height: 1200 });
+    let saved!: () => void;
+    mocked.saveFramePhoto.mockReturnValue(new Promise<void>((r) => (saved = r)));
+    const uploading = uploadFramePhoto(id, file);
+    await flush();
+    const imageId = mocked.saveFramePhoto.mock.calls[0][0];
+    mocked.listFramePhotoIds.mockResolvedValue([imageId]);
+
+    await gcFramePhotos();
+    saved();
+    await uploading;
+
+    expect(mocked.deleteFramePhotos).not.toHaveBeenCalled();
+    expect(frame(id)!.photo!.imageId).toBe(imageId);
+  });
+
   it("deletes nothing when every stored image is in use", async () => {
     usePlannerStore.getState().setFramePhoto(id, { imageId: "on-wall", aspect: 1 });
     mocked.listFramePhotoIds.mockResolvedValue(["on-wall"]);

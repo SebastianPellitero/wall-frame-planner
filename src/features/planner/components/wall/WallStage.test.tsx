@@ -1,9 +1,10 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createRef } from "react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Shell } from "../../hooks/useShell";
 import { initialProject, initialUi } from "../../state/actions";
 import { useDragUi } from "../../state/dragUi";
+import { setPhotoBlob } from "../../state/photoImage";
 import { usePlannerStore } from "../../state/store";
 import { useWallPaintPreview } from "../../state/wallPaintUi";
 import { WallContext } from "./WallContext";
@@ -22,9 +23,15 @@ function renderStage({ pxPerCm = 2, shell = "landscape" as Shell } = {}) {
 
 const EMPTY_COPY = /Drag a frame onto the wall, or/;
 
+beforeAll(() => {
+  URL.createObjectURL = vi.fn(() => "blob:photo");
+  URL.revokeObjectURL = vi.fn();
+});
+
 beforeEach(() => {
   usePlannerStore.setState({ ...initialProject(), ...initialUi });
   useWallPaintPreview.setState({ color: null });
+  setPhotoBlob(null);
 });
 
 describe("WallStage", () => {
@@ -102,6 +109,7 @@ describe("WallStage", () => {
 
   it("forces the light tone while a shown wall photo is at least half opaque", () => {
     renderStage();
+    act(() => setPhotoBlob(new Blob(["photo"])));
     const wall = screen.getByTestId("wall");
     const { wall: paint, background } = usePlannerStore.getState();
     const photo = (visible: boolean, opacity: number) => ({ background: { ...background, hasImage: true, visible, opacity } });
@@ -110,6 +118,14 @@ describe("WallStage", () => {
     act(() => usePlannerStore.setState(photo(false, 0.5)));
     expect(wall).toHaveAttribute("data-wall-tone", "dark");
     act(() => usePlannerStore.setState(photo(true, 0.3)));
+    expect(wall).toHaveAttribute("data-wall-tone", "dark");
+  });
+
+  it("keeps the paint's own tone while the wall photo is not drawn (loading or unavailable)", () => {
+    renderStage();
+    const wall = screen.getByTestId("wall");
+    const { wall: paint, background } = usePlannerStore.getState();
+    act(() => usePlannerStore.setState({ wall: { ...paint, color: "#34383b" }, background: { ...background, hasImage: true, visible: true, opacity: 0.6 } }));
     expect(wall).toHaveAttribute("data-wall-tone", "dark");
   });
 

@@ -117,6 +117,20 @@ describe("SelectionBar frame photo controls (§4.7)", () => {
     expect(useAnnouncer.getState().text).toBe("Photo added");
   });
 
+  it.each(SHELLS)("the busy state stays with the frame being uploaded, not the next one selected (%s)", async (shell) => {
+    let finish!: (r: "added") => void;
+    upload.mockReturnValue(new Promise((r) => (finish = r)));
+    renderBar(shell);
+    act(() => usePlannerStore.setState({ shapes: [PLAIN, { ...PLAIN, id: "b", x: 100 }] }));
+    openPhotoTab(shell);
+    const input = button("Add photo to frame").nextElementSibling as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [new File(["x"], "a.jpg", { type: "image/jpeg" })] } });
+    expect(button("Add photo to frame")).toHaveAttribute("aria-busy", "true");
+    act(() => usePlannerStore.getState().select("b"));
+    expect(button("Add photo to frame")).toHaveAttribute("aria-busy", "false");
+    await act(async () => finish("added"));
+  });
+
   it("Replace announces 'Photo replaced'; a frame gone meanwhile says nothing", async () => {
     upload.mockResolvedValueOnce("replaced").mockResolvedValueOnce("frame-gone");
     renderBar("desktop", WITH_PHOTO);
@@ -178,6 +192,21 @@ describe("SelectionBar in adjust mode (§5.17)", () => {
     await waitFor(() => expect(current().photo!.zoom).toBe(1.6));
     expect(useSelectionUi.getState().previewZoom).toBeNull();
     expect(steps()).toBe(1);
+  });
+
+  it("a held arrow key on the Zoom slider is one history step; a later release is its own", async () => {
+    renderBar("desktop", WITH_PHOTO);
+    fireEvent.click(button("Adjust frame photo"));
+    const zoom = bar().getByRole("slider", { name: "Zoom" });
+    for (const [i, repeat] of [false, true, true].entries()) {
+      fireEvent.keyDown(zoom, { key: "ArrowRight", repeat });
+      fireEvent.change(zoom, { target: { value: String(101 + i) } });
+      await waitFor(() => expect(current().photo!.zoom).toBeCloseTo(1.01 + i / 100, 5));
+    }
+    expect(steps()).toBe(1);
+    fireEvent.change(zoom, { target: { value: "150" } });
+    await waitFor(() => expect(current().photo!.zoom).toBe(1.5));
+    expect(steps()).toBe(2);
   });
 
   it("desktop keeps the rest of Selected frame while adjusting; the landscape rail shows only the tools", () => {

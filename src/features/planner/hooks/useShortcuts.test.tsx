@@ -26,6 +26,7 @@ function Harness() {
       </div>
       <button type="button">Other</button>
       <input type="range" aria-label="Zoom" />
+      <div data-shape-id="a" tabIndex={0} data-testid="frame" />
       <div role="tablist" aria-label="Frame details">
         <button type="button" role="tab" aria-selected="true">
           Size
@@ -194,9 +195,13 @@ describe("useShortcuts in adjust mode (§5.17)", () => {
   });
 
   it("Escape exits adjust mode and keeps the selection, from the Zoom slider too", () => {
-    expect(press("Escape", {}, screen.getByRole("slider", { name: "Zoom" }))).toBe(true);
+    const slider = screen.getByRole("slider", { name: "Zoom" });
+    slider.focus();
+    expect(press("Escape", {}, slider)).toBe(true);
     expect(useSelectionUi.getState().adjustingId).toBeNull();
     expect(usePlannerStore.getState().selectedId).toBe("a");
+    // The tools unmount with the focused control: focus goes to the frame, not <body> (§5.17).
+    expect(document.activeElement).toBe(screen.getByTestId("frame"));
   });
 
   it("still undoes and redoes", () => {

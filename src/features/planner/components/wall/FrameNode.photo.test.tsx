@@ -4,7 +4,8 @@ import { matPx, mouldingPx } from "../../lib/frameLook";
 import { initialProject, initialUi } from "../../state/actions";
 import { useDragUi } from "../../state/dragUi";
 import { framePhotoUrls } from "../../state/framePhotoUrls";
-import { enterAdjust, useSelectionUi } from "../../state/selectionUi";
+import { undo } from "../../state/frameCommands";
+import { enterAdjust, exitAdjust, useSelectionUi } from "../../state/selectionUi";
 import { usePlannerStore } from "../../state/store";
 import type { Shape } from "../../types";
 import { FrameNode } from "./FrameNode";
@@ -164,7 +165,8 @@ describe("FrameNode in adjust mode (§5.17)", () => {
     fireEvent.pointerDown(frame, { ...pointer, clientX: 40, clientY: 50 });
     for (let i = 1; i <= 5; i++) windowPointer("pointermove", { clientX: 40 + i * 2, clientY: 50 });
     expect(writes).toBe(0);
-    expect(useDragUi.getState().draggingId).toBeNull();
+    // A live pan counts as a live drag, so history commands wait for the release.
+    expect(useDragUi.getState().draggingId).toBe("r1");
     // Motion values reach the style on the next frame.
     await waitFor(() => expect(parseFloat(screen.getByTestId("frame-photo").style.left)).toBeCloseTo(27 - 98.67 / 2 + 10, 1));
     windowPointer("pointerup", { clientX: 50, clientY: 50 });
@@ -181,6 +183,40 @@ describe("FrameNode in adjust mode (§5.17)", () => {
     windowPointer("pointermove", { clientX: 30, clientY: 50 });
     windowPointer("pointercancel", { clientX: 0, clientY: 0 });
     expect(photo().focusX).toBeCloseTo(0.5 + 10 / 98.67, 3);
+  });
+
+  it("undo during a pan is a no-op, so the release does not overwrite history", () => {
+    const { frame } = adjust();
+    fireEvent.pointerDown(frame, { ...pointer, clientX: 40, clientY: 50 });
+    windowPointer("pointermove", { clientX: 30, clientY: 50 });
+    windowPointer("pointerup", { clientX: 30, clientY: 50 });
+    const first = photo();
+    fireEvent.pointerDown(frame, { ...pointer, clientX: 40, clientY: 50 });
+    windowPointer("pointermove", { clientX: 35, clientY: 50 });
+    act(() => undo());
+    expect(photo()).toBe(first);
+    windowPointer("pointerup", { clientX: 35, clientY: 50 });
+    expect(useDragUi.getState().draggingId).toBeNull();
+    expect(steps()).toBe(2);
+    act(() => undo());
+    expect(photo()).toBe(first);
+  });
+
+  it("leaving adjust mode mid-pan commits what is shown once and ends the gesture", () => {
+    const { frame } = adjust();
+    fireEvent.pointerDown(frame, { ...pointer, clientX: 40, clientY: 50 });
+    windowPointer("pointermove", { clientX: 30, clientY: 50 });
+    expect(frame).toHaveClass("cursor-grabbing");
+    act(() => exitAdjust());
+    expect(steps()).toBe(1);
+    expect(photo().focusX).toBeCloseTo(0.5 + 10 / 98.67, 3);
+    expect(frame).toHaveClass("cursor-grab");
+    expect(useDragUi.getState().draggingId).toBeNull();
+    const after = photo();
+    windowPointer("pointermove", { clientX: 0, clientY: 50 });
+    windowPointer("pointerup", { clientX: 0, clientY: 50 });
+    expect(photo()).toBe(after);
+    expect(steps()).toBe(1);
   });
 
   it("a tap inside the frame centers that image point (clamped)", () => {

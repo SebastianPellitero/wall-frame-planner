@@ -8,6 +8,8 @@ import { CheckIcon, DropperIcon } from "../ui/icons";
 const STEP: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
 const CHECKED_RING = "ring-2 ring-accent ring-offset-1 ring-offset-surface";
 const toneText = (hex: string) => (isLightColor(hex) ? "text-ink" : "text-on-inverse");
+/** A picker closed without a `change` leaves its preview behind; it must not show over a later pick. */
+const clearPreview = () => useWallPaintPreview.setState({ color: null });
 
 /**
  * The wall paint (design-system.md §5.18): a 4 × 2 swatch radiogroup that commits each selection,
@@ -22,7 +24,10 @@ export function WallColorRow() {
   const checked = WALL_SWATCHES.findIndex((s) => s.hex === color.toLowerCase());
   const customActive = checked < 0;
 
-  const pick = (index: number) => usePlannerStore.getState().setWall({ color: WALL_SWATCHES[index].hex });
+  const pick = (index: number) => {
+    clearPreview();
+    usePlannerStore.getState().setWall({ color: WALL_SWATCHES[index].hex });
+  };
 
   const onKeyDown = (e: KeyboardEvent, index: number) => {
     const step = STEP[e.key];
@@ -38,7 +43,7 @@ export function WallColorRow() {
     if (!el) return;
     const commit = () => {
       usePlannerStore.getState().setWall({ color: el.value });
-      useWallPaintPreview.setState({ color: null });
+      clearPreview();
     };
     el.addEventListener("change", commit);
     return () => el.removeEventListener("change", commit);
@@ -99,8 +104,8 @@ export function WallColorRow() {
             ref={customRef}
             type="color"
             value={preview ?? color}
-            // shortcut: a preview left by a picker closed without a change stays until the next pick; clear on blur if it shows up.
             onInput={(e) => useWallPaintPreview.setState({ color: e.currentTarget.value })}
+            onBlur={clearPreview}
             className="absolute inset-0 size-full cursor-pointer opacity-0"
           />
         </label>

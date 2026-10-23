@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { centerFocusOn, panFocus, photoLayout, rubberPanLayout, zoomPhotoAt, type Opening, type PhotoCrop } from "../lib/framePhoto";
 import { dragStartPx } from "../lib/physics";
+import { useDragUi } from "../state/dragUi";
 import { exitAdjust } from "../state/selectionUi";
 import { usePlannerStore } from "../state/store";
 import type { Point } from "../types";
@@ -70,6 +71,7 @@ export function useAdjustGesture(options: AdjustGestureOptions) {
     for (const stop of g.stops.values()) stop();
     gesture.current = null;
     setPanning(false);
+    if (useDragUi.getState().draggingId === latest.current.id) useDragUi.getState().endDrag();
     const { id, opening, motion } = latest.current;
     const store = usePlannerStore.getState();
     if (g.moved) {
@@ -120,6 +122,7 @@ export function useAdjustGesture(options: AdjustGestureOptions) {
       if (session.pointers.size === 1) {
         // A second finger: the pan so far becomes the base the pinch starts from.
         update(session, { crop: shownCrop(session, latest.current.opening), moved: true, spread: distance(pair(session)[0], at) });
+        useDragUi.getState().startDrag(latest.current.id);
       } else {
         update(session, { origin: at });
       }
@@ -145,7 +148,11 @@ export function useAdjustGesture(options: AdjustGestureOptions) {
           const dx = p.x - session.origin.x;
           const dy = p.y - session.origin.y;
           if (!session.moved && Math.hypot(dx, dy) < session.slop) return;
-          if (!session.moved) setPanning(true);
+          if (!session.moved) {
+            setPanning(true);
+            // A live gesture is a live drag: history and frame commands wait for its one commit.
+            useDragUi.getState().startDrag(latest.current.id);
+          }
           update(session, { moved: true });
           motion.show(rubberPanLayout(session.crop, dx, dy, opening));
         },

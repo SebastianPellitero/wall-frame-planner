@@ -4,6 +4,7 @@ import type { Shell } from "../../hooks/useShell";
 import { clientToWallCm } from "../../lib/geometry";
 import { wallTone } from "../../lib/wallColor";
 import { useDragUi } from "../../state/dragUi";
+import { usePhotoImage } from "../../state/photoImage";
 import { usePlannerStore } from "../../state/store";
 import { useWallPaintPreview } from "../../state/wallPaintUi";
 import { cx } from "../ui/cx";
@@ -55,7 +56,9 @@ export function WallStage({ stageRef, shell, children }: { stageRef: Ref<HTMLEle
   const height = usePlannerStore((s) => s.wall.height);
   const preview = useWallPaintPreview((s) => s.color);
   const color = usePlannerStore((s) => preview ?? s.wall.color);
-  const photoOpacity = usePlannerStore((s) => (s.background.hasImage && s.background.visible ? s.background.opacity : null));
+  // Only a photo actually drawn (its image in memory, as BackgroundLayer needs) lightens the tone (§5.19).
+  const photoDrawn = usePhotoImage((s) => s.blob !== null);
+  const photoOpacity = usePlannerStore((s) => (photoDrawn && s.background.hasImage && s.background.visible ? s.background.opacity : null));
   const photo = usePinchPan({ enabled: mode === "photo", wallRef, pxPerCm });
   const photoStageRef = photo.stageRef;
   const setStage = useCallback(
