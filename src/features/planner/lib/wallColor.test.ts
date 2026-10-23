@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_WALL_COLOR, isHexColor, isLightColor, relativeLuminance, WALL_SWATCHES } from "./wallColor";
+import { DEFAULT_WALL_COLOR, isHexColor, isLightColor, relativeLuminance, WALL_SWATCHES, wallTone } from "./wallColor";
 
 describe("WALL_SWATCHES", () => {
   it("lists the eight paint chips of design-system.md §5.18, light to dark, starting with the default", () => {
@@ -49,5 +49,17 @@ describe("isLightColor", () => {
   it("is case-insensitive", () => {
     expect(isLightColor("#F4F5F1")).toBe(true);
     expect(isLightColor("#34383B")).toBe(false);
+  });
+});
+
+describe("wallTone", () => {
+  it("follows the paint when no photo covers the wall", () => {
+    expect(wallTone("#f4f5f1", null)).toBe("light");
+    expect(wallTone("#34383b", null)).toBe("dark");
+  });
+
+  it("forces the light set under a mostly opaque photo (opacity >= 0.5)", () => {
+    expect(wallTone("#34383b", 0.5)).toBe("light");
+    expect(wallTone("#34383b", 0.49)).toBe("dark");
   });
 });

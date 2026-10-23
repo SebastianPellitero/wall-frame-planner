@@ -221,3 +221,17 @@ export const RulerIcon = (p: IconProps) => (
     <path d="M6.5 8v3M10.5 8v4M14.5 8v3M18.5 8v4" />
   </Icon>
 );
+
+export const CheckIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M5 12.5l4.5 4.5L19 7.5" />
+  </Icon>
+);
+
+/** An eyedropper at 45°: the Custom wall color. */
+export const DropperIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M14.5 5.5l4 4M16.5 3.5a2.1 2.1 0 0 1 3 0l1 1a2.1 2.1 0 0 1 0 3l-2 2-4-4 2-2z" />
+    <path d="M13.5 8.5l-8 8V20h3.5l8-8" />
+  </Icon>
+);

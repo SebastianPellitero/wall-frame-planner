@@ -1,9 +1,11 @@
-import { useCallback, type PointerEvent, type ReactNode, type Ref } from "react";
+import { useCallback, type CSSProperties, type PointerEvent, type ReactNode, type Ref } from "react";
 import { usePinchPan } from "../../hooks/usePinchPan";
 import type { Shell } from "../../hooks/useShell";
 import { clientToWallCm } from "../../lib/geometry";
+import { wallTone } from "../../lib/wallColor";
 import { useDragUi } from "../../state/dragUi";
 import { usePlannerStore } from "../../state/store";
+import { useWallPaintPreview } from "../../state/wallPaintUi";
 import { cx } from "../ui/cx";
 import { BackgroundLayer } from "./BackgroundLayer";
 import { FramesLayer } from "./FramesLayer";
@@ -51,6 +53,9 @@ export function WallStage({ stageRef, shell, children }: { stageRef: Ref<HTMLEle
   const empty = usePlannerStore((s) => s.shapes.length === 0);
   const width = usePlannerStore((s) => s.wall.width);
   const height = usePlannerStore((s) => s.wall.height);
+  const preview = useWallPaintPreview((s) => s.color);
+  const color = usePlannerStore((s) => preview ?? s.wall.color);
+  const photoOpacity = usePlannerStore((s) => (s.background.hasImage && s.background.visible ? s.background.opacity : null));
   const photo = usePinchPan({ enabled: mode === "photo", wallRef, pxPerCm });
   const photoStageRef = photo.stageRef;
   const setStage = useCallback(
@@ -97,9 +102,10 @@ export function WallStage({ stageRef, shell, children }: { stageRef: Ref<HTMLEle
           ref={wallRef}
           data-testid="wall"
           onPointerDown={onWallPointerDown}
-          style={{ width: wallPx.w, height: wallPx.h }}
+          data-wall-tone={wallTone(color, photoOpacity)}
+          style={{ width: wallPx.w, height: wallPx.h, "--color-wall-paint": color } as CSSProperties}
           className={cx(
-            "relative z-wall touch-none bg-wall shadow-wall",
+            "relative z-wall touch-none bg-wall-paint shadow-wall transition-colors duration-base ease-in-out-soft motion-reduce:duration-reduced",
             mode === "gridOrigin" && "cursor-crosshair",
             mode === "photo" && "cursor-move",
           )}
@@ -121,7 +127,7 @@ export function WallStage({ stageRef, shell, children }: { stageRef: Ref<HTMLEle
 function EmptyWallCopy() {
   return (
     <div className="pointer-events-none absolute inset-0 grid place-items-center p-4">
-      <p className="max-w-[24ch] text-center font-serif text-lead text-balance text-ink-muted">
+      <p className="max-w-[22ch] text-center font-serif text-placard text-balance text-wall-ink">
         Drag a frame onto the wall, or <span className="can-hover:hidden">tap</span>
         <span className="hidden can-hover:inline">click</span> the preview to add one.
       </p>

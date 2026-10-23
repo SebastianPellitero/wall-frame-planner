@@ -1,6 +1,7 @@
 import { usePlannerStore } from "../../state/store";
 import { CmField } from "../ui/CmField";
 import { SettingsSection } from "./SettingsSection";
+import { WallColorRow } from "./WallColorRow";
 
 /** The wall is at least 10 cm a side (the store's floor); the cap only guards against typos. */
 const WALL_CM = { min: 10, max: 1000 };
@@ -23,6 +24,7 @@ export function WallSettings() {
         <CmField label="Push gap" name="Push gap (cm)" value={wall.pushGap} {...PUSH_GAP_CM} onCommit={(pushGap) => setWall({ pushGap })} className="min-w-0" />
       </div>
       <p className="text-caption text-ink-muted">Space kept between frames when they push each other apart.</p>
+      <WallColorRow />
     </SettingsSection>
   );
 }

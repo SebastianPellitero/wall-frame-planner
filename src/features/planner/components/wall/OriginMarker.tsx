@@ -15,9 +15,9 @@ interface OriginMarkerProps {
 }
 
 /**
- * The grid origin crosshair (design-system.md §5.13): 2.5px accent over a 5.5px halo, 14px, or
- * 20px with a dot while setting the origin. A new origin springs there (`settle`) and, in Grid
- * origin mode, plays one ring pulse; a rescale (wall resize, rotation) jumps, like frames do.
+ * The grid origin crosshair (design-system.md §5.13): 2.5px origin-mark over a 5.5px
+ * origin-mark-halo (both follow the wall tone, §5.19), 14px, or 20px with a dot while setting the
+ * origin. A new origin springs there (`settle`) and, in Grid origin mode, plays one ring pulse; a rescale (wall resize, rotation) jumps, like frames do.
  */
 export function OriginMarker({ x, y, pxPerCm, setting }: OriginMarkerProps) {
   const reduced = useReducedMotion() === true;
@@ -54,16 +54,16 @@ export function OriginMarker({ x, y, pxPerCm, setting }: OriginMarkerProps) {
           key={pulse}
           data-testid="origin-pulse"
           r={arm}
-          className="stroke-accent"
+          className="stroke-origin-mark"
           strokeWidth={2}
           initial={{ scale: PULSE.from, opacity: 1 }}
           animate={{ scale: PULSE.to, opacity: 0 }}
           transition={{ duration: PULSE.ms / 1000, ease: reducedMotion.ease }}
         />
       )}
-      <path d={cross} className="stroke-halo" strokeWidth={5.5} />
-      <path d={cross} className="stroke-accent" strokeWidth={2.5} />
-      {setting && <circle r={2} className="fill-accent" />}
+      <path d={cross} className="stroke-origin-mark-halo" strokeWidth={5.5} />
+      <path d={cross} className="stroke-origin-mark" strokeWidth={2.5} />
+      {setting && <circle r={2} className="fill-origin-mark" />}
     </motion.g>
   );
 }

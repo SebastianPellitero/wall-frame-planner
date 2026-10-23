@@ -5,6 +5,7 @@ import type { Shell } from "../../hooks/useShell";
 import { initialProject, initialUi } from "../../state/actions";
 import { useDragUi } from "../../state/dragUi";
 import { usePlannerStore } from "../../state/store";
+import { useWallPaintPreview } from "../../state/wallPaintUi";
 import { WallContext } from "./WallContext";
 import { WallStage } from "./WallStage";
 
@@ -23,6 +24,7 @@ const EMPTY_COPY = /Drag a frame onto the wall, or/;
 
 beforeEach(() => {
   usePlannerStore.setState({ ...initialProject(), ...initialUi });
+  useWallPaintPreview.setState({ color: null });
 });
 
 describe("WallStage", () => {
@@ -76,6 +78,44 @@ describe("WallStage", () => {
     unmount();
     renderStage({ shell: "landscape" });
     expect(screen.queryByText("300 cm")).not.toBeInTheDocument();
+  });
+
+  it("paints the wall with wall.color through --color-wall-paint, washing in over duration-base", () => {
+    renderStage();
+    const wall = screen.getByTestId("wall");
+    expect(wall.style.getPropertyValue("--color-wall-paint")).toBe("#f4f5f1");
+    expect(wall).toHaveClass("bg-wall-paint", "transition-colors", "duration-base", "ease-in-out-soft", "motion-reduce:duration-reduced");
+    expect(wall).toHaveAttribute("data-wall-tone", "light");
+    act(() => usePlannerStore.getState().setWall({ color: "#34383b" }));
+    expect(wall.style.getPropertyValue("--color-wall-paint")).toBe("#34383b");
+    expect(wall).toHaveAttribute("data-wall-tone", "dark");
+  });
+
+  it("shows the Custom picker's live preview over the stored color", () => {
+    renderStage();
+    act(() => useWallPaintPreview.setState({ color: "#2f4a3f" }));
+    const wall = screen.getByTestId("wall");
+    expect(wall.style.getPropertyValue("--color-wall-paint")).toBe("#2f4a3f");
+    expect(wall).toHaveAttribute("data-wall-tone", "dark");
+    expect(usePlannerStore.getState().wall.color).toBe("#f4f5f1");
+  });
+
+  it("forces the light tone while a shown wall photo is at least half opaque", () => {
+    renderStage();
+    const wall = screen.getByTestId("wall");
+    const { wall: paint, background } = usePlannerStore.getState();
+    const photo = (visible: boolean, opacity: number) => ({ background: { ...background, hasImage: true, visible, opacity } });
+    act(() => usePlannerStore.setState({ wall: { ...paint, color: "#34383b" }, ...photo(true, 0.5) }));
+    expect(wall).toHaveAttribute("data-wall-tone", "light");
+    act(() => usePlannerStore.setState(photo(false, 0.5)));
+    expect(wall).toHaveAttribute("data-wall-tone", "dark");
+    act(() => usePlannerStore.setState(photo(true, 0.3)));
+    expect(wall).toHaveAttribute("data-wall-tone", "dark");
+  });
+
+  it("sets the empty-wall line in wall-ink, which follows the wall tone", () => {
+    renderStage();
+    expect(screen.getByText(EMPTY_COPY)).toHaveClass("font-serif", "text-placard", "text-wall-ink", "max-w-[22ch]");
   });
 });
 

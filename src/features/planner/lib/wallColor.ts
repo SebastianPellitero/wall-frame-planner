@@ -41,3 +41,10 @@ export function relativeLuminance(hex: string): number {
 
 /** Whether a wall of this color takes the light-wall set (dark ink) of §5.19. */
 export const isLightColor = (hex: string): boolean => relativeLuminance(hex) >= LIGHT_WALL_LUMINANCE;
+
+/**
+ * The wall's `data-wall-tone` (§5.19). `photoOpacity` is the shown wall photo's opacity, or null
+ * when none is shown: a mostly opaque photo forces the light set, whose grid lines carry a halo.
+ */
+export const wallTone = (hex: string, photoOpacity: number | null): "light" | "dark" =>
+  (photoOpacity !== null && photoOpacity >= 0.5) || isLightColor(hex) ? "light" : "dark";
